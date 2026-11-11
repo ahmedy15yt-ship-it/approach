@@ -1,0 +1,6 @@
+{
+  "name": "نَهج — أفضل نسخة منك",
+  "description": "النظام اليومي المتكامل لطالب تالتة ثانوي علمي علوم: مذاكرة وصحة ونفسية وروح ومتابعة إنجاز حقيقية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

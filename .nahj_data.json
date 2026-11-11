@@ -1,0 +1,39 @@
+{
+  "ownerPin": "Ahmed1122@#",
+  "telegramSupportUrl": "https://t.me/Y_lI11",
+  "codes": [
+    {
+      "codeHash": "NHJ-OWNER1",
+      "displayPrefix": "NHJ-***ER1",
+      "studentName": "المالك (أحمد)",
+      "createdAt": "2026-11-11T03:00:00.000Z",
+      "isActive": true,
+      "usageCount": 1,
+      "lastUsedAt": "2026-11-11T03:04:00.474Z"
+    },
+    {
+      "codeHash": "NHJ-K7QP3M",
+      "displayPrefix": "NHJ-***P3M",
+      "studentName": "سارة خالد - المنصورة",
+      "createdAt": "2026-11-11T02:52:15.771Z",
+      "isActive": true,
+      "usageCount": 0
+    },
+    {
+      "codeHash": "NHJ-T9X4A1",
+      "displayPrefix": "NHJ-***4A1",
+      "studentName": "عمر شريف - القاهرة",
+      "createdAt": "2026-11-11T02:52:15.771Z",
+      "isActive": true,
+      "usageCount": 0
+    },
+    {
+      "codeHash": "NHJ-33EGS9",
+      "displayPrefix": "NHJ-***S9",
+      "studentName": "محمود سامي - الجيزة",
+      "createdAt": "2026-11-11T02:52:28.915Z",
+      "isActive": true,
+      "usageCount": 0
+    }
+  ]
+}
