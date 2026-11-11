@@ -51,21 +51,21 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs">
+      <div className="bg-white border border-[#1E40AF]/15 rounded-2xl p-5 shadow-xs">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-bold mb-1.5 border border-purple-200">
           <Brain className="w-3.5 h-3.5" />
           <span>علم النفس العصبي وإدارة التوتر لطالب الثانوية</span>
         </div>
-        <h2 className="text-xl font-extrabold text-[#1E2922]">
+        <h2 className="text-xl font-extrabold text-[#0F172A]">
           الهدوء النفسي والثقة تصنع الفارق بين الأول والمتعثر
         </h2>
-        <p className="text-xs text-[#6F7D72]">
+        <p className="text-xs text-[#64748B]">
           الامتحان معركة نفسية قبل أن يكون معركة حفظ. هنا أسلحتك لهزيمة القلق والتسويف والمقارنات الهدامة.
         </p>
       </div>
 
       {/* Daily Win Journal Box (دفتر الإنجاز اليومي) */}
-      <div className="bg-gradient-to-r from-[#2D5A43] to-[#1E3B2C] text-white rounded-3xl p-6 sm:p-7 shadow-md">
+      <div className="bg-gradient-to-r from-[#1E40AF] to-[#172554] text-white rounded-3xl p-6 sm:p-7 shadow-md">
         <div className="max-w-xl">
           <div className="flex items-center gap-2 mb-2">
             <BookMarked className="w-5 h-5 text-amber-300" />
@@ -88,7 +88,7 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                className="py-2.5 px-5 bg-amber-400 hover:bg-amber-300 text-[#1E2922] font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+                className="py-2.5 px-5 bg-amber-400 hover:bg-amber-300 text-[#0F172A] font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>توثيق الإنجاز في سجلي اليومي</span>
@@ -104,12 +104,12 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
       </div>
 
       {/* Practical Anxiety & Mindset Strategies */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs space-y-4">
+      <div className="bg-white border border-[#1E40AF]/15 rounded-2xl p-5 shadow-xs space-y-4">
         <div>
-          <h3 className="font-extrabold text-sm text-[#1E2922]">
+          <h3 className="font-extrabold text-sm text-[#0F172A]">
             استراتيجيات عملية مجربة للقلق والتوتر والتسويف
           </h3>
-          <p className="text-xs text-[#6F7D72]">
+          <p className="text-xs text-[#64748B]">
             طبق هذه الأساليب الذهنية فور شعورك بالضغط أو الخوف من الامتحان
           </p>
         </div>
@@ -122,8 +122,8 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
               onClick={() => setActiveStrategyIndex(i)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border ${
                 activeStrategyIndex === i
-                  ? 'bg-[#2D5A43] text-white border-[#2D5A43] shadow-xs'
-                  : 'bg-[#FAF9F6] text-[#4B594E] border-[#E8E4DC] hover:border-[#2D5A43]/40'
+                  ? 'bg-[#1E40AF] text-white border-[#1E40AF] shadow-xs'
+                  : 'bg-[#F8FAFC] text-[#334155] border-[#E2E8F0] hover:border-[#1E40AF]/40'
               }`}
             >
               {st.title.split('(')[0]}
@@ -133,28 +133,28 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
 
         {/* Strategy Details Card */}
         {MINDSET_STRATEGIES[activeStrategyIndex] && (
-          <div className="bg-[#FAF9F5] border border-[#2D5A43]/20 rounded-2xl p-5 space-y-4">
+          <div className="bg-[#F8FAFC] border border-[#1E40AF]/20 rounded-2xl p-5 space-y-4">
             <div>
               <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200 inline-block mb-1">
                 المشكلة: {MINDSET_STRATEGIES[activeStrategyIndex].problemSolved}
               </span>
-              <h4 className="font-black text-base text-[#1E2922]">
+              <h4 className="font-black text-base text-[#0F172A]">
                 {MINDSET_STRATEGIES[activeStrategyIndex].title}
               </h4>
-              <p className="text-xs text-[#556458] mt-1">
+              <p className="text-xs text-[#475569] mt-1">
                 {MINDSET_STRATEGIES[activeStrategyIndex].shortDesc}
               </p>
             </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-bold text-[#2D5A43] block">خطوات التنفيذ فوراً:</span>
+              <span className="text-xs font-bold text-[#1E40AF] block">خطوات التنفيذ فوراً:</span>
               <ul className="space-y-2">
                 {MINDSET_STRATEGIES[activeStrategyIndex].steps.map((step, idx) => (
                   <li
                     key={idx}
-                    className="text-xs text-[#2C3B30] leading-relaxed bg-white p-3 rounded-xl border border-[#EDE8DE] flex items-start gap-2.5"
+                    className="text-xs text-[#1E293B] leading-relaxed bg-white p-3 rounded-xl border border-[#E2E8F0] flex items-start gap-2.5"
                   >
-                    <span className="w-5 h-5 rounded-full bg-[#2D5A43]/10 text-[#2D5A43] font-bold flex items-center justify-center shrink-0 text-xs">
+                    <span className="w-5 h-5 rounded-full bg-[#1E40AF]/10 text-[#1E40AF] font-bold flex items-center justify-center shrink-0 text-xs">
                       {idx + 1}
                     </span>
                     <span>{step}</span>
@@ -171,14 +171,14 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
       </div>
 
       {/* Letter to My Future Self on Result Day (رسالة لنفسي يوم النتيجة) */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs space-y-3">
+      <div className="bg-white border border-[#1E40AF]/15 rounded-2xl p-5 shadow-xs space-y-3">
         <div className="flex items-center gap-2">
           <Target className="w-5 h-5 text-amber-600" />
-          <h3 className="font-extrabold text-sm text-[#1E2922]">
+          <h3 className="font-extrabold text-sm text-[#0F172A]">
             رسالة لنفسي التي ستُقرأ يوم ظهور النتيجة (صورة الهدف وكلية الأحلام)
           </h3>
         </div>
-        <p className="text-xs text-[#6F7D72]">
+        <p className="text-xs text-[#64748B]">
           اكتب هنا الكلية التي تسعى إليها، لماذا تستحق أن تتعب الآن، ورسالة فخر توجهها لنفسك عندما يظهر مجموعك في الصيف القادم.
         </p>
 
@@ -188,19 +188,19 @@ export const MindsetView: React.FC<MindsetViewProps> = ({
             value={futureLetter}
             onChange={(e) => setFutureLetter(e.target.value)}
             placeholder="اكتب هنا: يا دكتور المستقبل... أنا بتعب النهاردة ومستحمل عشان اللحظة اللي هنفرح فيها أهلنا وندخل كلية..."
-            className="w-full p-3.5 bg-[#FAF9F5] border border-[#D5CFC3] rounded-xl text-xs text-[#1E2922] focus:border-[#2D5A43] focus:outline-none font-medium leading-relaxed"
+            className="w-full p-3.5 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-xs text-[#0F172A] focus:border-[#1E40AF] focus:outline-none font-medium leading-relaxed"
           />
 
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className="py-2 px-4 bg-[#2D5A43] hover:bg-[#234734] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+              className="py-2 px-4 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
               <span>حفظ رسالة الهدف</span>
             </button>
             {savedLetterSuccess && (
-              <span className="text-xs text-emerald-700 font-bold">
+              <span className="text-xs text-[#1E40AF] font-bold">
                 تم حفظ رسالتك وستظل محفوظة لتتذكرها دائماً ✨
               </span>
             )}

@@ -185,9 +185,9 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#FAF9F5] border border-[#2D5A43]/20 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden relative my-6 max-h-[90vh] flex flex-col font-['Cairo',sans-serif]">
+      <div className="bg-[#F8FAFC] border border-[#1E40AF]/20 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden relative my-6 max-h-[90vh] flex flex-col font-['Cairo',sans-serif]">
         {/* Top Header */}
-        <div className="p-4 sm:p-5 bg-[#2D5A43] text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-[#1E40AF] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg">
               <ShieldAlert className="w-5 h-5 text-[#EAB308]" />
@@ -210,11 +210,11 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
           {!isAuthenticated ? (
             /* Owner Authentication Form */
             <div className="max-w-md mx-auto py-8 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1E40AF]/10 text-[#1E40AF] flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold text-[#1E2922] mb-1">تسجيل دخول المالك</h3>
-              <p className="text-xs text-[#5D6B60] mb-6">
+              <h3 className="text-lg font-bold text-[#0F172A] mb-1">تسجيل دخول المالك</h3>
+              <p className="text-xs text-[#475569] mb-6">
                 أدخل كلمة مرور المالك المعتمدة للوصول إلى لوحة إصدار الأكواد والتحكم
               </p>
 
@@ -224,13 +224,13 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="كلمة مرور المالك..."
-                  className="w-full px-4 py-3 text-center text-base font-bold bg-white border border-[#D5CFC3] rounded-xl focus:border-[#2D5A43] focus:outline-none"
+                  className="w-full px-4 py-3 text-center text-base font-bold bg-white border border-[#CBD5E1] rounded-xl focus:border-[#1E40AF] focus:outline-none"
                   autoFocus
                 />
                 {authError && <p className="text-xs text-red-600 font-semibold">{authError}</p>}
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#2D5A43] hover:bg-[#234734] text-white font-bold rounded-xl text-sm transition-all shadow-sm"
+                  className="w-full py-3 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold rounded-xl text-sm transition-all shadow-sm"
                 >
                   دخول لوحة التحكم
                 </button>
@@ -242,17 +242,17 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               {/* Quick Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-white p-4 rounded-xl border border-[#E4DFD5] shadow-xs">
-                  <span className="text-xs text-[#6F7D72] block">إجمالي الأكواد المُصدرة</span>
-                  <span className="text-2xl font-black text-[#2D5A43]">{codes.length}</span>
+                  <span className="text-xs text-[#64748B] block">إجمالي الأكواد المُصدرة</span>
+                  <span className="text-2xl font-black text-[#1E40AF]">{codes.length}</span>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[#E4DFD5] shadow-xs">
-                  <span className="text-xs text-[#6F7D72] block">الأكواد النشطة حالياً</span>
+                  <span className="text-xs text-[#64748B] block">الأكواد النشطة حالياً</span>
                   <span className="text-2xl font-black text-emerald-600">
                     {codes.filter((c) => c.isActive).length}
                   </span>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-[#E4DFD5] shadow-xs">
-                  <span className="text-xs text-[#6F7D72] block">الأكواد الملغاة</span>
+                  <span className="text-xs text-[#64748B] block">الأكواد الملغاة</span>
                   <span className="text-2xl font-black text-rose-600">
                     {codes.filter((c) => !c.isActive).length}
                   </span>
@@ -260,31 +260,31 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </div>
 
               {/* Create Code Section */}
-              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#2D5A43]/20 shadow-xs">
-                <h3 className="font-extrabold text-sm text-[#1E2922] mb-3 flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-[#2D5A43]" />
+              <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#1E40AF]/20 shadow-xs">
+                <h3 className="font-extrabold text-sm text-[#0F172A] mb-3 flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-[#1E40AF]" />
                   <span>إنشاء كود وصول لطالب جديد</span>
                 </h3>
                 <form onSubmit={handleCreateCode} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#4B594E] mb-1">اسم الطالب والمحافظة</label>
+                    <label className="block text-[11px] font-bold text-[#334155] mb-1">اسم الطالب والمحافظة</label>
                     <input
                       type="text"
                       value={newStudentName}
                       onChange={(e) => setNewStudentName(e.target.value)}
                       placeholder="مثال: يوسف أحمد - الإسكندرية"
                       required
-                      className="w-full px-3 py-2 text-xs bg-[#FAF9F5] border border-[#D5CFC3] rounded-lg focus:border-[#2D5A43] focus:outline-none"
+                      className="w-full px-3 py-2 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:border-[#1E40AF] focus:outline-none"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-[#4B594E]">الكود (أو اتركه للتوليد التلقائي)</label>
+                      <label className="text-[11px] font-bold text-[#334155]">الكود (أو اتركه للتوليد التلقائي)</label>
                       <button
                         type="button"
                         onClick={generateRandomSampleCode}
-                        className="text-[10px] text-[#2D5A43] hover:underline font-bold"
+                        className="text-[10px] text-[#1E40AF] hover:underline font-bold"
                       >
                         ولّد كود عشوائي
                       </button>
@@ -294,7 +294,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                       value={customCodeInput}
                       onChange={(e) => setCustomCodeInput(e.target.value.toUpperCase())}
                       placeholder="NHJ-K7QP3M"
-                      className="w-full px-3 py-2 text-xs font-mono uppercase bg-[#FAF9F5] border border-[#D5CFC3] rounded-lg focus:border-[#2D5A43] focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-mono uppercase bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:border-[#1E40AF] focus:outline-none"
                       dir="ltr"
                     />
                   </div>
@@ -302,7 +302,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   <div className="flex items-end">
                     <button
                       type="submit"
-                      className="w-full py-2.5 px-4 bg-[#2D5A43] hover:bg-[#234734] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-2"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>إصدار الكود الآن</span>
@@ -316,11 +316,11 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
               {/* Codes Table */}
               <div className="bg-white rounded-xl border border-[#E4DFD5] shadow-xs overflow-hidden">
-                <div className="p-3.5 border-b border-[#EAE6DF] flex items-center justify-between bg-[#F8F6F0]">
-                  <span className="font-bold text-xs text-[#2D5A43]">سجل أكواد الطلاب المعتمدة</span>
+                <div className="p-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
+                  <span className="font-bold text-xs text-[#1E40AF]">سجل أكواد الطلاب المعتمدة</span>
                   <button
                     onClick={() => loadCodes(pin)}
-                    className="text-xs text-[#6F7D72] hover:text-[#2D5A43] flex items-center gap-1 font-medium"
+                    className="text-xs text-[#64748B] hover:text-[#1E40AF] flex items-center gap-1 font-medium"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                     <span>تحديث</span>
@@ -329,7 +329,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-[#FAF9F6] text-[#556458] font-bold border-b border-[#EAE6DF]">
+                    <thead className="bg-[#F8FAFC] text-[#475569] font-bold border-b border-[#E2E8F0]">
                       <tr>
                         <th className="p-3">اسم الطالب</th>
                         <th className="p-3">الكود (المشفر)</th>
@@ -339,21 +339,21 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         <th className="p-3 text-center">إجراء</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#F0EDE6]">
+                    <tbody className="divide-y divide-[#E2E8F0]">
                       {codes.map((item) => (
-                        <tr key={item.id} className="hover:bg-[#FAF9F5] transition-colors">
-                          <td className="p-3 font-bold text-[#1E2922]">{item.studentName}</td>
-                          <td className="p-3 font-mono font-bold text-[#2D5A43]" dir="ltr">
+                        <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors">
+                          <td className="p-3 font-bold text-[#0F172A]">{item.studentName}</td>
+                          <td className="p-3 font-mono font-bold text-[#1E40AF]" dir="ltr">
                             {item.displayPrefix}
                           </td>
-                          <td className="p-3 text-[#6F7D72]">
+                          <td className="p-3 text-[#64748B]">
                             {new Date(item.createdAt).toLocaleDateString('ar-EG', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',
                             })}
                           </td>
-                          <td className="p-3 font-medium text-[#4B594E]">{item.usageCount || 0} مرة</td>
+                          <td className="p-3 font-medium text-[#334155]">{item.usageCount || 0} مرة</td>
                           <td className="p-3">
                             {item.isActive ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
@@ -388,11 +388,11 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
               {/* Telegram Support Link Configuration */}
               <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E4DFD5] shadow-xs">
-                <h3 className="font-extrabold text-sm text-[#1E2922] mb-2 flex items-center gap-2">
+                <h3 className="font-extrabold text-sm text-[#0F172A] mb-2 flex items-center gap-2">
                   <Send className="w-4 h-4 text-[#229ED9]" />
                   <span>تخصيص رابط تليجرام للدعم الفني للطلبة</span>
                 </h3>
-                <p className="text-xs text-[#6F7D72] mb-3">
+                <p className="text-xs text-[#64748B] mb-3">
                   هذا الرابط يظهر في شاشة الدخول للطلاب الذين ليس لديهم كود للتواصل معك مباشرة.
                 </p>
                 <form onSubmit={handleSaveSettings} className="flex gap-2">
@@ -402,12 +402,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                     onChange={(e) => setNewTelegramInput(e.target.value)}
                     placeholder="https://t.me/your_username"
                     required
-                    className="grow px-3 py-2 text-xs font-mono bg-[#FAF9F5] border border-[#D5CFC3] rounded-lg focus:border-[#2D5A43] focus:outline-none"
+                    className="grow px-3 py-2 text-xs font-mono bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:border-[#1E40AF] focus:outline-none"
                     dir="ltr"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#2D5A43] hover:bg-[#234734] text-white font-bold text-xs rounded-lg transition-all"
+                    className="px-4 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold text-xs rounded-lg transition-all"
                   >
                     حفظ الرابط
                   </button>
@@ -421,10 +421,10 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 bg-[#F2EFE9] border-t border-[#EAE6DF] text-center shrink-0">
+        <div className="p-3.5 bg-[#F2EFE9] border-t border-[#E2E8F0] text-center shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-[#2D5A43] hover:bg-[#234734] text-white text-xs font-bold rounded-lg transition-all"
+            className="px-5 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white text-xs font-bold rounded-lg transition-all"
           >
             إغلاق لوحة المالك والعودة للتطبيق
           </button>
@@ -439,16 +439,16 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               <AlertTriangle className="w-8 h-8 text-[#C59B27]" />
             </div>
 
-            <h3 className="text-lg font-black text-[#1E2922] mb-1">
+            <h3 className="text-lg font-black text-[#0F172A] mb-1">
               تم إصدار كود الطالب بنجاح!
             </h3>
-            <p className="text-xs text-[#5D6B60] mb-4">
-              كود خاص بالطالب: <strong className="text-[#2D5A43]">{createdStudentName}</strong>
+            <p className="text-xs text-[#475569] mb-4">
+              كود خاص بالطالب: <strong className="text-[#1E40AF]">{createdStudentName}</strong>
             </p>
 
             {/* Glowing Big Code Box */}
-            <div className="p-4 bg-[#FAF9F5] border-2 border-dashed border-[#2D5A43]/40 rounded-xl mb-4 select-all">
-              <span className="font-mono text-2xl font-black text-[#2D5A43] tracking-widest block" dir="ltr">
+            <div className="p-4 bg-[#F8FAFC] border-2 border-dashed border-[#1E40AF]/40 rounded-xl mb-4 select-all">
+              <span className="font-mono text-2xl font-black text-[#1E40AF] tracking-widest block" dir="ltr">
                 {onceOnlyCreatedCode}
               </span>
             </div>
@@ -462,7 +462,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             <div className="flex gap-2">
               <button
                 onClick={() => copyToClipboard(onceOnlyCreatedCode)}
-                className="grow py-3 px-4 bg-[#2D5A43] hover:bg-[#234734] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                className="grow py-3 px-4 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
               >
                 {copied ? (
                   <>

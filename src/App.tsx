@@ -32,8 +32,6 @@ import {
 } from './data/prayer';
 import { INITIAL_DAILY_TASKS, INITIAL_LEADERBOARD } from './data/tasks';
 
-import { AuthGate } from './components/AuthGate';
-import { OwnerDashboard } from './components/OwnerDashboard';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { ScheduleView } from './components/ScheduleView';
@@ -47,37 +45,27 @@ import { TasksLeaderboardView } from './components/TasksLeaderboardView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
+import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 
 export default function App() {
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const saved = localStorage.getItem('nahj_auth');
-    if (!saved) return false;
-    try {
-      const data = JSON.parse(saved);
-      if (data.codeMasked === 'NHJ-***O26' || data.codeMasked?.includes('O26')) {
-        localStorage.removeItem('nahj_auth');
-        return false;
-      }
-      return Boolean(data.isLoggedIn);
-    } catch {
-      return false;
-    }
-  });
-
-  const [studentName, setStudentName] = useState<string>(() => {
-    const saved = localStorage.getItem('nahj_auth');
-    return saved ? JSON.parse(saved).studentName : '';
-  });
-
-  const [codeMasked, setCodeMasked] = useState<string>(() => {
-    const saved = localStorage.getItem('nahj_auth');
-    return saved ? JSON.parse(saved).codeMasked : '';
-  });
-
-  // Owner Portal Modal
-  const [isOwnerOpen, setIsOwnerOpen] = useState(false);
   const [telegramSupportUrl, setTelegramSupportUrl] = useState('https://t.me/Y_lI11');
+
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('nahj_theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('nahj_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('nahj_theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -135,8 +123,8 @@ export default function App() {
     const savedHeight = localStorage.getItem('nahj_student_height');
     const parsed = saved ? JSON.parse(saved) : null;
     return {
-      name: parsed?.name || studentName,
-      codeMasked: parsed?.codeMasked || codeMasked,
+      name: parsed?.name || 'طالب نَهج المجتهد 🩺',
+      codeMasked: 'مفتوح للجميع',
       streakDays: parsed?.streakDays ?? 18,
       totalXp: parsed?.totalXp ?? 2450,
       rankTitle: parsed?.rankTitle || 'طبيب المستقبل 🩺',
@@ -203,22 +191,27 @@ export default function App() {
     EGYPT_GOVERNORATES[0];
   const prayers = calculatePrayerTimes(new Date(), currentGov);
 
-  // Handlers
-  const handleLoginSuccess = (name: string, masked: string) => {
-    setStudentName(name);
-    setCodeMasked(masked);
-    setIsAuthenticated(true);
-    setProfile((prev) => ({ ...prev, name, codeMasked: masked }));
-    localStorage.setItem(
-      'nahj_auth',
-      JSON.stringify({ isLoggedIn: true, studentName: name, codeMasked: masked })
-    );
-  };
+  // Background Push Notification Scheduler for prayers & study sessions
+  useEffect(() => {
+    if (!isNotificationsEnabled()) return;
 
-  const handleLogout = () => {
-    localStorage.removeItem('nahj_auth');
-    setIsAuthenticated(false);
-  };
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+      const timeStr24 = `${String(currentH).padStart(2, '0')}:${String(currentM).padStart(2, '0')}`;
+
+      // Check prayer match within 30 seconds of timestamp
+      const nowMs = now.getTime();
+      prayers.forEach((p) => {
+        if (p.timestamp && Math.abs(p.timestamp.getTime() - nowMs) < 30000) {
+          notifyPrayerTime(p.name);
+        }
+      });
+    }, 25000);
+
+    return () => clearInterval(interval);
+  }, [prayers]);
 
   const handleToggleLesson = (subjectId: string, chapterId: string, lessonId: string) => {
     setCurriculum((prev) =>
@@ -333,17 +326,6 @@ export default function App() {
     isCompleted: false,
   };
 
-  // If student is not logged in with an access code, show AuthGate
-  if (!isAuthenticated) {
-    return (
-      <AuthGate
-        onLoginSuccess={handleLoginSuccess}
-        onOpenOwner={() => setIsOwnerOpen(true)}
-        telegramSupportUrl={telegramSupportUrl}
-      />
-    );
-  }
-
   // Navigation Items
   const NAV_ITEMS = [
     { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
@@ -360,22 +342,23 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#1E2922] flex flex-col font-['Cairo',sans-serif]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B132B] text-[#0F172A] dark:text-[#F1F5F9] flex flex-col font-['Cairo',sans-serif] transition-colors duration-200">
       {/* Top Navigation */}
       <Navbar
         profile={profile}
         telegramSupportUrl={telegramSupportUrl}
-        onOpenOwner={() => setIsOwnerOpen(true)}
-        onLogout={handleLogout}
+        onUpdateName={(newName) => setProfile((p) => ({ ...p, name: newName }))}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
       />
 
       {/* Main Layout: Sidebar on Desktop + Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full grow flex gap-6">
         {/* Desktop Sidebar (Warm notebook aesthetic) */}
         <aside className="hidden lg:block w-64 shrink-0 space-y-2">
-          <div className="bg-white border border-[#2D5A43]/15 rounded-3xl p-3 shadow-xs sticky top-24 space-y-1">
+          <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-3 shadow-xs sticky top-24 space-y-1 transition-colors duration-200">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isCurrent = activeTab === item.id;
@@ -385,8 +368,8 @@ export default function App() {
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all ${
                     isCurrent
-                      ? 'bg-[#2D5A43] text-white shadow-xs'
-                      : 'text-[#4A5D4E] hover:bg-[#FAF9F5] hover:text-[#1E2922]'
+                      ? 'bg-[#1E40AF] text-white shadow-xs'
+                      : 'text-[#334155] dark:text-slate-300 hover:bg-[#F8FAFC] dark:hover:bg-[#162244] hover:text-[#0F172A] dark:hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -511,7 +494,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#2D5A43]/15 py-1.5 px-3 flex items-center justify-around">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B132B]/95 backdrop-blur-md border-t border-[#1E40AF]/15 dark:border-blue-900/40 py-1.5 px-3 flex items-center justify-around transition-colors duration-200">
         {NAV_ITEMS.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isCurrent = activeTab === item.id;
@@ -520,7 +503,9 @@ export default function App() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${
-                isCurrent ? 'text-[#2D5A43] font-black' : 'text-[#7A8A7E] font-medium'
+                isCurrent
+                  ? 'text-[#1E40AF] dark:text-blue-400 font-black'
+                  : 'text-[#64748B] dark:text-slate-400 font-medium'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -532,7 +517,7 @@ export default function App() {
         {/* More Menu Modal Trigger for remaining items on mobile */}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[#7A8A7E] font-medium`}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[#64748B] dark:text-slate-400 font-medium`}
         >
           <Menu className="w-5 h-5" />
           <span className="text-[10px]">المزيد</span>
@@ -542,12 +527,12 @@ export default function App() {
       {/* Mobile More Sheet Modal */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end">
-          <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF]">
-              <span className="font-extrabold text-sm text-[#1E2922]">باقي أقسام نَهج</span>
+          <div className="bg-white dark:bg-[#111C38] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-slate-200 dark:border-blue-900/40">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+              <span className="font-extrabold text-sm text-[#0F172A] dark:text-white">باقي أقسام نَهج</span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -566,8 +551,8 @@ export default function App() {
                     }}
                     className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-3 ${
                       isCurrent
-                        ? 'bg-[#2D5A43] text-white border-[#2D5A43]'
-                        : 'bg-[#FAF9F5] text-[#1E2922] border-[#E8E4DC]'
+                        ? 'bg-[#1E40AF] text-white border-[#1E40AF]'
+                        : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#0F172A] dark:text-slate-200 border-[#E2E8F0] dark:border-slate-800'
                     }`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
@@ -590,15 +575,6 @@ export default function App() {
             setProfile((p) => ({ ...p, totalXp: p.totalXp + 25 }));
             setActiveFocusSession(null);
           }}
-        />
-      )}
-
-      {/* Owner Dashboard Modal */}
-      {isOwnerOpen && (
-        <OwnerDashboard
-          onClose={() => setIsOwnerOpen(false)}
-          telegramSupportUrl={telegramSupportUrl}
-          onUpdateTelegramUrl={(url) => setTelegramSupportUrl(url)}
         />
       )}
     </div>

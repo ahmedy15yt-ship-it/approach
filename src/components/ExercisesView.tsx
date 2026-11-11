@@ -133,31 +133,31 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2D5A43]/10 text-[#2D5A43] rounded-full text-xs font-bold mb-1.5">
+      <div className="bg-white border border-[#1E40AF]/15 rounded-2xl p-5 shadow-xs">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 text-[#1E40AF] rounded-full text-xs font-bold mb-1.5">
           <Dumbbell className="w-3.5 h-3.5" />
           <span>تمارين مكتبية ومنزلية بالفيديو والشرح التوضيحي</span>
         </div>
-        <h2 className="text-xl font-extrabold text-[#1E2922]">
+        <h2 className="text-xl font-extrabold text-[#0F172A]">
           دم بيوصل للمخ + حماية فقرات الظهر وتفصيل حسب وزنك
         </h2>
-        <p className="text-xs text-[#6F7D72]">
+        <p className="text-xs text-[#64748B]">
           فيديوهات يوتيوب توضيحية مع شرح كتابي خطوة بخطوة، ونظام تمارين ملائم لوزنك وطولك لحماية مفاصلك وتنشيط ذهنك.
         </p>
       </div>
 
       {/* Weight & Height Personalization Card */}
-      <div className="bg-white border-2 border-[#2D5A43]/20 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F0EDE6]">
+      <div className="bg-white border-2 border-[#1E40AF]/20 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 text-[#1E40AF] flex items-center justify-center font-bold">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-[#1E2922]">
+              <h3 className="font-extrabold text-sm text-[#0F172A]">
                 تحديد الوزن والطول لملاءمة التمارين والنظام الغذائي
               </h3>
-              <p className="text-xs text-[#7A8A7E]">
+              <p className="text-xs text-[#64748B]">
                 التمارين والنظام الغذائي يتغيران تلقائياً بحسب بياناتك للحفاظ على طاقتك وسلامة ركبتك
               </p>
             </div>
@@ -174,13 +174,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         {/* Input sliders for Weight and Height */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
           {/* Weight */}
-          <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E8E4DC] space-y-2">
+          <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#4B594E] flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-[#2D5A43]" />
+              <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-[#1E40AF]" />
                 <span>وزنك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#2D5A43]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#1E40AF]" dir="ltr">
                 {weight} كجم
               </span>
             </div>
@@ -190,7 +190,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="130"
               value={weight}
               onChange={(e) => handleSaveMetrics(Number(e.target.value), height)}
-              className="w-full accent-[#2D5A43] cursor-pointer"
+              className="w-full accent-[#1E40AF] cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
               <span>40 kg</span>
@@ -200,13 +200,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
           </div>
 
           {/* Height */}
-          <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E8E4DC] space-y-2">
+          <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#4B594E] flex items-center gap-1.5">
-                <Ruler className="w-4 h-4 text-[#2D5A43]" />
+              <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
+                <Ruler className="w-4 h-4 text-[#1E40AF]" />
                 <span>طولك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#2D5A43]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#1E40AF]" dir="ltr">
                 {height} سم
               </span>
             </div>
@@ -216,7 +216,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="205"
               value={height}
               onChange={(e) => handleSaveMetrics(weight, Number(e.target.value))}
-              className="w-full accent-[#2D5A43] cursor-pointer"
+              className="w-full accent-[#1E40AF] cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
               <span>140 cm</span>
@@ -227,10 +227,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         </div>
 
         {/* Personalized Coach Guidance Message based on Weight */}
-        <div className="bg-[#F0F5F2] border border-[#2D5A43]/20 rounded-2xl p-4 text-xs text-[#2C3B30] flex items-start gap-3">
+        <div className="bg-[#F0F5F2] border border-[#1E40AF]/20 rounded-2xl p-4 text-xs text-[#1E293B] flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <strong className="block font-bold text-sm text-[#2D5A43] mb-0.5">
+            <strong className="block font-bold text-sm text-[#1E40AF] mb-0.5">
               توجيه الكابتن الرياضي المخصص لوزنك ({weight} كجم):
             </strong>
             {bmi >= 25 ? (
@@ -251,7 +251,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       </div>
 
       {/* Active Exercise Stage: Video Tutorial + Written Guidance + Timer */}
-      <div className="bg-gradient-to-r from-[#2D5A43] via-[#244A37] to-[#1E3B2C] text-white rounded-3xl p-6 sm:p-8 shadow-lg">
+      <div className="bg-gradient-to-r from-[#1E40AF] via-[#1D4ED8] to-[#172554] text-white rounded-3xl p-6 sm:p-8 shadow-lg">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* Left/Main Column: Instructions & YouTube Video Preview */}
           <div className="lg:col-span-7 space-y-4">
@@ -343,7 +343,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
 
               <button
                 onClick={toggleTimer}
-                className={`grow py-3.5 px-6 rounded-2xl font-black text-sm text-[#1E2922] transition-all shadow-md flex items-center justify-center gap-2 ${
+                className={`grow py-3.5 px-6 rounded-2xl font-black text-sm text-[#0F172A] transition-all shadow-md flex items-center justify-center gap-2 ${
                   isRunning ? 'bg-amber-400 hover:bg-amber-300' : 'bg-white hover:bg-white/90'
                 }`}
               >
@@ -367,10 +367,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       {/* Routine Cards Selection matching user's weight */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-extrabold text-sm text-[#1E2922]">
+          <h3 className="font-extrabold text-sm text-[#0F172A]">
             قائمة التمارين المتوافقة مع وزنك ({weight} كجم) والهدف الحالي:
           </h3>
-          <span className="text-xs text-[#7A8A7E]">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
+          <span className="text-xs text-[#64748B]">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -382,33 +382,33 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                 onClick={() => selectExercise(ex)}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                   isCurrent
-                    ? 'bg-white border-[#2D5A43] shadow-md ring-2 ring-[#2D5A43]/20'
-                    : 'bg-[#FAF9F6] border-[#E8E4DC] hover:border-[#2D5A43]/40'
+                    ? 'bg-white border-[#1E40AF] shadow-md ring-2 ring-[#1E40AF]/20'
+                    : 'bg-[#F8FAFC] border-[#E2E8F0] hover:border-[#1E40AF]/40'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#2D5A43]/10 text-[#2D5A43]">
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#1E40AF]/10 text-[#1E40AF]">
                       {ex.category}
                     </span>
                     <span className="text-xs font-mono font-bold text-[#8C7A52]" dir="ltr">
                       {ex.durationSeconds} ثانية
                     </span>
                   </div>
-                  <h4 className="font-extrabold text-xs text-[#1E2922] mb-1">{ex.name}</h4>
-                  <p className="text-[11px] text-[#5D6B60] leading-relaxed line-clamp-2">
+                  <h4 className="font-extrabold text-xs text-[#0F172A] mb-1">{ex.name}</h4>
+                  <p className="text-[11px] text-[#475569] leading-relaxed line-clamp-2">
                     {ex.benefit}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-[#EDE8DE] flex items-center justify-between">
+                <div className="mt-3 pt-2 border-t border-[#E2E8F0] flex items-center justify-between">
                   <span className="text-[10px] text-red-600 font-bold flex items-center gap-1">
                     <Video className="w-3 h-3" />
                     <span>فيديو يوتيوب</span>
                   </span>
                   <span
                     className={`text-[11px] font-bold ${
-                      isCurrent ? 'text-[#2D5A43]' : 'text-gray-400'
+                      isCurrent ? 'text-[#1E40AF]' : 'text-gray-400'
                     }`}
                   >
                     {isCurrent ? '● المختار حالياً' : 'اختيار ←'}

@@ -53,36 +53,36 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2D5A43]/10 text-[#2D5A43] rounded-full text-xs font-bold mb-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 rounded-full text-xs font-bold mb-1.5">
             <BookOpen className="w-3.5 h-3.5" />
             <span>منهج تالتة ثانوي علمي علوم المعتمد</span>
           </div>
-          <h2 className="text-xl font-extrabold text-[#1E2922]">خريطة المنهج والكبسولات السريعة</h2>
-          <p className="text-xs text-[#6F7D72]">
+          <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">خريطة المنهج والكبسولات السريعة</h2>
+          <p className="text-xs text-[#64748B] dark:text-slate-400">
             تتبع إنجاز دروسك أولاً بأول، واطلع على ملخصات المفاهيم وتركات الامتحانات قبل كل جلسة
           </p>
         </div>
 
         {/* Mode switch: Lessons checklist vs Key Concept Summaries */}
-        <div className="flex bg-[#F2EFE9] p-1 rounded-xl self-start md:self-center">
+        <div className="flex bg-[#F2EFE9] dark:bg-[#0B132B] p-1 rounded-xl self-start md:self-center border border-transparent dark:border-slate-800">
           <button
             onClick={() => setActiveTabMode('lessons')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTabMode === 'lessons'
-                ? 'bg-[#2D5A43] text-white shadow-xs'
-                : 'text-[#4B594E] hover:text-[#1E2922]'
+                ? 'bg-[#1E40AF] text-white shadow-xs'
+                : 'text-[#334155] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white'
             }`}
           >
             قائمة الدروس والمتابعة
           </button>
           <button
             onClick={() => setActiveTabMode('summaries')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTabMode === 'summaries'
-                ? 'bg-[#2D5A43] text-white shadow-xs'
-                : 'text-[#4B594E] hover:text-[#1E2922]'
+                ? 'bg-[#1E40AF] text-white shadow-xs'
+                : 'text-[#334155] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white'
             }`}
           >
             <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
@@ -103,17 +103,17 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
             <button
               key={subj.id}
               onClick={() => setSelectedSubjectId(subj.id)}
-              className={`px-4 py-3 rounded-2xl shrink-0 font-bold text-xs transition-all border flex items-center gap-3 ${
+              className={`px-4 py-3 rounded-2xl shrink-0 font-bold text-xs transition-all border flex items-center gap-3 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#2D5A43] text-white border-[#2D5A43] shadow-md'
-                  : 'bg-white text-[#4B594E] border-[#E2DDD3] hover:border-[#2D5A43]/40'
+                  ? 'bg-[#1E40AF] text-white border-[#1E40AF] shadow-md'
+                  : 'bg-white dark:bg-[#111C38] text-[#334155] dark:text-slate-200 border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/40'
               }`}
             >
               <div className="text-right">
                 <span className="block text-xs font-extrabold">{subj.name}</span>
                 <span
                   className={`text-[10px] block ${
-                    isSelected ? 'text-emerald-200' : 'text-[#8A988D]'
+                    isSelected ? 'text-amber-300' : 'text-[#64748B] dark:text-slate-400'
                   }`}
                 >
                   {pct}% منجز ({done}/{total})
@@ -125,23 +125,23 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
       </div>
 
       {/* Progress Bar for Current Subject */}
-      <div className="bg-white p-4 rounded-xl border border-[#E8E4DC] flex items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111C38] p-4 rounded-xl border border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between gap-4 transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center font-bold">
             {progressPercent}%
           </div>
           <div>
-            <span className="text-xs font-bold text-[#1E2922] block">
+            <span className="text-xs font-bold text-[#0F172A] dark:text-white block">
               تقدمك في مادة {currentSubject.name}
             </span>
-            <span className="text-[11px] text-[#78887C]">
+            <span className="text-[11px] text-[#64748B] dark:text-slate-400">
               أنهيت {completedCount} درس من إجمالي {allLessons.length} درس
             </span>
           </div>
         </div>
-        <div className="w-1/3 h-2.5 bg-[#EAE6DF] rounded-full overflow-hidden">
+        <div className="w-1/3 h-2.5 bg-[#E2E8F0] dark:bg-slate-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#2D5A43] rounded-full transition-all duration-500"
+            className="h-full bg-[#1E40AF] dark:bg-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -154,14 +154,14 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
           {currentSubject.chapters.map((chapter) => (
             <div
               key={chapter.id}
-              className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs"
+              className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs transition-colors duration-200"
             >
               {/* Chapter Title */}
-              <div className="flex items-center justify-between border-b border-[#F0EDE6] pb-3 mb-3">
+              <div className="flex items-center justify-between border-b border-[#E2E8F0] dark:border-slate-800 pb-3 mb-3">
                 <div>
-                  <h3 className="font-extrabold text-sm text-[#1E2922]">{chapter.title}</h3>
+                  <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white">{chapter.title}</h3>
                   {chapter.unitTitle && (
-                    <span className="text-[11px] text-[#7A8A7E] font-medium">{chapter.unitTitle}</span>
+                    <span className="text-[11px] text-[#64748B] dark:text-slate-400 font-medium">{chapter.unitTitle}</span>
                   )}
                 </div>
                 <button
@@ -171,9 +171,9 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                       `أستاذ نَهج، اشرحلي أهم أفكار وتركات الامتحان في: ${chapter.title}`
                     )
                   }
-                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-200 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#1E40AF] dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800/40 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
-                  <Bot className="w-3.5 h-3.5 text-emerald-600" />
+                  <Bot className="w-3.5 h-3.5 text-[#1E40AF] dark:text-blue-400" />
                   <span>اسأل أستاذ نَهج عن هذا الباب (مجاناً)</span>
                 </button>
               </div>
@@ -186,19 +186,19 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                     onClick={() => onToggleLesson(currentSubject.id, chapter.id, lesson.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       lesson.isCompleted
-                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
-                        : 'bg-[#FAF9F6] border-[#E8E4DC] hover:border-[#2D5A43]/30 text-[#1E2922]'
+                        ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/50 text-blue-950 dark:text-blue-200 shadow-2xs'
+                        : 'bg-[#F8FAFC] dark:bg-[#0B132B]/60 border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/30 dark:hover:border-blue-500/40 text-[#0F172A] dark:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       {lesson.isCompleted ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-[#1E40AF] dark:text-blue-400 shrink-0" />
                       ) : (
-                        <Circle className="w-5 h-5 text-gray-400 shrink-0" />
+                        <Circle className="w-5 h-5 text-gray-400 dark:text-slate-500 shrink-0" />
                       )}
                       <span
                         className={`text-xs font-bold leading-relaxed ${
-                          lesson.isCompleted ? 'line-through text-emerald-700/80' : ''
+                          lesson.isCompleted ? 'line-through text-blue-800/70 dark:text-blue-400/70' : ''
                         }`}
                       >
                         {lesson.title}
@@ -206,7 +206,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                     </div>
 
                     {lesson.isCustom && (
-                      <span className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold">
+                      <span className="text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 rounded font-semibold">
                         مخصص
                       </span>
                     )}
@@ -222,12 +222,12 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                     value={newLessonTitle}
                     onChange={(e) => setNewLessonTitle(e.target.value)}
                     placeholder="اسم الدرس أو الفصل الإضافي..."
-                    className="grow px-3 py-2 text-xs bg-[#FAF9F5] border border-[#D5CFC3] rounded-lg focus:border-[#2D5A43] focus:outline-none"
+                    className="grow px-3 py-2 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:border-[#1E40AF] focus:outline-none"
                     autoFocus
                   />
                   <button
                     onClick={() => handleAddLessonSubmit(chapter.id)}
-                    className="px-4 py-2 bg-[#2D5A43] text-white font-bold text-xs rounded-lg"
+                    className="px-4 py-2 bg-[#1E40AF] text-white font-bold text-xs rounded-lg"
                   >
                     حفظ
                   </button>
@@ -244,7 +244,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
               ) : (
                 <button
                   onClick={() => setAddingToChapterId(chapter.id)}
-                  className="mt-3 text-[11px] text-[#2D5A43] hover:underline font-bold flex items-center gap-1"
+                  className="mt-3 text-[11px] text-[#1E40AF] hover:underline font-bold flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>إضافة درس أو موضوع إضافي لهذا الباب</span>
@@ -269,15 +269,15 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
           {currentSubject.chapters.map((chapter) => (
             <div
               key={chapter.id}
-              className="bg-white border-2 border-[#2D5A43]/20 rounded-2xl p-5 shadow-xs space-y-4"
+              className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/20 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors duration-200"
             >
               {/* Chapter Summary Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#EAE6DF] gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800 gap-2">
                 <div>
-                  <span className="text-[11px] font-bold text-[#8C7A52] block">
+                  <span className="text-[11px] font-bold text-[#8C7A52] dark:text-amber-300 block">
                     {chapter.title}
                   </span>
-                  <h3 className="font-extrabold text-base text-[#1E2922]">
+                  <h3 className="font-extrabold text-base text-[#0F172A] dark:text-white">
                     💡 {chapter.summary.title}
                   </h3>
                 </div>
@@ -289,7 +289,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                       `أستاذ نَهج، اختبرني في ${chapter.title} بـ 4 أسئلة اختيار من متعدد نظام حديث وشوف إجابتي!`
                     )
                   }
-                  className="px-3 py-1.5 bg-[#2D5A43] hover:bg-[#234734] text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 self-start sm:self-center"
+                  className="px-3 py-1.5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
                 >
                   <Bot className="w-3.5 h-3.5 text-amber-300" />
                   <span>اختبرني في هذا الباب الآن</span>
@@ -298,17 +298,17 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
 
               {/* Key Concept Points */}
               <div>
-                <h4 className="text-xs font-black text-[#2D5A43] mb-2 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#2D5A43]" />
+                <h4 className="text-xs font-black text-[#1E40AF] dark:text-blue-400 mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#1E40AF] dark:bg-blue-400" />
                   <span>المفاهيم المحورية والقواعد الذهبية:</span>
                 </h4>
                 <ul className="space-y-2">
                   {chapter.summary.keyPoints.map((point, idx) => (
                     <li
                       key={idx}
-                      className="text-xs text-[#2C3B30] leading-relaxed bg-[#FAF9F5] p-2.5 rounded-xl border border-[#EDE8DE] flex items-start gap-2"
+                      className="text-xs text-[#1E293B] dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0B132B]/60 p-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 flex items-start gap-2"
                     >
-                      <span className="text-[#2D5A43] font-bold text-sm shrink-0">✦</span>
+                      <span className="text-[#1E40AF] dark:text-blue-400 font-bold text-sm shrink-0">✦</span>
                       <span>{point}</span>
                     </li>
                   ))}
@@ -317,15 +317,15 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
 
               {/* Exam Traps & Tips */}
               {chapter.summary.examTips.length > 0 && (
-                <div className="bg-[#FFFDF5] border border-amber-200/80 rounded-xl p-3.5">
-                  <h4 className="text-xs font-black text-amber-900 mb-2 flex items-center gap-1.5">
-                    <span className="text-amber-600">⚡</span>
+                <div className="bg-[#FFFDF5] dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-xl p-3.5">
+                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+                    <span className="text-amber-600 dark:text-amber-400">⚡</span>
                     <span>تركات الامتحان التي يقع فيها أغلب الطلاب:</span>
                   </h4>
                   <ul className="space-y-1.5">
                     {chapter.summary.examTips.map((tip, idx) => (
-                      <li key={idx} className="text-xs text-amber-950 font-medium leading-relaxed flex items-start gap-2">
-                        <span className="text-amber-600 font-bold shrink-0">✓</span>
+                      <li key={idx} className="text-xs text-amber-950 dark:text-amber-200 font-medium leading-relaxed flex items-start gap-2">
+                        <span className="text-amber-600 dark:text-amber-400 font-bold shrink-0">✓</span>
                         <span>{tip}</span>
                       </li>
                     ))}
@@ -335,11 +335,11 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
 
               {/* Core Formula or Memory Nugget */}
               {chapter.summary.formulaOrNugget && (
-                <div className="bg-[#F0F5F2] border border-[#2D5A43]/30 rounded-xl p-3 text-center">
-                  <span className="text-[11px] font-bold text-[#2D5A43] block mb-0.5">
+                <div className="bg-[#F0F5F2] border border-[#1E40AF]/30 rounded-xl p-3 text-center">
+                  <span className="text-[11px] font-bold text-[#1E40AF] block mb-0.5">
                     معادلة / ثمرة الباب المختصرة:
                   </span>
-                  <span className="font-mono text-xs font-black text-[#1E2922]" dir="ltr">
+                  <span className="font-mono text-xs font-black text-[#0F172A]" dir="ltr">
                     {chapter.summary.formulaOrNugget}
                   </span>
                 </div>

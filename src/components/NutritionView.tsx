@@ -125,31 +125,31 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header Banner */}
-      <div className="bg-white border border-[#2D5A43]/15 rounded-2xl p-5 shadow-xs">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2D5A43]/10 text-[#2D5A43] rounded-full text-xs font-bold mb-1.5">
+      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-2xl p-5 shadow-xs transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 dark:bg-[#1E40AF]/25 text-[#1E40AF] dark:text-blue-400 rounded-full text-xs font-bold mb-1.5">
           <Utensils className="w-3.5 h-3.5" />
           <span>تغذية طالب تالتة ثانوي بالأكل المصري الاقتصادي</span>
         </div>
-        <h2 className="text-xl font-extrabold text-[#1E2922]">
+        <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">
           نظام غذائي مصري مخصص حسب وزنك (رخيص ومتاح في كل بيت)
         </h2>
-        <p className="text-xs text-[#6F7D72] leading-relaxed">
+        <p className="text-xs text-[#64748B] dark:text-slate-400 leading-relaxed">
           مش محتاج أكل غالي ولا مكملات مستوردة. الفول البلدي، البيض، الجبنة القريش، البليلة، والسمك البلطي فيهم كل ما يحتاجه مخك لسرعة الحفظ وحل أصعب المسائل بدون صداع أو هبوط.
         </p>
       </div>
 
       {/* Personal Weight & Height Profile Card */}
-      <div className="bg-white border-2 border-[#2D5A43]/20 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F0EDE6]">
+      <div className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/20 dark:border-[#1E3A8A]/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#2D5A43]/10 text-[#2D5A43] flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 dark:bg-[#1E40AF]/25 text-[#1E40AF] dark:text-blue-400 flex items-center justify-center font-bold">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-[#1E2922]">
+              <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white">
                 تحديد الوزن والطول لحساب احتياجك الدقيق من الطعام والماء
               </h3>
-              <p className="text-xs text-[#7A8A7E]">
+              <p className="text-xs text-[#64748B] dark:text-slate-400">
                 يتم تفصيل الوجبات والسعرات وكمية البروتين والماء آلياً حسب بياناتك الشخصية
               </p>
             </div>
@@ -165,13 +165,13 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
         {/* Sliders Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* Weight Slider */}
-          <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E8E4DC] space-y-2">
+          <div className="bg-[#F8FAFC] dark:bg-[#0B132B] p-4 rounded-2xl border border-[#E2E8F0] dark:border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#4B594E] flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-[#2D5A43]" />
+              <label className="text-xs font-bold text-[#334155] dark:text-slate-300 flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" />
                 <span>وزنك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#2D5A43]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#1E40AF] dark:text-blue-400" dir="ltr">
                 {weight} كجم
               </span>
             </div>
@@ -181,9 +181,9 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               max="130"
               value={weight}
               onChange={(e) => handleUpdateWeight(Number(e.target.value))}
-              className="w-full accent-[#2D5A43] cursor-pointer"
+              className="w-full accent-[#1E40AF] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-gray-400 dark:text-slate-500 font-mono" dir="ltr">
               <span>40 kg</span>
               <span>85 kg</span>
               <span>130 kg</span>
@@ -191,13 +191,13 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           </div>
 
           {/* Height Slider */}
-          <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E8E4DC] space-y-2">
+          <div className="bg-[#F8FAFC] dark:bg-[#0B132B] p-4 rounded-2xl border border-[#E2E8F0] dark:border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#4B594E] flex items-center gap-1.5">
-                <Ruler className="w-4 h-4 text-[#2D5A43]" />
+              <label className="text-xs font-bold text-[#334155] dark:text-slate-300 flex items-center gap-1.5">
+                <Ruler className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" />
                 <span>طولك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#2D5A43]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#1E40AF] dark:text-blue-400" dir="ltr">
                 {height} سم
               </span>
             </div>
@@ -207,9 +207,9 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               max="205"
               value={height}
               onChange={(e) => handleUpdateHeight(Number(e.target.value))}
-              className="w-full accent-[#2D5A43] cursor-pointer"
+              className="w-full accent-[#1E40AF] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-gray-400 dark:text-slate-500 font-mono" dir="ltr">
               <span>140 cm</span>
               <span>172 cm</span>
               <span>205 cm</span>
@@ -219,36 +219,36 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
         {/* Nutritional Blueprint for this Weight */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-          <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-emerald-800 font-bold block mb-1">البروتين اليومي</span>
-            <span className="font-mono text-xl font-black text-emerald-900" dir="ltr">
+          <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-blue-800 dark:text-blue-300 font-bold block mb-1">البروتين اليومي</span>
+            <span className="font-mono text-xl font-black text-[#1E40AF] dark:text-blue-400" dir="ltr">
               {recommendedProteinGrams} جم
             </span>
-            <span className="text-[10px] text-emerald-700 block mt-0.5">لترميم خلايا المخ</span>
+            <span className="text-[10px] text-blue-700 dark:text-blue-300/80 block mt-0.5">لترميم خلايا المخ</span>
           </div>
 
-          <div className="bg-sky-50/60 border border-sky-200 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-sky-800 font-bold block mb-1">احتياج الماء الصافي</span>
-            <span className="font-mono text-xl font-black text-sky-900" dir="ltr">
+          <div className="bg-sky-50/60 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/50 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-sky-800 dark:text-sky-300 font-bold block mb-1">احتياج الماء الصافي</span>
+            <span className="font-mono text-xl font-black text-sky-900 dark:text-sky-300" dir="ltr">
               {recommendedWaterLiters} لتر
             </span>
-            <span className="text-[10px] text-sky-700 block mt-0.5">({dynamicTargetCups} أكواب يومياً)</span>
+            <span className="text-[10px] text-sky-700 dark:text-sky-300/80 block mt-0.5">({dynamicTargetCups} أكواب يومياً)</span>
           </div>
 
-          <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-amber-800 font-bold block mb-1">السعرات المقترحة</span>
-            <span className="font-mono text-base font-black text-amber-900">
+          <div className="bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-amber-800 dark:text-amber-300 font-bold block mb-1">السعرات المقترحة</span>
+            <span className="font-mono text-base font-black text-amber-900 dark:text-amber-300">
               {activePlan.dailyCaloriesTarget.split(' ')[0]}
             </span>
-            <span className="text-[10px] text-amber-700 block mt-0.5">طاقة ثابتة بلا خمول</span>
+            <span className="text-[10px] text-amber-700 dark:text-amber-300/80 block mt-0.5">طاقة ثابتة بلا خمول</span>
           </div>
 
-          <div className="bg-purple-50/60 border border-purple-200 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-purple-800 font-bold block mb-1">التكلفة اليومية</span>
-            <span className="font-mono text-base font-black text-purple-900">
+          <div className="bg-purple-50/60 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-purple-800 dark:text-purple-300 font-bold block mb-1">التكلفة اليومية</span>
+            <span className="font-mono text-base font-black text-purple-900 dark:text-purple-300">
               25 - 40 جنيه
             </span>
-            <span className="text-[10px] text-purple-700 block mt-0.5">أوفر 70% من الديليفري</span>
+            <span className="text-[10px] text-purple-700 dark:text-purple-300/80 block mt-0.5">أوفر 70% من الديليفري</span>
           </div>
         </div>
       </div>
@@ -256,11 +256,11 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       {/* Plan Selector Tabs */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-sm text-[#1E2922] flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-[#2D5A43]" />
+          <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" />
             <span>اختر خطة التغذية المصرية الملائمة لوزنك وهدفك:</span>
           </h3>
-          <span className="text-xs text-[#7A8A7E]">
+          <span className="text-xs text-[#64748B] dark:text-slate-400">
             تم تحديد النظام الملائم لوزنك ({weight} كجم) تلقائياً
           </span>
         </div>
@@ -277,8 +277,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 onClick={() => setActivePlanKey(key)}
                 className={`p-4 rounded-2xl border text-right transition-all flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-white border-[#2D5A43] shadow-md ring-2 ring-[#2D5A43]/20'
-                    : 'bg-[#FAF9F6] border-[#E8E4DC] hover:border-[#2D5A43]/40'
+                    ? 'bg-white dark:bg-[#111C38] border-[#1E40AF] dark:border-blue-500 shadow-md ring-2 ring-[#1E40AF]/20 dark:ring-blue-500/30'
+                    : 'bg-[#F8FAFC] dark:bg-[#0B132B] border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/40'
                 }`}
               >
                 <div>
@@ -286,29 +286,29 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                         isSelected
-                          ? 'bg-[#2D5A43] text-white'
-                          : 'bg-[#2D5A43]/10 text-[#2D5A43]'
+                          ? 'bg-[#1E40AF] text-white'
+                          : 'bg-[#1E40AF]/10 dark:bg-[#1E40AF]/25 text-[#1E40AF] dark:text-blue-400'
                       }`}
                     >
                       {plan.bmiRange}
                     </span>
                     {isRecommended && (
-                      <span className="text-[10px] px-2 py-0.5 bg-amber-400 text-[#1E2922] font-black rounded-full">
+                      <span className="text-[10px] px-2 py-0.5 bg-amber-400 text-[#0F172A] font-black rounded-full">
                         ★ متوافق مع وزنك
                       </span>
                     )}
                   </div>
-                  <h4 className="font-extrabold text-xs text-[#1E2922] mb-1">
+                  <h4 className="font-extrabold text-xs text-[#0F172A] dark:text-white mb-1">
                     {plan.categoryTitle}
                   </h4>
-                  <p className="text-[11px] text-[#6F7D72] leading-relaxed line-clamp-2">
+                  <p className="text-[11px] text-[#64748B] dark:text-slate-400 leading-relaxed line-clamp-2">
                     {plan.targetGoal}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-[#EDE8DE] flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#8C7A52]">{plan.badge}</span>
-                  <span className="text-xs font-bold text-[#2D5A43]">
+                <div className="mt-3 pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#8C7A52] dark:text-amber-400">{plan.badge}</span>
+                  <span className="text-xs font-bold text-[#1E40AF] dark:text-blue-400">
                     {isSelected ? '✓ معروض الآن' : 'عرض الخطة ←'}
                   </span>
                 </div>
@@ -319,32 +319,32 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Active Diet Plan Breakdown */}
-      <div className="bg-gradient-to-br from-[#FAF9F5] to-white border-2 border-[#2D5A43]/25 rounded-3xl p-6 shadow-sm space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#EAE6DF]">
+      <div className="bg-gradient-to-br from-[#F8FAFC] to-white dark:from-[#111C38] dark:to-[#0B132B] border-2 border-[#1E40AF]/25 dark:border-[#1E3A8A]/40 rounded-3xl p-6 shadow-sm space-y-6 transition-colors">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-slate-800">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2D5A43] text-white rounded-full text-xs font-bold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF] text-white rounded-full text-xs font-bold mb-2">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>{activePlan.badge}</span>
             </div>
-            <h3 className="text-lg font-black text-[#1E2922]">{activePlan.categoryTitle}</h3>
-            <p className="text-xs text-[#5D6B60] mt-1 max-w-2xl">{activePlan.targetGoal}</p>
+            <h3 className="text-lg font-black text-[#0F172A] dark:text-white">{activePlan.categoryTitle}</h3>
+            <p className="text-xs text-[#475569] dark:text-slate-300 mt-1 max-w-2xl">{activePlan.targetGoal}</p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="px-3 py-1.5 rounded-xl bg-white border border-[#2D5A43]/20 font-bold text-[#2D5A43]">
+            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#111C38] border border-[#1E40AF]/20 dark:border-[#1E3A8A]/40 font-bold text-[#1E40AF] dark:text-blue-400">
               🔥 السعرات: {activePlan.dailyCaloriesTarget}
             </span>
-            <span className="px-3 py-1.5 rounded-xl bg-white border border-[#2D5A43]/20 font-bold text-[#2D5A43]">
+            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#111C38] border border-[#1E40AF]/20 dark:border-[#1E3A8A]/40 font-bold text-[#1E40AF] dark:text-blue-400">
               🥩 البروتين: {activePlan.dailyProteinTarget}
             </span>
           </div>
         </div>
 
         {/* Golden Rule Callout */}
-        <div className="bg-[#2D5A43]/10 border border-[#2D5A43]/20 rounded-2xl p-4 flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-xs leading-relaxed text-[#1E2922]">
-            <strong className="font-extrabold text-[#2D5A43] block mb-0.5">
+        <div className="bg-[#1E40AF]/10 dark:bg-blue-950/40 border border-[#1E40AF]/20 dark:border-blue-900/50 rounded-2xl p-4 flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed text-[#0F172A] dark:text-slate-200">
+            <strong className="font-extrabold text-[#1E40AF] dark:text-blue-400 block mb-0.5">
               القاعدة الذهبية لطالب الثانوية في هذه الخطة:
             </strong>
             {activePlan.goldenRule}
@@ -353,7 +353,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
         {/* 5 Daily Meals Timeline */}
         <div className="space-y-3">
-          <h4 className="font-extrabold text-sm text-[#1E2922]">
+          <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-white">
             جدول الوجبات الـ 5 الموزعة على مدار يوم المذاكرة:
           </h4>
 
@@ -361,42 +361,42 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
             {activePlan.meals.map((meal, index) => (
               <div
                 key={index}
-                className="bg-white border border-[#E8E4DC] rounded-2xl p-4 shadow-2xs hover:border-[#2D5A43]/40 transition-all flex flex-col justify-between space-y-3"
+                className="bg-white dark:bg-[#111C38] border border-[#E2E8F0] dark:border-slate-800 rounded-2xl p-4 shadow-2xs hover:border-[#1E40AF]/40 transition-all flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#2D5A43]/10 text-[#2D5A43]">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#1E40AF]/10 dark:bg-[#1E40AF]/25 text-[#1E40AF] dark:text-blue-400">
                       {meal.mealTime}
                     </span>
-                    <span className="text-[11px] text-gray-500 flex items-center gap-1 font-medium">
+                    <span className="text-[11px] text-gray-500 dark:text-slate-400 flex items-center gap-1 font-medium">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{meal.prepTime}</span>
                     </span>
                   </div>
 
-                  <h5 className="font-black text-sm text-[#1E2922] mb-1.5 leading-snug">
+                  <h5 className="font-black text-sm text-[#0F172A] dark:text-white mb-1.5 leading-snug">
                     {meal.dish}
                   </h5>
 
-                  <p className="text-xs text-[#4B594E] leading-relaxed mb-2 font-medium">
+                  <p className="text-xs text-[#334155] dark:text-slate-300 leading-relaxed mb-2 font-medium">
                     🛒 <strong>المكونات:</strong> {meal.items}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="bg-[#F8F7F2] rounded-xl p-3 border border-[#EAE6DE]">
-                    <span className="text-[10px] font-bold text-[#2D5A43] block mb-0.5">
+                  <div className="bg-[#F8F7F2] dark:bg-[#0B132B] rounded-xl p-3 border border-[#EAE6DE] dark:border-slate-800">
+                    <span className="text-[10px] font-bold text-[#1E40AF] dark:text-blue-400 block mb-0.5">
                       🔬 مفعولها على تركيزك بالثانوية:
                     </span>
-                    <p className="text-xs text-[#334237] leading-relaxed">{meal.whyThisMeal}</p>
+                    <p className="text-xs text-[#334237] dark:text-slate-300 leading-relaxed">{meal.whyThisMeal}</p>
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] pt-1">
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
                       <Coins className="w-3.5 h-3.5" />
                       <span>{meal.estimatedCost}</span>
                     </span>
-                    <span className="text-gray-400 font-medium">مكونات متوفرة في مصر</span>
+                    <span className="text-gray-400 dark:text-slate-500 font-medium">مكونات متوفرة في مصر</span>
                   </div>
                 </div>
               </div>
@@ -406,16 +406,16 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Cheap Egyptian Superfoods Catalog */}
-      <div className="bg-white rounded-3xl border border-[#2D5A43]/15 shadow-xs p-6 space-y-4">
+      <div className="bg-white rounded-3xl border border-[#1E40AF]/15 shadow-xs p-6 space-y-4">
         <div>
           <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold mb-1.5">
             <Coins className="w-3.5 h-3.5" />
             <span>قائمة التسوق الأسبوعية الاقتصادية</span>
           </div>
-          <h3 className="font-extrabold text-base text-[#1E2922]">
+          <h3 className="font-extrabold text-base text-[#0F172A]">
             «السوبر فود» المصري الشعبي: بدائل خارقة للمخ بتكلفة جنيهات معدودة
           </h3>
-          <p className="text-xs text-[#6F7D72]">
+          <p className="text-xs text-[#64748B]">
             أكلات شعبية مصرية تتفوق علمياً على المنتجات والمكملات المستوردة بأسعار في متناول أي طالب:
           </p>
         </div>
@@ -424,21 +424,21 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           {CHEAP_EGYPTIAN_SUPERFOODS.map((food, i) => (
             <div
               key={i}
-              className="bg-[#FAF9F5] border border-[#E8E4DC] rounded-2xl p-4 flex flex-col justify-between hover:border-[#2D5A43]/40 transition-all space-y-2.5"
+              className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col justify-between hover:border-[#1E40AF]/40 transition-all space-y-2.5"
             >
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-mono text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800">
                     {food.priceEstimate}
                   </span>
-                  <span className="text-[10px] text-[#2D5A43] font-bold">بديل مصري ممتاز</span>
+                  <span className="text-[10px] text-[#1E40AF] font-bold">بديل مصري ممتاز</span>
                 </div>
-                <h4 className="font-black text-xs text-[#1E2922] mb-1">{food.name}</h4>
-                <p className="text-[11px] text-[#2D5A43] font-bold mb-1.5">{food.nutrient}</p>
+                <h4 className="font-black text-xs text-[#0F172A] mb-1">{food.name}</h4>
+                <p className="text-[11px] text-[#1E40AF] font-bold mb-1.5">{food.nutrient}</p>
                 <p className="text-xs text-[#526055] leading-relaxed">{food.benefit}</p>
               </div>
 
-              <div className="pt-2 border-t border-[#EAE6DF] text-[11px] text-[#7A8A7E]">
+              <div className="pt-2 border-t border-[#E2E8F0] text-[11px] text-[#64748B]">
                 🍳 <strong>طريقة التحضير:</strong> {food.howToPrep}
               </div>
             </div>
@@ -505,12 +505,12 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Good vs Bad Foods Comparison Table */}
-      <div className="bg-white rounded-3xl border border-[#2D5A43]/15 shadow-xs p-6 space-y-4">
+      <div className="bg-white rounded-3xl border border-[#1E40AF]/15 shadow-xs p-6 space-y-4">
         <div>
-          <h3 className="font-extrabold text-sm text-[#1E2922]">
+          <h3 className="font-extrabold text-sm text-[#0F172A]">
             دليل المقارنة: أكلات تعزز استيعابك vs أكلات تسبب الضباب والخمول
           </h3>
-          <p className="text-xs text-[#6F7D72]">
+          <p className="text-xs text-[#64748B]">
             احرص على القائمة الخضراء وابتعد تماماً عن القائمة الحمراء خصوصاً في أيام الامتحانات والمراجعات الكبرى
           </p>
         </div>
@@ -536,8 +536,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="font-extrabold text-xs text-[#1E2922] mb-0.5">{food.name}</h4>
-                  <p className="text-xs text-[#4B594E] leading-relaxed mb-1">{food.impact}</p>
+                  <h4 className="font-extrabold text-xs text-[#0F172A] mb-0.5">{food.name}</h4>
+                  <p className="text-xs text-[#334155] leading-relaxed mb-1">{food.impact}</p>
                   <span
                     className={`text-[11px] font-bold block ${
                       isGood ? 'text-emerald-700' : 'text-rose-700'
