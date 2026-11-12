@@ -40,16 +40,33 @@ import {
   UTHMANI_BASMALA,
   Ayah,
 } from '../data/quran';
+import { AzkarTasbihSection } from './AzkarTasbihSection';
+import {
+  MUEZZINS,
+  isAdhanPlaying,
+  toggleAdhan,
+  stopAdhan,
+  isAutoAdhanEnabled,
+  setAutoAdhanEnabled,
+  getSelectedMuezzin,
+  setSelectedMuezzin,
+  subscribeAdhanState,
+} from '../utils/adhanPlayer';
 
 interface QuranPrayerSectionProps {
   currentGovernorate: string;
   onUpdateGovernorate: (govName: string) => void;
+  onAwardBonusXp?: (amount: number) => void;
 }
 
 export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
   currentGovernorate,
   onUpdateGovernorate,
+  onAwardBonusXp,
 }) => {
+  // Main Tab: Quran or Azkar
+  const [activeMainSection, setActiveMainSection] = useState<'quran' | 'azkar'>('quran');
+
   const [selectedGov, setSelectedGov] = useState<Governorate>(() => {
     return (
       EGYPT_GOVERNORATES.find((g) => g.name.includes(currentGovernorate)) ||
@@ -85,9 +102,29 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<'all' | 'juz_amma' | 'juz_tabarak' | 'study_blessed'>('all');
   const [selectedJuzFilter, setSelectedJuzFilter] = useState<number | 'all'>('all');
 
-  // Adhan sound toggle
-  const [isPlayingAdhan, setIsPlayingAdhan] = useState(false);
-  const adhanAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Adhan sound and auto-play state synced with centralized adhanPlayer
+  const [isPlayingAdhan, setIsPlayingAdhan] = useState<boolean>(isAdhanPlaying());
+  const [autoAdhanActive, setAutoAdhanActive] = useState<boolean>(isAutoAdhanEnabled());
+  const [currentMuezzinId, setCurrentMuezzinId] = useState<string>(getSelectedMuezzin().id);
+
+  useEffect(() => {
+    const unsubscribe = subscribeAdhanState((playing, mId) => {
+      setIsPlayingAdhan(playing);
+      setCurrentMuezzinId(mId);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleToggleAutoAdhan = () => {
+    const nextVal = !autoAdhanActive;
+    setAutoAdhanActive(nextVal);
+    setAutoAdhanEnabled(nextVal);
+  };
+
+  const handleChangeMuezzin = (mId: string) => {
+    setCurrentMuezzinId(mId);
+    setSelectedMuezzin(mId);
+  };
 
   // Bookmark / Last Read
   const [bookmark, setBookmark] = useState<{ surahNumber: number; surahName: string; page: number } | null>(() => {
@@ -229,23 +266,10 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
     }
   };
 
-  const toggleAdhan = () => {
-    if (!adhanAudioRef.current) {
-      const audio = new Audio('https://server8.mp3quran.net/afs/001.mp3');
-      audio.onended = () => setIsPlayingAdhan(false);
-      audio.play().catch((e) => console.log(e));
-      adhanAudioRef.current = audio;
-      setIsPlayingAdhan(true);
-    } else {
-      if (isPlayingAdhan) {
-        adhanAudioRef.current.pause();
-        setIsPlayingAdhan(false);
-      } else {
-        adhanAudioRef.current.play().catch((e) => console.log(e));
-        setIsPlayingAdhan(true);
-      }
-    }
+  const handleToggleAdhanPlayback = () => {
+    toggleAdhan(currentMuezzinId);
   };
+
 
   const handleSaveBookmark = () => {
     if (!activeSurah) return;
@@ -299,91 +323,181 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
 
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
-      {/* 1) Prayer Times Card (27 Egyptian Governorates) */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center">
-              <Compass className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-extrabold text-base text-[#0F172A] dark:text-white">
-                مواقيت الصلاة الفلكية — مصر (الهيئة العامة للمساحة)
-              </h2>
-              <p className="text-xs text-[#64748B] dark:text-slate-400">
-                محسوبة بدقة فلكية لكل الـ 27 محافظة بنظام 12 ساعة
-              </p>
-            </div>
-          </div>
+      {/* 0) Top Main Navigation Tabs: Quran & Prayers vs Azkar & Tasbih */}
+      <div className="flex items-center gap-2 p-1.5 bg-[#E2E8F0]/60 dark:bg-[#0B132B] border border-[#CBD5E1]/60 dark:border-blue-900/40 rounded-2xl">
+        <button
+          onClick={() => setActiveMainSection('quran')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainSection === 'quran'
+              ? 'bg-[#1E40AF] text-white shadow-md'
+              : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] hover:bg-white/50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>المصحف الشريف ومواقيت الصلاة والأذان</span>
+        </button>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedGov.id}
-              onChange={handleGovChange}
-              className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
-            >
-              {EGYPT_GOVERNORATES.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handleDetectLocation}
-              className="p-2 bg-[#F8FAFC] dark:bg-[#0B132B] hover:bg-[#F2EFE9] dark:hover:bg-slate-800 border border-[#CBD5E1] dark:border-slate-700 rounded-xl text-xs font-bold text-[#1E40AF] dark:text-blue-300 transition-colors cursor-pointer"
-              title="تحديد المحافظة تلقائياً عبر GPS"
-            >
-              <MapPin className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={toggleAdhan}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
-                isPlayingAdhan
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
-              }`}
-            >
-              {isPlayingAdhan ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />}
-              <span>{isPlayingAdhan ? 'إيقاف التكبير' : 'سماع الأذان'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 6 Prayer Times Horizontal Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
-          {prayers.map((p) => {
-            const isNext = p.key === nextPrayerInfo.nextPrayer.key;
-            return (
-              <div
-                key={p.key}
-                className={`p-3 rounded-2xl border text-center transition-all ${
-                  isNext
-                    ? 'bg-[#1E40AF] text-white shadow-md ring-2 ring-[#1E40AF]/20'
-                    : 'bg-[#F8FAFC] dark:bg-[#0B132B]/70 border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white'
-                }`}
-              >
-                <span
-                  className={`text-[11px] font-bold block mb-1 ${
-                    isNext ? 'text-amber-300' : 'text-[#64748B] dark:text-slate-400'
-                  }`}
-                >
-                  {p.name}
-                </span>
-                <span className="font-mono text-base font-black tracking-wide" dir="ltr">
-                  {p.time}
-                </span>
-                {isNext && (
-                  <span className="text-[10px] block mt-1 text-amber-200 font-bold">
-                    الصلاة القادمة ({nextPrayerInfo.remainingFormatted})
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => setActiveMainSection('azkar')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeMainSection === 'azkar'
+              ? 'bg-[#1E40AF] text-white shadow-md'
+              : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] hover:bg-white/50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>حصن المسلم وأذكار المذاكرة والمسبحة</span>
+          <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black">
+            جديد
+          </span>
+        </button>
       </div>
+
+      {/* Render Azkar & Tasbih View if selected */}
+      {activeMainSection === 'azkar' && (
+        <AzkarTasbihSection onAwardXp={onAwardBonusXp} />
+      )}
+
+      {/* Render Quran & Prayer Times if selected */}
+      {activeMainSection === 'quran' && (
+        <>
+          {/* 1) Prayer Times Card (27 Egyptian Governorates) */}
+          <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center shrink-0">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-base text-[#0F172A] dark:text-white">
+                    مواقيت الصلاة الفلكية — مصر (الهيئة العامة للمساحة)
+                  </h2>
+                  <p className="text-xs text-[#64748B] dark:text-slate-400">
+                    محسوبة بدقة فلكية لكل الـ 27 محافظة بنظام 12 ساعة مع صوت أذان حقيقي
+                  </p>
+                </div>
+              </div>
+
+              {/* Controls: Governorate, Muezzin Selector, Auto-Adhan, Listen Button */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Governorate Selector */}
+                <select
+                  value={selectedGov.id}
+                  onChange={handleGovChange}
+                  className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                  title="اختر المحافظة"
+                >
+                  {EGYPT_GOVERNORATES.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleDetectLocation}
+                  className="p-2 bg-[#F8FAFC] dark:bg-[#0B132B] hover:bg-[#F2EFE9] dark:hover:bg-slate-800 border border-[#CBD5E1] dark:border-slate-700 rounded-xl text-xs font-bold text-[#1E40AF] dark:text-blue-300 transition-colors cursor-pointer"
+                  title="تحديد المحافظة تلقائياً عبر GPS"
+                >
+                  <MapPin className="w-4 h-4" />
+                </button>
+
+                {/* Muezzin Choice Dropdown */}
+                <select
+                  value={currentMuezzinId}
+                  onChange={(e) => handleChangeMuezzin(e.target.value)}
+                  className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                  title="اختر صوت المؤذن"
+                >
+                  {MUEZZINS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Auto-Adhan Toggle Button */}
+                <button
+                  onClick={handleToggleAutoAdhan}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                    autoAdhanActive
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-300 dark:border-slate-700'
+                  }`}
+                  title="تفعيل أو إلغاء تشغيل الأذان تلقائياً عند دخول كل صلاة"
+                >
+                  <span>الأذان التلقائي:</span>
+                  <span className="font-black">{autoAdhanActive ? 'مفعّل 🔊' : 'معطّل 🔇'}</span>
+                </button>
+
+                {/* Listen to Real Adhan Play/Stop Button */}
+                <button
+                  onClick={handleToggleAdhanPlayback}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                    isPlayingAdhan
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs animate-pulse'
+                      : 'bg-[#1E40AF] hover:bg-[#1D4ED8] text-white'
+                  }`}
+                  title="تشغيل أو إيقاف صوت الأذان الحقيقي"
+                >
+                  {isPlayingAdhan ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
+                  <span>{isPlayingAdhan ? 'إيقاف الأذان' : 'سماع الأذان'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Active Adhan Notice Banner */}
+            {isPlayingAdhan && (
+              <div className="p-3 bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-600/60 rounded-2xl flex items-center justify-between gap-3 text-xs font-bold text-amber-950 dark:text-amber-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-base animate-bounce">🕌</span>
+                  <span>
+                    صوت الأذان يعمل الآن ({getSelectedMuezzin().name}) — استمع وأنصت وكرر خلف المؤذن.
+                  </span>
+                </div>
+                <button
+                  onClick={stopAdhan}
+                  className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-black cursor-pointer shrink-0"
+                >
+                  إيقاف الآن
+                </button>
+              </div>
+            )}
+
+            {/* 6 Prayer Times Horizontal Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
+              {prayers.map((p) => {
+                const isNext = p.key === nextPrayerInfo.nextPrayer.key;
+                return (
+                  <div
+                    key={p.key}
+                    className={`p-3 rounded-2xl border text-center transition-all ${
+                      isNext
+                        ? 'bg-[#1E40AF] text-white shadow-md ring-2 ring-[#1E40AF]/20'
+                        : 'bg-[#F8FAFC] dark:bg-[#0B132B]/70 border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white'
+                    }`}
+                  >
+                    <span
+                      className={`text-[11px] font-bold block mb-1 ${
+                        isNext ? 'text-amber-300' : 'text-[#64748B] dark:text-slate-400'
+                      }`}
+                    >
+                      {p.name}
+                    </span>
+                    <span className="font-mono text-base font-black tracking-wide" dir="ltr">
+                      {p.time}
+                    </span>
+                    {isNext && (
+                      <span className="text-[10px] block mt-1 text-amber-200 font-bold">
+                        الصلاة القادمة ({nextPrayerInfo.remainingFormatted})
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
 
       {/* 2) Quran Section (Index or Single Surah Reader) */}
       {!activeSurah ? (
@@ -793,6 +907,9 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
           </div>
         </div>
       )}
+      </>
+      )}
     </div>
   );
+
 };

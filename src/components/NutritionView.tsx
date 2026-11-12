@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Utensils,
   Droplet,
@@ -16,6 +16,12 @@ import {
   Coffee,
   Check,
   ChevronLeft,
+  Camera,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+  X,
+  FileQuestion,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -49,6 +55,15 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
     const saved = localStorage.getItem('nahj_student_height');
     return saved ? Number(saved) : heightCm;
   });
+
+  // Smart Meal Inspector State
+  const [mealImageBase64, setMealImageBase64] = useState<string | null>(null);
+  const [mealImageMime, setMealImageMime] = useState<string>('image/jpeg');
+  const [mealDescription, setMealDescription] = useState<string>('');
+  const [isAnalyzingMeal, setIsAnalyzingMeal] = useState<boolean>(false);
+  const [mealAnalysisResult, setMealAnalysisResult] = useState<any | null>(null);
+  const [mealAnalysisError, setMealAnalysisError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Calculate BMI and Weight Category
   const heightInMeters = height > 0 ? height / 100 : 1.72;
@@ -119,6 +134,74 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
   const handleMinusWater = () => {
     if (waterCups > 0) {
       onUpdateWaterCups(waterCups - 1);
+    }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 12 * 1024 * 1024) {
+      setMealAnalysisError('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 12 ميجابايت.');
+      return;
+    }
+
+    setMealImageMime(file.type || 'image/jpeg');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const resultStr = reader.result as string;
+      const base64Content = resultStr.includes(',') ? resultStr.split(',')[1] : resultStr;
+      setMealImageBase64(base64Content);
+      setMealAnalysisError(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearImage = () => {
+    setMealImageBase64(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleInspectMeal = async () => {
+    if (!mealDescription.trim() && !mealImageBase64) {
+      setMealAnalysisError('يرجى التقاط صورة للأكلة أو كتابة وصف لمكوناتها أولاً.');
+      return;
+    }
+
+    setIsAnalyzingMeal(true);
+    setMealAnalysisError(null);
+
+    try {
+      const res = await fetch('/api/gemini/inspect-meal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: mealImageBase64,
+          mimeType: mealImageMime,
+          description: mealDescription,
+          studentWeight: weight,
+          studentHeight: height,
+          bmi,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.analysis || data.verdict) {
+        setMealAnalysisResult(data);
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+        });
+      } else {
+        setMealAnalysisError(data.error || 'تعذر فحص الوجبة في الوقت الحالي، يرجى إعادة المحاولة.');
+      }
+    } catch (err: any) {
+      setMealAnalysisError('حدث خطأ في الاتصال بالخادم، يرجى التحقق من الاتصال والمحاولة ثانية.');
+    } finally {
+      setIsAnalyzingMeal(false);
     }
   };
 
@@ -251,6 +334,263 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
             <span className="text-[10px] text-purple-700 dark:text-purple-300/80 block mt-0.5">أوفر 70% من الديليفري</span>
           </div>
         </div>
+      </div>
+
+      {/* Smart Meal Inspector (User Request: فحص أكل البيت بالصور والمواصفات وملاءمته للجسم) */}
+      <div className="bg-gradient-to-br from-blue-50/60 via-white to-sky-50/40 dark:from-[#111C38] dark:via-[#132247] dark:to-[#0E1A38] border-2 border-[#1E40AF]/25 dark:border-blue-800/60 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#1E40AF] text-white flex items-center justify-center font-bold shadow-xs">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1 text-[11px] font-black text-[#1E40AF] dark:text-blue-400 mb-0.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>فاحص الوجبات بالذكاء الاصطناعي (كاميرا + مواصفات)</span>
+              </div>
+              <h3 className="font-black text-base text-[#0F172A] dark:text-white">
+                هل وجبتك المنزلية مناسبة لوزنك وتركيزك اليوم؟
+              </h3>
+            </div>
+          </div>
+
+          <div className="text-left bg-white dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900/50">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">بيانات جسمك المعتمدة للفحص:</span>
+            <span className="text-xs font-black text-[#1E40AF] dark:text-blue-400">
+              {weight} كجم • {height} سم • مؤشر {bmi}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          لو طبخت أو عملت أكل لنفسك في البيت، التقط له صورة واكتب مواصفاته ومكوناته، وسيقوم الذكاء الاصطناعي بفحص الأكلة وحساب سعراتها وبروتينها، وإخبارك بدقة هل هي مناسبة لوزنك وهل تمنحك طاقة للمذاكرة أم تسبب لك الخمول والنعاس!
+        </p>
+
+        {/* Upload & Description Form */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          {/* Image Uploader & Preview (5 cols) */}
+          <div className="md:col-span-5 flex flex-col">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleImageFileChange}
+              className="hidden"
+            />
+
+            {mealImageBase64 ? (
+              <div className="relative rounded-2xl overflow-hidden border-2 border-[#1E40AF] bg-black/5 aspect-4/3 flex items-center justify-center group">
+                <img
+                  src={`data:${mealImageMime};base64,${mealImageBase64}`}
+                  alt="الوجبة"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleClearImage}
+                  className="absolute top-2 left-2 p-1.5 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition-all cursor-pointer"
+                  title="حذف الصورة"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/70 backdrop-blur-xs text-white rounded-lg text-[10px] font-bold">
+                  ✓ تم تحميل صورة الوجبة
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-blue-300 dark:border-blue-800 hover:border-[#1E40AF] dark:hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-all bg-white/70 dark:bg-slate-900/40 aspect-4/3 group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-xs font-black text-[#0F172A] dark:text-white block">
+                    اضغط لالتقاط أو اختيار صورة الوجبة
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                    (PNG, JPG حتى 12 ميجابايت)
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-[#1E40AF] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-900/50 mt-1">
+                  📸 صور طبقك الآن
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Description Textarea & Action (7 cols) */}
+          <div className="md:col-span-7 flex flex-col justify-between space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                مواصفات الأكلة ومكوناتها (اكتب ما صنعته بالتفصيل):
+              </label>
+              <textarea
+                value={mealDescription}
+                onChange={(e) => setMealDescription(e.target.value)}
+                rows={4}
+                placeholder="مثال: جهزت طبق مكون من ربع فرخة مسلوقة، و5 ملاعق أرز أبيض، وطبق سلطة خضراء برشة ليمون، ومعاهم كوب ماء..."
+                className="w-full text-xs p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0F172A] dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#1E40AF] leading-relaxed resize-none"
+              />
+            </div>
+
+            {/* Quick Suggestions Chips */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">
+                أمثلة شائعة يمكنك اختيارها بضغطة زر:
+              </span>
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
+                {[
+                  'طبق فول بلدي بزيت حار مع 2 بيضة مسلوقة ورغيف بلدي',
+                  'علبة تونة مصفاة مع سلطة طماطم وخيار وبصل ورغيف سن',
+                  'جبنة قريش بزيت زيتون ونعناع مع شرائح خيار وربع رغيف',
+                  'طبق مكرونة بالصلصة مع قطعة بانيه محمرة في زيت غزير',
+                ].map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setMealDescription(sample)}
+                    className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-[#1E40AF] dark:hover:border-blue-400 text-[10px] font-medium transition-colors cursor-pointer"
+                  >
+                    + {sample.slice(0, 32)}...
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="button"
+              disabled={isAnalyzingMeal || (!mealDescription.trim() && !mealImageBase64)}
+              onClick={handleInspectMeal}
+              className={`w-full py-3 px-4 rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                isAnalyzingMeal || (!mealDescription.trim() && !mealImageBase64)
+                  ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-[#1E40AF] hover:bg-[#1D4ED8] text-white active:scale-98'
+              }`}
+            >
+              {isAnalyzingMeal ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جاري فحص الوجبة بالذكاء الاصطناعي ومطابقتها مع جسمك...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>افحص ملاءمة الوجبة لجسمي الآن 🩺</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Error Notification */}
+        {mealAnalysisError && (
+          <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{mealAnalysisError}</span>
+          </div>
+        )}
+
+        {/* Analysis Results Display */}
+        {mealAnalysisResult && (
+          <div className="mt-4 pt-4 border-t border-blue-100 dark:border-slate-800 space-y-4 animate-in fade-in duration-300">
+            {/* Verdict Banner */}
+            <div
+              className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                mealAnalysisResult.isSuitable
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
+                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    mealAnalysisResult.isSuitable
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-amber-500 text-white'
+                  }`}
+                >
+                  {mealAnalysisResult.isSuitable ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider block opacity-80">
+                    نتيجة الفحص الغذائي المعتمد
+                  </span>
+                  <h4 className="text-sm font-black">
+                    {mealAnalysisResult.verdict ||
+                      (mealAnalysisResult.isSuitable
+                        ? 'وجبة متوافقة وممتازة لطاقة وتركيز جسمك'
+                        : 'وجبة تحتاج لتعديل حتى لا تسبب خمولاً')}
+                  </h4>
+                </div>
+              </div>
+
+              {/* Macro Estimates */}
+              <div className="flex flex-wrap gap-2 text-xs font-mono font-bold self-end sm:self-center">
+                {mealAnalysisResult.caloriesEstimate && (
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-900 border border-current">
+                    🔥 {mealAnalysisResult.caloriesEstimate}
+                  </span>
+                )}
+                {mealAnalysisResult.proteinGrams && (
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-900 border border-current">
+                    🥩 بروتين: {mealAnalysisResult.proteinGrams}
+                  </span>
+                )}
+                {mealAnalysisResult.carbsGrams && (
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-900 border border-current">
+                    🌾 كارب: {mealAnalysisResult.carbsGrams}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Scientific Analysis */}
+            <div className="bg-white dark:bg-[#111C38] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+              <div>
+                <span className="text-[11px] font-black text-[#1E40AF] dark:text-blue-400 block mb-1">
+                  🔬 التقييم العلمي لأثر هذه الوجبة على جسمك واستيعابك:
+                </span>
+                <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
+                  {mealAnalysisResult.analysis}
+                </p>
+              </div>
+
+              {/* Actionable recommendations */}
+              {mealAnalysisResult.recommendations && mealAnalysisResult.recommendations.length > 0 && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white block mb-1.5">
+                    💡 نصائح وتعديلات مقترحة لتحسين الوجبة:
+                  </span>
+                  <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                    {mealAnalysisResult.recommendations.map((rec: string, i: number) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="text-[#1E40AF] dark:text-blue-400 font-bold">•</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Thanaweya Tip */}
+              {mealAnalysisResult.thanaweyaTip && (
+                <div className="bg-blue-50/70 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-950 dark:text-blue-200 font-bold leading-relaxed">
+                    🎓 <strong>نصيحة ثانوية عامة:</strong> {mealAnalysisResult.thanaweyaTip}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Plan Selector Tabs */}

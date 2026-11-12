@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Clock,
   BookOpen,
@@ -6,6 +6,7 @@ import {
   VolumeX,
   Play,
   Pause,
+  RotateCcw,
   Sparkles,
   Flame,
   Award,
@@ -24,7 +25,11 @@ import {
   ChevronLeft,
   Bell,
   BellRing,
+  Star,
+  Timer,
+  Check,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { StudentProfile, DailyTask, StudySession, Subject } from '../types';
 import { PrayerTime, getNextPrayer } from '../data/prayer';
 import { SURAH_LIST, getSurahAudioUrl, RECITERS } from '../data/quran';
@@ -34,6 +39,7 @@ import {
   requestNotificationPermission,
   sendNotification,
 } from '../services/notificationService';
+import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
 
 interface DashboardViewProps {
   profile: StudentProfile;
@@ -44,6 +50,9 @@ interface DashboardViewProps {
   onStartSession: (session: StudySession) => void;
   onNavigateTab: (tab: string) => void;
   curriculum: Subject[];
+  onAwardBonusXp?: (amount: number) => void;
+  voiceAlertsEnabled?: boolean;
+  onToggleVoiceAlerts?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -55,7 +64,98 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onStartSession,
   onNavigateTab,
   curriculum,
+  onAwardBonusXp,
+  voiceAlertsEnabled = true,
+  onToggleVoiceAlerts,
 }) => {
+  // Embedded Pomodoro Timer State
+  const [pomoPresetMinutes, setPomoPresetMinutes] = useState<number>(25);
+  const [pomoSecondsLeft, setPomoSecondsLeft] = useState<number>(25 * 60);
+  const [isPomoRunning, setIsPomoRunning] = useState<boolean>(false);
+  const [pomoSubject, setPomoSubject] = useState<string>(nextSession.subjectName);
+  const [pomoLesson, setPomoLesson] = useState<string>(nextSession.lessonTitle);
+
+  // Rating Modal State
+  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [ratingStars, setRatingStars] = useState<number>(5);
+  const [focusTag, setFocusTag] = useState<string>('تركيز عميق وفهم مستوعب 🧠');
+  const [ratingNotes, setRatingNotes] = useState<string>('');
+  const [awardedXpMessage, setAwardedXpMessage] = useState<string | null>(null);
+
+  // Timer Tick Effect
+  useEffect(() => {
+    let interval: any = null;
+    if (isPomoRunning && pomoSecondsLeft > 0) {
+      interval = setInterval(() => {
+        setPomoSecondsLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setIsPomoRunning(false);
+            // Bell chime & voice alert upon completion
+            playBellChime();
+            announceSessionComplete(pomoSubject);
+            setShowRatingModal(true);
+            return pomoPresetMinutes * 60;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPomoRunning, pomoSecondsLeft, pomoPresetMinutes, pomoSubject]);
+
+  const handleSelectPreset = (minutes: number) => {
+    setPomoPresetMinutes(minutes);
+    setPomoSecondsLeft(minutes * 60);
+    setIsPomoRunning(false);
+  };
+
+  const handleTogglePomo = () => {
+    if (!isPomoRunning && pomoSecondsLeft === 0) {
+      setPomoSecondsLeft(pomoPresetMinutes * 60);
+    }
+    setIsPomoRunning((prev) => !prev);
+  };
+
+  const handleResetPomo = () => {
+    setIsPomoRunning(false);
+    setPomoSecondsLeft(pomoPresetMinutes * 60);
+  };
+
+  const handleCompletePomoEarly = () => {
+    setIsPomoRunning(false);
+    playBellChime();
+    announceSessionComplete(pomoSubject);
+    setShowRatingModal(true);
+  };
+
+  const handleSubmitRating = () => {
+    const earnedXp = ratingStars >= 4 ? 45 : 30;
+    if (onAwardBonusXp) {
+      onAwardBonusXp(earnedXp);
+    }
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+    setAwardedXpMessage(`أحسنت يا بطل! تم إضافة +${earnedXp} XP إلى رصيدك 🏆`);
+    setTimeout(() => {
+      setShowRatingModal(false);
+      setAwardedXpMessage(null);
+      setPomoSecondsLeft(pomoPresetMinutes * 60);
+    }, 1800);
+  };
+
+  // Format MM:SS
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
   // Prayer Countdown
   const [nextPrayerInfo, setNextPrayerInfo] = useState<{
     nextPrayer: PrayerTime;
@@ -198,33 +298,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Push Notifications Prompt Banner */}
-      {isNotificationSupported() && !isNotifGranted && (
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50/40 to-blue-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-blue-200/90 dark:border-blue-800/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs transition-colors duration-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1E40AF] text-white flex items-center justify-center shrink-0 shadow-xs ring-4 ring-blue-100 dark:ring-blue-900/50">
-              <BellRing className="w-5 h-5 animate-pulse text-amber-300" />
-            </div>
-            <div>
-              <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-white">
-                تفعيل تنبيهات نَهج في الخلفية (Push Notifications)
-              </h4>
-              <p className="text-xs text-[#475569] dark:text-slate-300 leading-relaxed">
-                تذكيرك في الخلفية بمواعيد المذاكرة، جلسات البومودورو، ومواقيت الصلاة حتى لو كان التطبيق مغلقاً أو مصغراً.
-              </p>
-            </div>
+      {/* Voice & Push Alert Controls Bar */}
+      <div className="bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 dark:from-blue-950/40 dark:via-[#111C38] dark:to-blue-950/40 border border-blue-200/80 dark:border-blue-900/40 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs transition-colors duration-200">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#1E40AF]/10 dark:bg-blue-900/40 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center shrink-0">
+            {voiceAlertsEnabled ? <Volume2 className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
           </div>
-
-          <button
-            onClick={handleEnableNotifications}
-            className="px-4 py-2 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-black shadow-xs transition-all whitespace-nowrap self-end sm:self-center cursor-pointer active:scale-95"
-          >
-            تفعيل التنبيهات الآن 🔔
-          </button>
+          <div>
+            <span className="text-xs font-bold text-[#0F172A] dark:text-white block">
+              التنبيهات الصوتية المخصصة للأذان والمهام
+            </span>
+            <span className="text-[11px] text-[#64748B] dark:text-slate-400">
+              {voiceAlertsEnabled
+                ? 'مفعلة — يتم نطق اسم الصلاة أو المهمة بصوت عربي واضح عند موعدها'
+                : 'معطلة — يمكنك تفعيلها لنطق التنبيهات صوتياً'}
+            </span>
+          </div>
         </div>
-      )}
 
-      {/* Top 2 Crucial Cards: Next Prayer + Next Study Session */}
+        <div className="flex items-center gap-2">
+          {onToggleVoiceAlerts && (
+            <button
+              onClick={onToggleVoiceAlerts}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                voiceAlertsEnabled
+                  ? 'bg-blue-100 dark:bg-blue-900/60 text-[#1E40AF] dark:text-blue-300 border border-blue-300 dark:border-blue-700'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+              }`}
+            >
+              {voiceAlertsEnabled ? 'مفعلة 🔊' : 'تفعيل التنبيه الصوتي 🔇'}
+            </button>
+          )}
+
+          {isNotificationSupported() && !isNotifGranted && (
+            <button
+              onClick={handleEnableNotifications}
+              className="px-3 py-1.5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-black transition-all cursor-pointer"
+            >
+              تنبيهات الخلفية 🔔
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Top 2 Crucial Cards: Next Prayer + Embedded Pomodoro Focus Timer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Next Prayer Countdown Card */}
         <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between transition-colors duration-200">
@@ -262,36 +379,108 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Next Study Session Card */}
-        <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between transition-colors duration-200">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 flex items-center justify-center">
-                <BookOpen className="w-5 h-5" />
+        {/* Embedded Interactive Pomodoro Focus Timer Card */}
+        <div className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/30 dark:border-blue-800/60 rounded-2xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between transition-colors duration-200">
+          <div>
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all ${
+                  isPomoRunning
+                    ? 'bg-amber-500 text-white animate-pulse shadow-md'
+                    : 'bg-[#1E40AF]/10 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-300'
+                }`}>
+                  <Timer className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-extrabold text-[#1E40AF] dark:text-blue-400 block">مؤقت بومودورو المدمج</span>
+                    {isPomoRunning && (
+                      <span className="text-[9px] px-1.5 py-0.2 bg-emerald-500 text-white font-black rounded-full animate-pulse">
+                        جلسة جارية
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-black text-[#0F172A] dark:text-white truncate max-w-[200px]">
+                    {pomoSubject}: {pomoLesson}
+                  </h3>
+                </div>
               </div>
-              <div>
-                <span className="text-xs font-bold text-[#64748B] dark:text-slate-400 block">جلسة المذاكرة التالية المبرمجة</span>
-                <h3 className="text-lg font-black text-[#0F172A] dark:text-white">
-                  {nextSession.subjectName}
-                </h3>
+
+              {/* Presets */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+                {[25, 45, 15].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => handleSelectPreset(m)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                      pomoPresetMinutes === m
+                        ? 'bg-[#1E40AF] text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    {m} د
+                  </button>
+                ))}
               </div>
             </div>
-            <span className="text-xs font-mono px-2 py-0.5 bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#E2E8F0] dark:border-slate-800 rounded-md font-bold text-[#334155] dark:text-slate-300">
-              {nextSession.durationMinutes} دقيقة
-            </span>
+
+            {/* Countdown Display & Controls */}
+            <div className="bg-gradient-to-r from-blue-50/70 to-indigo-50/70 dark:from-[#0B132B] dark:to-blue-950/30 p-3.5 rounded-xl border border-blue-100 dark:border-blue-900/40 flex items-center justify-between mb-3">
+              <div>
+                <span className="text-[10px] font-bold text-[#64748B] dark:text-slate-400 block">
+                  {isPomoRunning ? 'الوقت المتبقي حتى جرس النهاية:' : 'اضغط زر البدء للانطلاق بتركيز تام'}
+                </span>
+                <span className="font-mono text-2xl font-black text-[#1E40AF] dark:text-blue-400 tracking-wider" dir="ltr">
+                  {formatTime(pomoSecondsLeft)}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleTogglePomo}
+                  className={`px-4 py-2 rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isPomoRunning
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-[#1E40AF] hover:bg-[#1D4ED8] text-white'
+                  }`}
+                >
+                  {isPomoRunning ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5 fill-current" />
+                      <span>إيقاف مؤقت</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>ابدأ المذاكرة بضغطة زر</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleResetPomo}
+                  title="إعادة ضبط"
+                  className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <p className="text-xs text-[#334155] dark:text-slate-300 my-3 bg-[#F8FAFC] dark:bg-[#0B132B]/70 p-2.5 rounded-lg border border-[#E2E8F0] dark:border-slate-800 font-medium">
-            📖 <strong>الموضوع:</strong> {nextSession.lessonTitle}
-          </p>
-
-          <button
-            onClick={() => onStartSession(nextSession)}
-            className="w-full py-2.5 px-4 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>ابدأ جلسة التركيز الآن (بومودورو 25 دقيقة)</span>
-          </button>
+          <div className="flex items-center justify-between pt-1 text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400">
+              🔔 يرن جرس تلقائي عند انتهاء الجلسة + تقييم ونقاط
+            </span>
+            {isPomoRunning && (
+              <button
+                onClick={handleCompletePomoEarly}
+                className="text-[#1E40AF] dark:text-blue-400 font-extrabold hover:underline cursor-pointer"
+              >
+                أنهيت الجلسة مبكراً ←
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -496,6 +685,120 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           «اللهم بارك فيمن بنى وساهم ودعا، واجعل التوفيق والدرجات العلا نصيب طلاب الثانوية العامة جميعاً»
         </p>
       </footer>
+
+      {/* Session Rating Popup Modal (Triggered on Pomodoro end or early finish) */}
+      {showRatingModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/30 dark:border-blue-800/60 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 text-right">
+            <div className="text-center space-y-1.5">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shadow-inner">
+                🔔
+              </div>
+              <h3 className="text-lg font-black text-[#0F172A] dark:text-white">
+                ما شاء الله! انتهت جلسة المذاكرة 🎯
+              </h3>
+              <p className="text-xs text-[#64748B] dark:text-slate-300">
+                «رن جرس النهاية بنجاح» — قيّم مستوى استيعابك لتسجيل نقاط الإنجاز وزيادة مستواك!
+              </p>
+            </div>
+
+            {/* Stars rating */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block text-center">
+                كيف كان مستوى تركيزك وفهمك للدرس؟
+              </label>
+              <div className="flex items-center justify-center gap-2" dir="ltr">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRatingStars(star)}
+                    className="p-1 hover:scale-125 transition-transform cursor-pointer"
+                  >
+                    <Star
+                      className={`w-7 h-7 ${
+                        star <= ratingStars
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-slate-300 dark:text-slate-600'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <div className="text-center text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                {ratingStars === 5 && '🌟 تركيز أسطوري واستيعاب كامل (+45 XP)'}
+                {ratingStars === 4 && '✨ فهمت الأفكار الأساسية وحللت تدريبات (+45 XP)'}
+                {ratingStars === 3 && '👍 جيد ولكن هناك أفكار تحتاج مراجعة (+30 XP)'}
+                {ratingStars <= 2 && '⚡ تشتت قليل، سأعيد التركيز في الجلسة القادمة (+30 XP)'}
+              </div>
+            </div>
+
+            {/* Quick tags */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                طبيعة ما أنجزته في هذه الجلسة:
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  'فهم عميق واستيعاب 🧠',
+                  'حل مسائل وتدريبات 📝',
+                  'حفظ وتثبيت قوانين ⚡',
+                  'تصفية نقاط صعبة 🎯',
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setFocusTag(tag)}
+                    className={`p-2 rounded-xl border text-right font-bold transition-all cursor-pointer ${
+                      focusTag === tag
+                        ? 'bg-blue-50 dark:bg-blue-900/40 border-[#1E40AF] text-[#1E40AF] dark:text-blue-300'
+                        : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Optional notes */}
+            <div>
+              <input
+                type="text"
+                value={ratingNotes}
+                onChange={(e) => setRatingNotes(e.target.value)}
+                placeholder="ملاحظة سريعة للدرس (اختياري)..."
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[#0F172A] dark:text-white focus:outline-none focus:border-[#1E40AF]"
+              />
+            </div>
+
+            {awardedXpMessage && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 rounded-xl text-center text-xs font-black text-emerald-800 dark:text-emerald-300">
+                {awardedXpMessage}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleSubmitRating}
+                className="grow py-2.5 px-4 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>حفظ التقييم واستلام النقاط (+{ratingStars >= 4 ? 45 : 30} XP)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRatingModal(false)}
+                className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                تخطي
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

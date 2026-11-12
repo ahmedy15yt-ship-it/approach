@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
+
   LayoutDashboard,
   Calendar,
   BookOpen,
@@ -44,10 +45,12 @@ import { QuranPrayerSection } from './components/QuranPrayerSection';
 import { TasksLeaderboardView } from './components/TasksLeaderboardView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
-import { PomodoroTimerModal } from './components/PomodoroTimerModal';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
+import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
+import { playAdhan, isAutoAdhanEnabled } from './utils/adhanPlayer';
 
 export default function App() {
+
   const [telegramSupportUrl, setTelegramSupportUrl] = useState('https://t.me/Y_lI11');
 
   // Dark Mode State
@@ -66,6 +69,22 @@ export default function App() {
       localStorage.setItem('nahj_theme', 'light');
     }
   }, [isDarkMode]);
+
+  // Voice alerts state
+  const [voiceAlertsEnabled, setVoiceAlertsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('nahj_voice_alerts') !== 'false';
+  });
+
+  const handleToggleVoiceAlerts = () => {
+    setVoiceAlertsEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem('nahj_voice_alerts', next ? 'true' : 'false');
+      if (next) {
+        playBellChime();
+      }
+      return next;
+    });
+  };
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -116,7 +135,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_DAILY_TASKS;
   });
 
-  // Student Profile state
+  // Student Profile state - XP starts at 0 for every student, increments progressively
   const [profile, setProfile] = useState<StudentProfile>(() => {
     const saved = localStorage.getItem('nahj_profile');
     const savedWeight = localStorage.getItem('nahj_student_weight');
@@ -125,11 +144,11 @@ export default function App() {
     return {
       name: parsed?.name || 'طالب نَهج المجتهد 🩺',
       codeMasked: 'مفتوح للجميع',
-      streakDays: parsed?.streakDays ?? 18,
-      totalXp: parsed?.totalXp ?? 2450,
+      streakDays: (parsed?.streakDays !== undefined && parsed?.streakDays !== 18) ? parsed.streakDays : 0,
+      totalXp: (parsed?.totalXp !== undefined && parsed?.totalXp !== 2450) ? parsed.totalXp : 0,
       rankTitle: parsed?.rankTitle || 'طبيب المستقبل 🩺',
       governorate: parsed?.governorate || 'القاهرة',
-      dailyWaterCups: parsed?.dailyWaterCups ?? 5,
+      dailyWaterCups: parsed?.dailyWaterCups ?? 0,
       dailyWin: parsed?.dailyWin || 'أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!',
       weightKg: parsed?.weightKg || (savedWeight ? Number(savedWeight) : 68),
       heightCm: parsed?.heightCm || (savedHeight ? Number(savedHeight) : 172),
@@ -149,6 +168,13 @@ export default function App() {
     setProfile((prev) => ({ ...prev, weightKg: weight, heightCm: height }));
     localStorage.setItem('nahj_student_weight', String(weight));
     localStorage.setItem('nahj_student_height', String(height));
+  };
+
+  const handleAwardBonusXp = (amount: number) => {
+    setProfile((prev) => ({
+      ...prev,
+      totalXp: prev.totalXp + amount,
+    }));
   };
 
   // Active Focus Session (Pomodoro Modal)
@@ -191,27 +217,36 @@ export default function App() {
     EGYPT_GOVERNORATES[0];
   const prayers = calculatePrayerTimes(new Date(), currentGov);
 
-  // Background Push Notification Scheduler for prayers & study sessions
+  // Background Push Notification & Adhan / Voice Alert Scheduler for prayers
+  const lastPlayedPrayerKeyRef = useRef<string>('');
+
   useEffect(() => {
-    if (!isNotificationsEnabled()) return;
-
     const interval = setInterval(() => {
-      const now = new Date();
-      const currentH = now.getHours();
-      const currentM = now.getMinutes();
-      const timeStr24 = `${String(currentH).padStart(2, '0')}:${String(currentM).padStart(2, '0')}`;
-
-      // Check prayer match within 30 seconds of timestamp
-      const nowMs = now.getTime();
+      const nowMs = Date.now();
       prayers.forEach((p) => {
         if (p.timestamp && Math.abs(p.timestamp.getTime() - nowMs) < 30000) {
-          notifyPrayerTime(p.name);
+          const prayerTriggerKey = `${p.key}-${new Date().toDateString()}`;
+          if (lastPlayedPrayerKeyRef.current !== prayerTriggerKey) {
+            lastPlayedPrayerKeyRef.current = prayerTriggerKey;
+
+            // Trigger real Adhan if enabled by student
+            if (isAutoAdhanEnabled()) {
+              playAdhan();
+            } else if (voiceAlertsEnabled) {
+              announcePrayer(p.name);
+            }
+
+            if (isNotificationsEnabled()) {
+              notifyPrayerTime(p.name);
+            }
+          }
         }
       });
-    }, 25000);
+    }, 20000);
 
     return () => clearInterval(interval);
-  }, [prayers]);
+  }, [prayers, voiceAlertsEnabled]);
+
 
   const handleToggleLesson = (subjectId: string, chapterId: string, lessonId: string) => {
     setCurriculum((prev) =>
@@ -227,8 +262,9 @@ export default function App() {
                 if (les.id !== lessonId) return les;
                 const nextDone = !les.isCompleted;
                 if (nextDone) {
-                  // award XP
                   setProfile((p) => ({ ...p, totalXp: p.totalXp + 20 }));
+                } else {
+                  setProfile((p) => ({ ...p, totalXp: Math.max(0, p.totalXp - 20) }));
                 }
                 return { ...les, isCompleted: nextDone };
               }),
@@ -267,6 +303,11 @@ export default function App() {
         const nextDone = !t.isDone;
         if (nextDone) {
           setProfile((p) => ({ ...p, totalXp: p.totalXp + t.xp }));
+          if (voiceAlertsEnabled) {
+            announceTask(`إنجاز مهمة ${t.title} وزيادة ${t.xp} نقطة`);
+          }
+        } else {
+          setProfile((p) => ({ ...p, totalXp: Math.max(0, p.totalXp - t.xp) }));
         }
         return { ...t, isDone: nextDone };
       })
@@ -333,7 +374,7 @@ export default function App() {
     { id: 'curriculum', label: 'المنهج والكبسولات', icon: BookOpen },
     { id: 'backlog', label: 'المتراكم', icon: Layers },
     { id: 'tutor', label: 'أستاذ نَهج', icon: Bot, highlight: true },
-    { id: 'quran', label: 'الروح والقرآن', icon: Compass },
+    { id: 'quran', label: 'القرآن والأذكار والصلاة', icon: Compass },
     { id: 'nutrition', label: 'الأكل والصحة', icon: Utensils },
     { id: 'exercises', label: 'التمارين', icon: Dumbbell },
     { id: 'mindset', label: 'النفسية والتفكير', icon: Brain },
@@ -400,6 +441,9 @@ export default function App() {
               onStartSession={(s) => setActiveFocusSession(s)}
               onNavigateTab={setActiveTab}
               curriculum={curriculum}
+              onAwardBonusXp={handleAwardBonusXp}
+              voiceAlertsEnabled={voiceAlertsEnabled}
+              onToggleVoiceAlerts={handleToggleVoiceAlerts}
             />
           )}
 
@@ -444,8 +488,10 @@ export default function App() {
             <QuranPrayerSection
               currentGovernorate={profile.governorate}
               onUpdateGovernorate={(gov) => setProfile((p) => ({ ...p, governorate: gov }))}
+              onAwardBonusXp={handleAwardBonusXp}
             />
           )}
+
 
           {activeTab === 'nutrition' && (
             <NutritionView

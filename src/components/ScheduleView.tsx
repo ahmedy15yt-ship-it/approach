@@ -13,6 +13,9 @@ import {
   Coffee,
   CheckCircle2,
   Settings,
+  ChevronRight,
+  ChevronLeft,
+  RotateCcw,
 } from 'lucide-react';
 import { Subject, StudySession, DaySchedule } from '../types';
 import { PrayerTime, convert24To12 } from '../data/prayer';
@@ -37,6 +40,35 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   const [isSchoolDay, setIsSchoolDay] = useState(true);
   const [wakeUpTime, setWakeUpTime] = useState('05:30');
   const [bedTime, setBedTime] = useState('23:00');
+
+  // Weekly rotation state (User Request: كل أسبوع يتغير قسم الجدول التلقائي المتوازن)
+  const [selectedWeek, setSelectedWeek] = useState<number>(() => {
+    const saved = localStorage.getItem('nahj_selected_week');
+    if (saved) return Number(saved);
+    const now = new Date();
+    // Default current week in the Egyptian Thanaweya calendar (approx week 24 in mid-year)
+    return 1;
+  });
+
+  const handleSelectWeek = (w: number) => {
+    const safeW = Math.max(1, Math.min(30, w));
+    setSelectedWeek(safeW);
+    localStorage.setItem('nahj_selected_week', String(safeW));
+  };
+
+  const getWeeklyFocusTheme = (weekNum: number) => {
+    const themes = [
+      { week: 1, title: 'الانطلاقة وبناء العادات', focus: 'التأسيس القوي للفصول الأولى وحل أفكار كتاب الوزارة الأساسية' },
+      { week: 2, title: 'التعمق وتثبيت المفاهيم', focus: 'التنسيق الهرموني، الاتزان الكيميائي، والتأثير المغناطيسي' },
+      { week: 3, title: 'الحل المكثف وبنوك الأسئلة', focus: 'التكاثر في الكائنات الحية، الكيمياء الكهربية، والحث الكهرومغناطيسي' },
+      { week: 4, title: 'الربط بين الأبواب والمفاهيم المركبة', focus: 'المناعة، الكيمياء العضوية الممتعة، ودوائر التيار المتردد' },
+      { week: 5, title: 'البيولوجيا الجزيئية والفيزياء الحديثة', focus: 'DNA و RNA والفيزياء الحديثة والجيولوجيا التاريخية' },
+      { week: 6, title: 'المراجعة الأسبوعية الشاملة وحل الامتحانات', focus: 'امتحانات شاملة على نصف المنهج وتصفية أي متراكم قديم' },
+    ];
+    return themes[(weekNum - 1) % themes.length];
+  };
+
+  const currentWeekTheme = getWeeklyFocusTheme(selectedWeek);
 
   const DAYS = [
     'السبت',
@@ -168,26 +200,35 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       desc: 'وضوء منعش، كوب ماء، وتحديد أهداف جلسات المساء.',
     });
 
-    // 7. Study Sessions with real Curriculum lessons!
-    const daySubject1 = activeSubjects[selectedDayIndex % activeSubjects.length];
-    const daySubject2 = activeSubjects[(selectedDayIndex + 2) % activeSubjects.length];
-    const daySubject3 = activeSubjects[(selectedDayIndex + 4) % activeSubjects.length];
+    // 7. Study Sessions with dynamic Weekly Rotation!
+    const weekShift = (selectedWeek - 1) * 2;
+    const daySubject1 = activeSubjects[(selectedDayIndex + weekShift) % activeSubjects.length];
+    const daySubject2 = activeSubjects[(selectedDayIndex + weekShift + 2) % activeSubjects.length];
+    const daySubject3 = activeSubjects[(selectedDayIndex + weekShift + 4) % activeSubjects.length];
 
-    const lesson1 =
-      daySubject1.chapters[0]?.lessons.find((l) => !l.isCompleted)?.title ||
-      daySubject1.chapters[0]?.lessons[0]?.title ||
-      'مراجعة وحل تدريبات الباب الأول';
+    const getProgressionForSubject = (subj: Subject, sessionIndex: number) => {
+      const chapterCount = subj.chapters.length || 1;
+      const chIndex = (selectedWeek - 1 + sessionIndex) % chapterCount;
+      const chapter = subj.chapters[chIndex] || subj.chapters[0];
+      const lesson =
+        chapter?.lessons.find((l) => !l.isCompleted)?.title ||
+        chapter?.lessons[(selectedWeek - 1) % (chapter?.lessons.length || 1)]?.title ||
+        'مراجعة شاملة وحل بنك أسئلة الوزارة';
+      return {
+        chapterTitle: chapter?.title || 'الباب العام',
+        lessonTitle: lesson,
+      };
+    };
 
-    const lesson2 =
-      daySubject2.chapters[0]?.lessons.find((l) => !l.isCompleted)?.title ||
-      daySubject2.chapters[0]?.lessons[0]?.title ||
-      'حل مسائل وأفكار امتحانات';
+    const s1Info = getProgressionForSubject(daySubject1, 0);
+    const s2Info = getProgressionForSubject(daySubject2, 1);
+    const s3Info = getProgressionForSubject(daySubject3, 2);
 
     const sessionObj1: StudySession = {
-      id: `auto-${selectedDayIndex}-1`,
+      id: `auto-w${selectedWeek}-d${selectedDayIndex}-1`,
       subjectId: daySubject1.id,
       subjectName: daySubject1.name,
-      lessonTitle: `${daySubject1.chapters[0]?.title || ''}: ${lesson1}`,
+      lessonTitle: `${s1Info.chapterTitle}: ${s1Info.lessonTitle}`,
       startTime: '16:00',
       durationMinutes: 50,
       isCompleted: false,
@@ -197,7 +238,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       time: '4:00 م - 4:50 م',
       title: `جلسة مذاكرة 1: ${daySubject1.name}`,
       type: 'study',
-      desc: `الدرس: ${sessionObj1.lessonTitle}`,
+      desc: `الدرس (الأسبوع ${selectedWeek}): ${sessionObj1.lessonTitle}`,
       session: sessionObj1,
     });
 
@@ -209,10 +250,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
     });
 
     const sessionObj2: StudySession = {
-      id: `auto-${selectedDayIndex}-2`,
+      id: `auto-w${selectedWeek}-d${selectedDayIndex}-2`,
       subjectId: daySubject2.id,
       subjectName: daySubject2.name,
-      lessonTitle: `${daySubject2.chapters[0]?.title || ''}: ${lesson2}`,
+      lessonTitle: `${s2Info.chapterTitle}: ${s2Info.lessonTitle}`,
       startTime: '17:05',
       durationMinutes: 50,
       isCompleted: false,
@@ -222,7 +263,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       time: '5:05 م - 5:55 م',
       title: `جلسة مذاكرة 2: ${daySubject2.name}`,
       type: 'study',
-      desc: `الدرس: ${sessionObj2.lessonTitle}`,
+      desc: `الدرس (الأسبوع ${selectedWeek}): ${sessionObj2.lessonTitle}`,
       session: sessionObj2,
     });
 
@@ -237,10 +278,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
     // 9. Study Session 3 (or Backlog session)
     const sessionObj3: StudySession = {
-      id: `auto-${selectedDayIndex}-3`,
+      id: `auto-w${selectedWeek}-d${selectedDayIndex}-3`,
       subjectId: daySubject3.id,
       subjectName: daySubject3.name,
-      lessonTitle: `تصفية المتراكم وحل بنك الأسئلة في ${daySubject3.name}`,
+      lessonTitle: `تصفية المتراكم وحل بنك الأسئلة في ${daySubject3.name} (${s3Info.chapterTitle})`,
       startTime: '18:40',
       durationMinutes: 45,
       isCompleted: false,
@@ -250,7 +291,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       time: '6:40 م - 7:25 م',
       title: `جلسة مذاكرة 3 (المتراكم وتدريبات): ${daySubject3.name}`,
       type: 'study',
-      desc: `الهدف: ${sessionObj3.lessonTitle}`,
+      desc: `الهدف (الأسبوع ${selectedWeek}): ${sessionObj3.lessonTitle}`,
       session: sessionObj3,
     });
 
@@ -386,6 +427,78 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       {/* Mode 1: Automated Smart Day Timeline */}
       {activeTab === 'auto' && (
         <div className="space-y-4">
+          {/* Weekly Dynamic Rotation Control (User Request: يتغير قسم الجدول التلقائي كل أسبوع) */}
+          <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/90 dark:from-blue-950/40 dark:via-[#111C38] dark:to-blue-950/40 border-2 border-blue-200 dark:border-blue-900/50 rounded-2xl p-4 space-y-3 shadow-2xs transition-colors">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-blue-200/80 dark:border-blue-900/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#1E40AF] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                  W{selectedWeek}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-xs text-[#0F172A] dark:text-white">
+                      الجدول التلقائي المتوازن — يتغير أسبوعياً
+                    </span>
+                    <span className="text-[10px] px-2 py-0.2 bg-amber-400 text-black font-extrabold rounded-full">
+                      تدوير المواد وفصول المنهج
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#475569] dark:text-slate-300">
+                    تتغير موضوعات ودروس المذاكرة آلياً كل أسبوع لتغطية أبواب المنهج بالتناوب بدون ملل
+                  </span>
+                </div>
+              </div>
+
+              {/* Week Navigation Controls */}
+              <div className="flex items-center gap-1.5 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => handleSelectWeek(selectedWeek - 1)}
+                  disabled={selectedWeek <= 1}
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-[#1E40AF] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  <span>السابق</span>
+                </button>
+
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => handleSelectWeek(Number(e.target.value))}
+                  className="bg-white dark:bg-slate-900 border border-[#1E40AF] dark:border-blue-500 rounded-xl px-2.5 py-1.5 text-xs font-black text-[#1E40AF] dark:text-blue-300 focus:outline-none cursor-pointer"
+                >
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      الأسبوع {i + 1} من 30
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectWeek(selectedWeek + 1)}
+                  disabled={selectedWeek >= 30}
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-[#1E40AF] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <span>التالي</span>
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Weekly Focus Theme Banner */}
+            <div className="bg-white/90 dark:bg-slate-900/90 rounded-xl p-3 border border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="font-extrabold text-[#0F172A] dark:text-white">
+                  محور الأسبوع {selectedWeek}: «{currentWeekTheme.title}»
+                </span>
+              </div>
+              <span className="text-[#64748B] dark:text-slate-300 text-[11px] font-medium">
+                🎯 {currentWeekTheme.focus}
+              </span>
+            </div>
+          </div>
+
           {/* Day parameters toggle */}
           <div className="bg-[#F8FAFC] dark:bg-[#0F172A] p-3.5 rounded-xl border border-[#1E40AF]/15 dark:border-[#1E3A8A]/30 flex flex-wrap items-center justify-between gap-3 text-xs transition-colors">
             <div className="flex items-center gap-3">
