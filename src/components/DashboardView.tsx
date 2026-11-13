@@ -43,6 +43,7 @@ import {
   sendNotification,
 } from '../services/notificationService';
 import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
+import { generateTutorFallback } from '../utils/aiFallbacks';
 
 interface DashboardViewProps {
   profile: StudentProfile;
@@ -126,6 +127,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       }
 
       if (!res.ok) {
+        if (res.status === 404) {
+          const fallbackReply = generateTutorFallback({
+            message: query,
+            subject: homeStudySubject,
+            tutorMode: 'explain',
+          });
+          setHomeStudyReply(fallbackReply);
+          setHomeStudyWarning('تم التجاوب عبر المحرك التعليمي المدمج.');
+          if (!customPrompt) {
+            setHomeStudyQuestion('');
+          }
+          return;
+        }
         const msg =
           data?.error ||
           data?.message ||

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Subject } from '../types';
 import { speakTutorVoice, stopSpeaking } from '../utils/voiceAlerts';
+import { generateTutorFallback } from '../utils/aiFallbacks';
 
 interface Message {
   id: string;
@@ -349,6 +350,25 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       }
 
       if (!res.ok) {
+        if (res.status === 404) {
+          const fallbackReply = generateTutorFallback({
+            message: textToSend,
+            subject: activeSubject,
+            tutorMode,
+          });
+          const tutorMsg: Message = {
+            id: `tutor-${Date.now()}`,
+            sender: 'tutor',
+            text: fallbackReply,
+            timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+            subject: activeSubject,
+            mode: tutorMode,
+            source: 'fallback',
+            warning: 'تم التجاوب عبر المحرك التعليمي الذكي المدمج.',
+          };
+          setMessages((prev) => [...prev, tutorMsg]);
+          return;
+        }
         const errDetail =
           data?.error ||
           data?.message ||

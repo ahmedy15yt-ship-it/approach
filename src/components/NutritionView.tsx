@@ -30,6 +30,7 @@ import {
   FOOD_COMPARISON,
   EgyptianDietPlan,
 } from '../data/nutrition';
+import { generateMealFallback } from '../utils/aiFallbacks';
 
 interface NutritionViewProps {
   waterCups: number;
@@ -196,6 +197,28 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       }
 
       if (!res.ok) {
+        if (res.status === 404) {
+          const fallbackMeal = generateMealFallback({
+            description: mealDescription,
+            hasImage: Boolean(mealImageBase64),
+            studentWeight: weight,
+            studentHeight: height,
+            studentBmi: bmi,
+            studentCategory: autoCategoryKey,
+          });
+          setMealAnalysisResult({
+            success: true,
+            ...fallbackMeal,
+            source: 'fallback',
+            warning: 'تم الفحص عبر نظام التغذية السريري المدمج.',
+          });
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.7 },
+          });
+          return;
+        }
         const errMsg =
           data?.error ||
           data?.message ||
