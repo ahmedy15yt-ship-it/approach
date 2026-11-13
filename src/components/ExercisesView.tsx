@@ -57,24 +57,24 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   const bmi = Number((weight / (heightInMeters * heightInMeters)).toFixed(1));
 
   let weightCategory: 'نحافة' | 'وزن مثالي' | 'زيادة وزن' | 'سمنة خفيفة' = 'وزن مثالي';
-  let categoryColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+  let categoryColor = 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50';
   let recommendedRoutineFilter: 'الجميع' | 'الوزن الزائد' | 'النحافة والوزن المعتدل' = 'الجميع';
 
   if (bmi < 18.5) {
     weightCategory = 'نحافة';
-    categoryColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    categoryColor = 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/50';
     recommendedRoutineFilter = 'النحافة والوزن المعتدل';
   } else if (bmi >= 18.5 && bmi < 25) {
     weightCategory = 'وزن مثالي';
-    categoryColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    categoryColor = 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50';
     recommendedRoutineFilter = 'النحافة والوزن المعتدل';
   } else if (bmi >= 25 && bmi < 30) {
     weightCategory = 'زيادة وزن';
-    categoryColor = 'text-orange-700 bg-orange-50 border-orange-200';
+    categoryColor = 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-900/50';
     recommendedRoutineFilter = 'الوزن الزائد';
   } else {
     weightCategory = 'سمنة خفيفة';
-    categoryColor = 'text-rose-700 bg-rose-50 border-rose-200';
+    categoryColor = 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50';
     recommendedRoutineFilter = 'الوزن الزائد';
   }
 
@@ -133,31 +133,31 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white border border-[#1E40AF]/15 rounded-2xl p-5 shadow-xs">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 text-[#1E40AF] rounded-full text-xs font-bold mb-1.5">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 rounded-full text-xs font-bold mb-1.5 border border-red-200/60 dark:border-red-900/50">
           <Dumbbell className="w-3.5 h-3.5" />
           <span>تمارين مكتبية ومنزلية بالفيديو والشرح التوضيحي</span>
         </div>
-        <h2 className="text-xl font-extrabold text-[#0F172A]">
+        <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
           دم بيوصل للمخ + حماية فقرات الظهر وتفصيل حسب وزنك
         </h2>
-        <p className="text-xs text-[#64748B]">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           فيديوهات يوتيوب توضيحية مع شرح كتابي خطوة بخطوة، ونظام تمارين ملائم لوزنك وطولك لحماية مفاصلك وتنشيط ذهنك.
         </p>
       </div>
 
       {/* Weight & Height Personalization Card */}
-      <div className="bg-white border-2 border-[#1E40AF]/20 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0]">
+      <div className="bg-white dark:bg-[#121215] border-2 border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 text-[#1E40AF] flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 flex items-center justify-center font-bold">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-[#0F172A]">
+              <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">
                 تحديد الوزن والطول لملاءمة التمارين والنظام الغذائي
               </h3>
-              <p className="text-xs text-[#64748B]">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 التمارين والنظام الغذائي يتغيران تلقائياً بحسب بياناتك للحفاظ على طاقتك وسلامة ركبتك
               </p>
             </div>
@@ -174,13 +174,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         {/* Input sliders for Weight and Height */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
           {/* Weight */}
-          <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-[#1E40AF]" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
                 <span>وزنك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#1E40AF]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
                 {weight} كجم
               </span>
             </div>
@@ -190,9 +190,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="130"
               value={weight}
               onChange={(e) => handleSaveMetrics(Number(e.target.value), height)}
-              className="w-full accent-[#1E40AF] cursor-pointer"
+              className="w-full accent-[#DC2626] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 font-mono" dir="ltr">
               <span>40 kg</span>
               <span>85 kg</span>
               <span>130 kg</span>
@@ -200,13 +200,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
           </div>
 
           {/* Height */}
-          <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
-                <Ruler className="w-4 h-4 text-[#1E40AF]" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Ruler className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
                 <span>طولك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#1E40AF]" dir="ltr">
+              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
                 {height} سم
               </span>
             </div>
@@ -216,9 +216,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="205"
               value={height}
               onChange={(e) => handleSaveMetrics(weight, Number(e.target.value))}
-              className="w-full accent-[#1E40AF] cursor-pointer"
+              className="w-full accent-[#DC2626] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 font-mono" dir="ltr">
               <span>140 cm</span>
               <span>172 cm</span>
               <span>205 cm</span>
@@ -227,10 +227,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         </div>
 
         {/* Personalized Coach Guidance Message based on Weight */}
-        <div className="bg-[#F0F5F2] border border-[#1E40AF]/20 rounded-2xl p-4 text-xs text-[#1E293B] flex items-start gap-3">
+        <div className="bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 text-xs text-zinc-800 dark:text-zinc-200 flex items-start gap-3">
           <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <strong className="block font-bold text-sm text-[#1E40AF] mb-0.5">
+            <strong className="block font-bold text-sm text-[#DC2626] dark:text-red-400 mb-0.5">
               توجيه الكابتن الرياضي المخصص لوزنك ({weight} كجم):
             </strong>
             {bmi >= 25 ? (
@@ -251,7 +251,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       </div>
 
       {/* Active Exercise Stage: Video Tutorial + Written Guidance + Timer */}
-      <div className="bg-gradient-to-r from-[#1E40AF] via-[#1D4ED8] to-[#172554] text-white rounded-3xl p-6 sm:p-8 shadow-lg">
+      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 sm:p-8 shadow-lg">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* Left/Main Column: Instructions & YouTube Video Preview */}
           <div className="lg:col-span-7 space-y-4">
@@ -259,7 +259,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-white/20 text-[#EAB308]">
                 {selectedExercise.category}
               </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-black/20 text-white/90">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-black/30 text-white/90">
                 الملائمة: {selectedExercise.suitableForWeight}
               </span>
             </div>
@@ -273,7 +273,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
             </p>
 
             {/* Embedded YouTube Player */}
-            <div className="rounded-2xl overflow-hidden border-2 border-white/20 shadow-md bg-black/40 aspect-video relative">
+            <div className="rounded-2xl overflow-hidden border-2 border-white/20 shadow-md bg-black/50 aspect-video relative">
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${selectedExercise.youtubeId}?rel=0&modestbranding=1`}
                 title={selectedExercise.name}
@@ -283,7 +283,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               />
             </div>
 
-            <div className="flex items-center justify-between text-xs text-white/70">
+            <div className="flex items-center justify-between text-xs text-white/75">
               <span className="flex items-center gap-1.5">
                 <Video className="w-4 h-4 text-amber-300" />
                 <span>فيديو توضيحي مباشر للحركة الصحيحة</span>
@@ -300,7 +300,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
             </div>
 
             {/* Step-by-Step Written Guide */}
-            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-xs space-y-2 border border-white/10">
+            <div className="bg-black/25 rounded-2xl p-4 backdrop-blur-xs space-y-2 border border-white/10">
               <span className="text-xs font-bold text-amber-300 block">
                 الشرح الكتابي وخطوات الأداء الصحيح ({selectedExercise.repsOrHold}):
               </span>
@@ -321,7 +321,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
           </div>
 
           {/* Right Column: Timer Clock */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 bg-white/10 rounded-3xl backdrop-blur-md border border-white/15 text-center">
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 bg-black/30 rounded-3xl backdrop-blur-md border border-white/15 text-center">
             <span className="text-xs text-amber-300 font-bold mb-2">
               مؤقت الجلسة التفاعلي
             </span>
@@ -335,7 +335,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
             <div className="flex items-center gap-3 w-full justify-center">
               <button
                 onClick={resetTimer}
-                className="p-3.5 bg-white/15 hover:bg-white/25 rounded-2xl text-white transition-colors"
+                className="p-3.5 bg-white/15 hover:bg-white/25 rounded-2xl text-white transition-colors cursor-pointer"
                 title="إعادة ضبط المؤقت"
               >
                 <RotateCcw className="w-5 h-5" />
@@ -343,7 +343,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
 
               <button
                 onClick={toggleTimer}
-                className={`grow py-3.5 px-6 rounded-2xl font-black text-sm text-[#0F172A] transition-all shadow-md flex items-center justify-center gap-2 ${
+                className={`grow py-3.5 px-6 rounded-2xl font-black text-sm text-zinc-950 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
                   isRunning ? 'bg-amber-400 hover:bg-amber-300' : 'bg-white hover:bg-white/90'
                 }`}
               >
@@ -367,10 +367,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       {/* Routine Cards Selection matching user's weight */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-extrabold text-sm text-[#0F172A]">
+          <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">
             قائمة التمارين المتوافقة مع وزنك ({weight} كجم) والهدف الحالي:
           </h3>
-          <span className="text-xs text-[#64748B]">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -382,33 +382,33 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                 onClick={() => selectExercise(ex)}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                   isCurrent
-                    ? 'bg-white border-[#1E40AF] shadow-md ring-2 ring-[#1E40AF]/20'
-                    : 'bg-[#F8FAFC] border-[#E2E8F0] hover:border-[#1E40AF]/40'
+                    ? 'bg-white dark:bg-[#121215] border-[#DC2626] shadow-md ring-2 ring-[#DC2626]/20'
+                    : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#1E40AF]/10 text-[#1E40AF]">
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300">
                       {ex.category}
                     </span>
-                    <span className="text-xs font-mono font-bold text-[#8C7A52]" dir="ltr">
+                    <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400" dir="ltr">
                       {ex.durationSeconds} ثانية
                     </span>
                   </div>
-                  <h4 className="font-extrabold text-xs text-[#0F172A] mb-1">{ex.name}</h4>
-                  <p className="text-[11px] text-[#475569] leading-relaxed line-clamp-2">
+                  <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white mb-1">{ex.name}</h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-2">
                     {ex.benefit}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-[#E2E8F0] flex items-center justify-between">
-                  <span className="text-[10px] text-red-600 font-bold flex items-center gap-1">
+                <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                  <span className="text-[10px] text-red-600 dark:text-red-400 font-bold flex items-center gap-1">
                     <Video className="w-3 h-3" />
                     <span>فيديو يوتيوب</span>
                   </span>
                   <span
                     className={`text-[11px] font-bold ${
-                      isCurrent ? 'text-[#1E40AF]' : 'text-gray-400'
+                      isCurrent ? 'text-[#DC2626] dark:text-red-400' : 'text-zinc-400'
                     }`}
                   >
                     {isCurrent ? '● المختار حالياً' : 'اختيار ←'}

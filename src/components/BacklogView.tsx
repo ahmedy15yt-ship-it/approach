@@ -99,23 +99,23 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 rounded-full text-xs font-bold mb-1.5 border border-rose-200 dark:border-rose-900/50">
             <Layers className="w-3.5 h-3.5" />
             <span>محرك تصفية المتراكم الذكي</span>
           </div>
-          <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">
+          <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
             لا تراكم بعد اليوم — خطة الإنقاذ وتوزيع الدروس
           </h2>
-          <p className="text-xs text-[#64748B] dark:text-slate-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             اختر الدروس المتأخرة والمدة المطلوبة، وسيقوم النظام بتوزيعها بالعدل لتعرف «نصيب النهاردة» بدقة
           </p>
         </div>
 
         <button
           onClick={handlePrintPlan}
-          className="px-4 py-2.5 bg-[#F8FAFC] dark:bg-[#0F172A] hover:bg-[#F2EFE9] dark:hover:bg-[#1E293B] border border-[#1E40AF]/30 dark:border-[#1E3A8A]/50 text-[#1E40AF] dark:text-blue-400 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 self-start md:self-center"
+          className="px-4 py-2.5 bg-zinc-50 dark:bg-[#09090B] hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-[#DC2626] dark:text-red-400 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 self-start md:self-center cursor-pointer"
         >
           <Printer className="w-4 h-4" />
           <span>تحميل / طباعة جدول المتراكم (PDF)</span>
@@ -123,10 +123,10 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
       </div>
 
       {/* Crucial Box: نصيب النهاردة (Today's Backlog Quota) */}
-      <div className="bg-gradient-to-r from-[#1E40AF] to-[#1F3D2E] text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 text-[#0F172A] flex items-center justify-center font-black">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-zinc-950 flex items-center justify-center font-black">
               ★
             </div>
             <div>
@@ -155,19 +155,19 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
               <div
                 key={item.id}
                 onClick={() => handleCompleteTodayLesson(item.id)}
-                className="bg-white dark:bg-[#0B132B] text-[#0F172A] dark:text-white p-3.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-900/30 transition-all shadow-xs border border-transparent dark:border-slate-800"
+                className="bg-white dark:bg-[#09090B] text-zinc-900 dark:text-white p-3.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-red-50/70 dark:hover:bg-red-950/40 transition-all shadow-xs border border-transparent dark:border-zinc-800"
               >
                 <div className="flex items-center gap-3">
-                  <Circle className="w-5 h-5 text-gray-400 hover:text-[#1E40AF] dark:hover:text-blue-400 shrink-0" />
+                  <Circle className="w-5 h-5 text-zinc-400 hover:text-[#DC2626] dark:hover:text-red-400 shrink-0" />
                   <div>
-                    <span className="text-[11px] font-bold text-[#1E40AF] dark:text-blue-400 block">
+                    <span className="text-[11px] font-bold text-[#DC2626] dark:text-red-400 block">
                       {item.subjectName}
                     </span>
                     <span className="text-xs font-black">{item.lessonTitle}</span>
                   </div>
                 </div>
 
-                <span className="text-xs px-3 py-1 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded-lg font-bold shrink-0">
+                <span className="text-xs px-3 py-1 bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-200 rounded-lg font-bold shrink-0">
                   تم الانتهاء منه ✓
                 </span>
               </div>
@@ -179,23 +179,23 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
       {/* Add Backlog & Duration Selector */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Form to Select Lessons */}
-        <div className="md:col-span-2 bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
-          <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" />
+        <div className="md:col-span-2 bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
+          <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+            <Plus className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
             <span>إضافة درس متراكم للخطة</span>
           </h3>
 
           <form onSubmit={handleAddSubmit} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#334155] dark:text-slate-300 mb-1">المادة</label>
+                <label className="block text-[11px] font-bold text-zinc-600 dark:text-zinc-300 mb-1">المادة</label>
                 <select
                   value={selectedSubjectId}
                   onChange={(e) => {
                     setSelectedSubjectId(e.target.value);
                     setSelectedLessonTitle('');
                   }}
-                  className="w-full px-3 py-2 text-xs bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-lg font-bold text-[#0F172A] dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg font-bold text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
                 >
                   {curriculum.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -206,7 +206,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#334155] dark:text-slate-300 mb-1">
+                <label className="block text-[11px] font-bold text-zinc-600 dark:text-zinc-300 mb-1">
                   اختر من دروس المنهج
                 </label>
                 <select
@@ -215,7 +215,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                     setSelectedLessonTitle(e.target.value);
                     setCustomLessonInput('');
                   }}
-                  className="w-full px-3 py-2 text-xs bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-lg text-[#0F172A] dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
                 >
                   <option value="">-- اضغط لاختيار درس من منهج {currentSubject.name} --</option>
                   {subjectLessons.map((l) => (
@@ -228,7 +228,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-[#334155] dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-600 dark:text-zinc-300 mb-1">
                 أو اكتب موضوعاً مخصصاً / مذكرة متأخرة
               </label>
               <input
@@ -239,13 +239,13 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                   setSelectedLessonTitle('');
                 }}
                 placeholder="مثال: مذكرة التكاثر في الإنسان - مستر محمد - 30 صفحة"
-                className="w-full px-3 py-2 text-xs bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-lg text-[#0F172A] dark:text-white focus:border-[#1E40AF] dark:focus:border-blue-400 focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:border-[#DC2626] dark:focus:border-red-400 focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>إدراج في جدول المتراكم</span>
@@ -254,9 +254,9 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
         </div>
 
         {/* Duration Strategy Controls */}
-        <div className="bg-[#F8FAFC] dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
-          <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white">توزيع المتراكم على مدة زمنية</h3>
-          <p className="text-xs text-[#64748B] dark:text-slate-400">
+        <div className="bg-zinc-50 dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
+          <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">توزيع المتراكم على مدة زمنية</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             في كم يوم تريد تصفية كل هذه الدروس بدون ضغط؟
           </p>
 
@@ -265,10 +265,10 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
               <button
                 key={days}
                 onClick={() => handleAutoDistribute(days)}
-                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                   planDurationDays === days
-                    ? 'bg-[#1E40AF] text-white border-[#1E40AF] shadow-xs'
-                    : 'bg-white dark:bg-[#0B132B] text-[#334155] dark:text-slate-300 border-[#CBD5E1] dark:border-slate-700 hover:border-[#1E40AF] dark:hover:border-blue-400'
+                    ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
+                    : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-[#DC2626] dark:hover:border-red-400'
                 }`}
               >
                 {days === 3
@@ -282,8 +282,8 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
             ))}
           </div>
 
-          <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 text-xs text-[#475569] dark:text-slate-400">
-            <span className="font-bold text-[#0F172A] dark:text-white block mb-1">إحصائية سريعة:</span>
+          <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="font-bold text-zinc-900 dark:text-white block mb-1">إحصائية سريعة:</span>
             <span>إجمالي المتراكم: {backlogItems.length} درس</span>
             <br />
             <span>تم إنجازه: {completedCount} درس بنجاح ✓</span>
@@ -292,45 +292,45 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
       </div>
 
       {/* Printable All Backlog Items Table */}
-      <div className="bg-white dark:bg-[#111C38] rounded-2xl border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 shadow-xs overflow-hidden printable-area transition-colors">
-        <div className="p-4 bg-[#F8FAFC] dark:bg-[#0F172A] border-b border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between">
-          <span className="font-extrabold text-sm text-[#1E40AF] dark:text-blue-400">
+      <div className="bg-white dark:bg-[#121215] rounded-2xl border border-red-200/70 dark:border-red-900/40 shadow-xs overflow-hidden printable-area transition-colors">
+        <div className="p-4 bg-zinc-50 dark:bg-[#09090B] border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+          <span className="font-extrabold text-sm text-[#DC2626] dark:text-red-400">
             جدول خطة تصفية المتراكم الشامل
           </span>
-          <span className="text-xs text-[#64748B] dark:text-slate-400">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
             موزع على {planDurationDays} يوماً
           </span>
         </div>
 
         {backlogItems.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#64748B] dark:text-slate-400">
+          <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
             لا يوجد دروس متراكمة حالياً! جدولك ناصع ومنتظم 🌟
           </div>
         ) : (
-          <div className="divide-y divide-[#E2E8F0] dark:divide-slate-800">
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {backlogItems.map((item) => (
               <div
                 key={item.id}
-                className="p-3.5 sm:px-5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] transition-colors"
+                className="p-3.5 sm:px-5 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-[#09090B]/70 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => onToggleBacklogItem(item.id)}
-                    className="shrink-0"
+                    className="shrink-0 cursor-pointer"
                   >
                     {item.isCompleted ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#1E40AF] dark:text-blue-400" />
+                      <CheckCircle2 className="w-5 h-5 text-[#DC2626] dark:text-red-400" />
                     ) : (
-                      <Circle className="w-5 h-5 text-gray-400 hover:text-[#1E40AF] dark:hover:text-blue-400" />
+                      <Circle className="w-5 h-5 text-zinc-400 hover:text-[#DC2626] dark:hover:text-red-400" />
                     )}
                   </button>
                   <div>
-                    <span className="text-[10px] font-bold text-[#8C7A52] dark:text-amber-400 block">
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block">
                       {item.subjectName} • تاريخ الاستحقاق: {item.assignedDate}
                     </span>
                     <span
                       className={`text-xs font-bold ${
-                        item.isCompleted ? 'line-through text-gray-400 dark:text-slate-600' : 'text-[#0F172A] dark:text-white'
+                        item.isCompleted ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-900 dark:text-white'
                       }`}
                     >
                       {item.lessonTitle}
@@ -340,7 +340,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
 
                 <button
                   onClick={() => onRemoveBacklogItem(item.id)}
-                  className="p-1.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors"
+                  className="p-1.5 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
                   title="حذف من الخطة"
                 >
                   <Trash2 className="w-4 h-4" />

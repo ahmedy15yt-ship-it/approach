@@ -45,6 +45,7 @@ import { QuranPrayerSection } from './components/QuranPrayerSection';
 import { TasksLeaderboardView } from './components/TasksLeaderboardView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
+import { PomodoroTimerModal } from './components/PomodoroTimerModal';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
 import { playAdhan, isAutoAdhanEnabled } from './utils/adhanPlayer';
@@ -383,7 +384,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B132B] text-[#0F172A] dark:text-[#F1F5F9] flex flex-col font-['Cairo',sans-serif] transition-colors duration-200">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] text-[#09090B] dark:text-[#F4F4F5] flex flex-col font-['Cairo',sans-serif] transition-colors duration-200">
       {/* Top Navigation */}
       <Navbar
         profile={profile}
@@ -397,9 +398,9 @@ export default function App() {
 
       {/* Main Layout: Sidebar on Desktop + Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full grow flex gap-6">
-        {/* Desktop Sidebar (Warm notebook aesthetic) */}
+        {/* Desktop Sidebar (Obsidian & Crimson aesthetic) */}
         <aside className="hidden lg:block w-64 shrink-0 space-y-2">
-          <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-3 shadow-xs sticky top-24 space-y-1 transition-colors duration-200">
+          <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-3 shadow-xs sticky top-24 space-y-1 transition-colors duration-200">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isCurrent = activeTab === item.id;
@@ -407,10 +408,10 @@ export default function App() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
                     isCurrent
-                      ? 'bg-[#1E40AF] text-white shadow-xs'
-                      : 'text-[#334155] dark:text-slate-300 hover:bg-[#F8FAFC] dark:hover:bg-[#162244] hover:text-[#0F172A] dark:hover:text-white'
+                      ? 'bg-gradient-to-l from-[#DC2626] to-[#991B1B] text-white shadow-sm shadow-red-600/20'
+                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-red-50/70 dark:hover:bg-zinc-900 hover:text-[#DC2626] dark:hover:text-red-400'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -419,7 +420,9 @@ export default function App() {
                   </div>
 
                   {item.highlight && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400 text-black font-extrabold">
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                      isCurrent ? 'bg-black text-white' : 'bg-[#DC2626] text-white'
+                    }`}>
                       مجاني
                     </span>
                   )}
@@ -444,6 +447,7 @@ export default function App() {
               onAwardBonusXp={handleAwardBonusXp}
               voiceAlertsEnabled={voiceAlertsEnabled}
               onToggleVoiceAlerts={handleToggleVoiceAlerts}
+              onOpenTutor={handleOpenTutorFromConcept}
             />
           )}
 
@@ -540,7 +544,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B132B]/95 backdrop-blur-md border-t border-[#1E40AF]/15 dark:border-blue-900/40 py-1.5 px-3 flex items-center justify-around transition-colors duration-200">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-md border-t border-zinc-200 dark:border-red-900/40 py-1.5 px-3 flex items-center justify-around transition-colors duration-200">
         {NAV_ITEMS.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isCurrent = activeTab === item.id;
@@ -550,8 +554,8 @@ export default function App() {
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${
                 isCurrent
-                  ? 'text-[#1E40AF] dark:text-blue-400 font-black'
-                  : 'text-[#64748B] dark:text-slate-400 font-medium'
+                  ? 'text-[#DC2626] dark:text-red-400 font-black'
+                  : 'text-zinc-500 dark:text-zinc-400 font-medium'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -563,7 +567,7 @@ export default function App() {
         {/* More Menu Modal Trigger for remaining items on mobile */}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[#64748B] dark:text-slate-400 font-medium`}
+          className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-zinc-500 dark:text-zinc-400 font-medium"
         >
           <Menu className="w-5 h-5" />
           <span className="text-[10px]">المزيد</span>
@@ -572,13 +576,13 @@ export default function App() {
 
       {/* Mobile More Sheet Modal */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end">
-          <div className="bg-white dark:bg-[#111C38] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-slate-200 dark:border-blue-900/40">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
-              <span className="font-extrabold text-sm text-[#0F172A] dark:text-white">باقي أقسام نَهج</span>
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end">
+          <div className="bg-white dark:bg-[#121215] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-zinc-200 dark:border-red-900/40">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+              <span className="font-extrabold text-sm text-zinc-950 dark:text-white">باقي أقسام نَهج</span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400"
+                className="p-1 rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -597,8 +601,8 @@ export default function App() {
                     }}
                     className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-3 ${
                       isCurrent
-                        ? 'bg-[#1E40AF] text-white border-[#1E40AF]'
-                        : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#0F172A] dark:text-slate-200 border-[#E2E8F0] dark:border-slate-800'
+                        ? 'bg-[#DC2626] text-white border-[#DC2626]'
+                        : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-950 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800'
                     }`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
@@ -616,6 +620,7 @@ export default function App() {
         <PomodoroTimerModal
           sessionTitle={activeFocusSession.lessonTitle}
           subjectName={activeFocusSession.subjectName}
+          initialDurationMinutes={activeFocusSession.durationMinutes || 25}
           onClose={() => setActiveFocusSession(null)}
           onComplete={(elapsedMins) => {
             setProfile((p) => ({ ...p, totalXp: p.totalXp + 25 }));

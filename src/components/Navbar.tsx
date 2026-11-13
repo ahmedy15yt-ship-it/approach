@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#F8FAFC]/90 dark:bg-[#0B132B]/90 backdrop-blur-md border-b border-[#1E40AF]/15 dark:border-blue-900/40 font-['Cairo',sans-serif] transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-[#FAFAFA]/90 dark:bg-[#09090B]/95 backdrop-blur-md border-b border-red-200/70 dark:border-red-900/40 font-['Cairo',sans-serif] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand & Logo */}
         <div className="flex items-center gap-3">
@@ -81,14 +81,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onTabChange('dashboard')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#1E40AF] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform ring-2 ring-[#1E40AF]/20 dark:ring-blue-500/40">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ring-2 ring-[#DC2626]/25 dark:ring-red-500/40">
               <span className="font-['Amiri',serif] text-2xl font-black">نَهْج</span>
             </div>
             <div>
-              <span className="font-extrabold text-base text-[#0F172A] dark:text-white block leading-tight">
+              <span className="font-extrabold text-base text-zinc-950 dark:text-white block leading-tight">
                 نَهج
               </span>
-              <span className="text-[10px] text-[#64748B] dark:text-slate-400 font-semibold block">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold block">
                 تالتة ثانوي علمي علوم
               </span>
             </div>
@@ -104,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* XP Points */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 dark:bg-blue-950/50 border border-[#1E40AF]/20 dark:border-blue-800/40 rounded-full text-xs font-bold text-[#1E40AF] dark:text-blue-300">
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-full text-xs font-bold text-[#DC2626] dark:text-red-300">
             <Award className="w-4 h-4 text-[#C59B27] dark:text-amber-400" />
             <span>{profile.totalXp} XP</span>
           </div>
@@ -117,12 +117,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="px-2.5 py-1 text-xs font-bold bg-white dark:bg-slate-900 border border-[#1E40AF] rounded-lg focus:outline-none w-36 text-[#0F172A] dark:text-white"
+                  className="px-2.5 py-1 text-xs font-bold bg-white dark:bg-zinc-900 border border-[#DC2626] rounded-lg focus:outline-none w-36 text-zinc-950 dark:text-white"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="p-1 bg-[#1E40AF] text-white rounded-lg hover:bg-[#1E3A8A]"
+                  className="p-1 bg-[#DC2626] text-white rounded-lg hover:bg-[#B91C1C]"
                   title="حفظ الاسم"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -131,12 +131,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <div
                 onClick={() => setIsEditingName(true)}
-                className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900/90 hover:bg-blue-50/60 dark:hover:bg-slate-800 border border-[#E2E8F0] dark:border-slate-800 hover:border-blue-500/40 rounded-full text-xs font-bold text-[#1E293B] dark:text-slate-200 cursor-pointer transition-colors group shadow-2xs"
+                className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-zinc-900/90 hover:bg-red-50/70 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/40 rounded-full text-xs font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer transition-colors group shadow-2xs"
                 title="اضغط لتعديل اسمك"
               >
-                <span className="w-2 h-2 rounded-full bg-blue-600 ring-2 ring-blue-200 dark:ring-blue-900" />
+                <span className="w-2 h-2 rounded-full bg-[#DC2626] ring-2 ring-red-200 dark:ring-red-900" />
                 <span className="truncate max-w-[130px]">{profile.name || 'طالب نَهج 🩺'}</span>
-                <Edit3 className="w-3 h-3 text-gray-400 group-hover:text-[#1E40AF]" />
+                <Edit3 className="w-3 h-3 text-zinc-400 group-hover:text-[#DC2626]" />
               </div>
             )}
           </div>
@@ -145,13 +145,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onToggleDarkMode && (
             <button
               onClick={onToggleDarkMode}
-              className="p-2 rounded-xl border border-slate-200 dark:border-blue-900/40 bg-white dark:bg-slate-900/80 text-slate-700 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="p-2 rounded-xl border border-zinc-200 dark:border-red-900/40 bg-white dark:bg-zinc-900/80 text-zinc-700 dark:text-amber-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
               title={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي'}
             >
               {isDarkMode ? (
                 <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20 animate-spin-slow" />
               ) : (
-                <Moon className="w-4 h-4 text-slate-700 fill-slate-700/20" />
+                <Moon className="w-4 h-4 text-zinc-800 fill-zinc-800/20" />
               )}
               <span className="hidden xl:inline text-[11px] font-bold">
                 {isDarkMode ? 'نهاري' : 'ليلي'}
@@ -164,13 +164,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={handleToggleNotification}
             className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs ${
               notifEnabled
-                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200/90 dark:border-blue-800/40 hover:bg-blue-100/70'
-                : 'bg-white dark:bg-slate-900/80 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
+                ? 'bg-red-50 dark:bg-red-950/40 text-[#DC2626] dark:text-red-300 border-red-200 dark:border-red-900/50 hover:bg-red-100/70'
+                : 'bg-white dark:bg-zinc-900/80 hover:bg-amber-50 dark:hover:bg-zinc-800 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
             }`}
             title={notifEnabled ? 'التنبيهات مفعلة بالخلفية (اضغط لاختبار التنبيه)' : 'اضغط لتفعيل تنبيهات المذاكرة والتركيز'}
           >
             {notifEnabled ? (
-              <BellRing className="w-4 h-4 text-blue-600 dark:text-blue-400 fill-blue-100 dark:fill-blue-950" />
+              <BellRing className="w-4 h-4 text-[#DC2626] dark:text-red-400 fill-red-100 dark:fill-red-950" />
             ) : (
               <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             )}
@@ -185,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             title="شات الدعم على تليجرام"
-            className="p-2 text-[#229ED9] hover:bg-[#229ED9]/10 rounded-xl transition-colors"
+            className="p-2 text-zinc-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
           >
             <Send className="w-4 h-4" />
           </a>

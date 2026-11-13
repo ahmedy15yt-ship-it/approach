@@ -89,45 +89,45 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold mb-1.5 border border-amber-200 dark:border-amber-900/50">
             <Trophy className="w-3.5 h-3.5" />
             <span>نظام نقاط المتفوقين وسلسلة الالتزام (Streak)</span>
           </div>
-          <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">المهام اليومية وقائمة الأوائل</h2>
-          <p className="text-xs text-[#64748B] dark:text-slate-400">
+          <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">المهام اليومية وقائمة الأوائل</h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             النقاط ليست عشوائية: كل نقطة تأتي من إنجاز حقيقي (مذاكرة، ماء، صلاة، تمرين، مراجعة)
           </p>
         </div>
 
         {/* 20-Hour Reset Timer Banner */}
-        <div className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#1E40AF]/20 dark:border-[#1E3A8A]/30 px-4 py-2.5 rounded-xl text-left self-start md:self-center">
-          <span className="text-[10px] text-[#64748B] dark:text-slate-400 font-bold block flex items-center gap-1">
-            <Clock className="w-3 h-3 text-[#1E40AF] dark:text-blue-400" />
+        <div className="bg-zinc-50 dark:bg-[#09090B] border border-red-200/70 dark:border-red-900/40 px-4 py-2.5 rounded-xl text-left self-start md:self-center">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold block flex items-center gap-1">
+            <Clock className="w-3 h-3 text-[#DC2626] dark:text-red-400" />
             <span>تتجدد المهام تلقائياً بعد:</span>
           </span>
-          <span className="font-mono text-xs font-black text-[#1E40AF] dark:text-blue-400" dir="ltr">
+          <span className="font-mono text-xs font-black text-[#DC2626] dark:text-red-400" dir="ltr">
             {formatCountdown(secondsRemaining)}
           </span>
         </div>
       </div>
 
       {/* 6 Daily Tasks Section */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-extrabold text-base text-[#0F172A] dark:text-white">
+            <h3 className="font-extrabold text-base text-zinc-900 dark:text-white">
               مهام اليوم الستة ({completedCount}/{tasks.length})
             </h3>
-            <span className="text-xs text-[#64748B] dark:text-slate-400">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
               أكمل المهام لرفع رتبتك في لوحة شرف الثانوية العامة
             </span>
           </div>
 
-          <div className="w-28 sm:w-36 h-3 bg-[#E2E8F0] dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="w-28 sm:w-36 h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#1E40AF] rounded-full transition-all duration-500"
+              className="h-full bg-[#DC2626] rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -140,31 +140,31 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
               onClick={() => handleTaskClick(task.id, task.isDone)}
               className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                 task.isDone
-                  ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50 text-blue-950 dark:text-blue-100 shadow-2xs'
-                  : 'bg-[#F8FAFC] dark:bg-[#0B132B] border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/40 dark:hover:border-blue-500/40 text-[#0F172A] dark:text-white'
+                  ? 'bg-red-50/70 dark:bg-red-950/35 border-red-200 dark:border-red-900/50 text-red-950 dark:text-red-100 shadow-2xs'
+                  : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40 dark:hover:border-red-500/40 text-zinc-900 dark:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
                 {task.isDone ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#1E40AF] dark:text-blue-400 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-[#DC2626] dark:text-red-400 shrink-0" />
                 ) : (
-                  <Circle className="w-5 h-5 text-gray-400 shrink-0" />
+                  <Circle className="w-5 h-5 text-zinc-400 shrink-0" />
                 )}
                 <div>
                   <span
                     className={`text-xs font-bold leading-relaxed block ${
-                      task.isDone ? 'line-through text-blue-800/70 dark:text-blue-300/70' : ''
+                      task.isDone ? 'line-through text-red-800/70 dark:text-red-300/70' : ''
                     }`}
                   >
                     {task.title}
                   </span>
-                  <span className="text-[10px] text-[#64748B] dark:text-slate-400 font-medium block mt-0.5">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium block mt-0.5">
                     النوع: {task.category}
                   </span>
                 </div>
               </div>
 
-              <span className="text-xs font-mono font-black px-2.5 py-1 rounded-lg bg-white dark:bg-[#111C38] border border-[#E2E8F0] dark:border-slate-700 text-[#C59B27] dark:text-amber-400 shrink-0">
+              <span className="text-xs font-mono font-black px-2.5 py-1 rounded-lg bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-700 text-[#C59B27] dark:text-amber-400 shrink-0">
                 +{task.xp} XP
               </span>
             </div>
@@ -173,24 +173,24 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
       </div>
 
       {/* Leaderboard Table (لوحة المتفوقين) */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-[#1E3A8A]/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 flex items-center justify-center">
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-[#0F172A] dark:text-white">
+              <h3 className="font-extrabold text-base text-zinc-900 dark:text-white">
                 لوحة شرف طلاب نَهج — علمي علوم
               </h3>
-              <p className="text-xs text-[#64748B] dark:text-slate-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 ترتيب الطلاب على مستوى الجمهورية وفقاً لمجموع نقاط الإنجاز والالتزام المستمر
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-3 py-1 bg-blue-50 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-400 rounded-full border border-blue-200 dark:border-blue-900/50 shadow-2xs">
+            <span className="text-xs font-bold px-3 py-1 bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 rounded-full border border-red-200 dark:border-red-900/50 shadow-2xs">
               ترتيبك الحالي: المركز {currentUserRank} 🎯
             </span>
           </div>
@@ -198,7 +198,7 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
-            <thead className="bg-[#F8FAFC] dark:bg-[#0F172A] text-[#475569] dark:text-slate-400 font-bold border-b border-[#E2E8F0] dark:border-slate-800">
+            <thead className="bg-zinc-50 dark:bg-[#09090B] text-zinc-600 dark:text-zinc-400 font-bold border-b border-zinc-200 dark:border-zinc-800">
               <tr>
                 <th className="p-3 text-center">المركز</th>
                 <th className="p-3">اسم الطالب والمحافظة</th>
@@ -207,7 +207,7 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
                 <th className="p-3 text-left">مجموع النقاط (XP)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0] dark:divide-slate-800">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {sortedLeaderboard.map((user) => {
                 const isTop3 = user.rank <= 3;
                 return (
@@ -215,8 +215,8 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
                     key={user.rank}
                     className={`transition-colors ${
                       user.isCurrentUser
-                        ? 'bg-[#1E40AF]/10 dark:bg-blue-900/30 font-bold border-y-2 border-[#1E40AF] dark:border-blue-500'
-                        : 'hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A]'
+                        ? 'bg-[#DC2626]/10 dark:bg-red-950/40 font-bold border-y-2 border-[#DC2626] dark:border-red-500'
+                        : 'hover:bg-zinc-50 dark:hover:bg-[#09090B]'
                     }`}
                   >
                     <td className="p-3 text-center">
@@ -233,19 +233,19 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
                           🥉
                         </span>
                       ) : (
-                        <span className="font-mono font-bold text-gray-500 dark:text-slate-400">#{user.rank}</span>
+                        <span className="font-mono font-bold text-zinc-500 dark:text-zinc-400">#{user.rank}</span>
                       )}
                     </td>
                     <td className="p-3">
-                      <span className="font-bold text-[#0F172A] dark:text-white block">
+                      <span className="font-bold text-zinc-900 dark:text-white block">
                         {user.name} {user.isCurrentUser && '(أنت)'}
                       </span>
-                      <span className="text-[10px] text-[#64748B] dark:text-slate-400 font-medium block">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium block">
                         {user.governorate}
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#F5F2EB] dark:bg-[#0B132B] border border-[#E2E8F0] dark:border-slate-800 text-[10px] font-bold text-[#334155] dark:text-slate-300">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-700 dark:text-zinc-300">
                         {user.badge}
                       </span>
                     </td>
@@ -255,7 +255,7 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
                         <span>{user.streak} يوم</span>
                       </div>
                     </td>
-                    <td className="p-3 text-left font-mono font-black text-[#1E40AF] dark:text-blue-400 text-sm" dir="ltr">
+                    <td className="p-3 text-left font-mono font-black text-[#DC2626] dark:text-red-400 text-sm" dir="ltr">
                       {user.xp} XP
                     </td>
                   </tr>

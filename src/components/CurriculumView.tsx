@@ -267,28 +267,28 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-200">
+      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-200">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 rounded-full text-xs font-bold mb-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 rounded-full text-xs font-bold mb-1.5 border border-red-200/60 dark:border-red-900/50">
             <BookOpen className="w-3.5 h-3.5" />
             <span>منهج تالتة ثانوي علمي علوم المعتمد</span>
           </div>
-          <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">
+          <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
             خريطة المنهج والكبسولات ومذكرات المراجعة
           </h2>
-          <p className="text-xs text-[#64748B] dark:text-slate-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             تتبع إنجاز دروسك، واطلع على كبسولات الامتحان، وأنشئ مذكراتك النصية لتصديرها ومراجعتها سريعاً
           </p>
         </div>
 
         {/* Mode switch: Lessons checklist vs Key Concept Summaries vs Final Revision Notes */}
-        <div className="flex flex-wrap bg-[#F2EFE9] dark:bg-[#0B132B] p-1 rounded-xl self-start md:self-center border border-transparent dark:border-slate-800 gap-1">
+        <div className="flex flex-wrap bg-zinc-100 dark:bg-[#09090B] p-1 rounded-xl self-start md:self-center border border-zinc-200 dark:border-zinc-800 gap-1">
           <button
             onClick={() => setActiveTabMode('lessons')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTabMode === 'lessons'
-                ? 'bg-[#1E40AF] text-white shadow-xs'
-                : 'text-[#334155] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             قائمة الدروس
@@ -297,8 +297,8 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
             onClick={() => setActiveTabMode('summaries')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTabMode === 'summaries'
-                ? 'bg-[#1E40AF] text-white shadow-xs'
-                : 'text-[#334155] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
@@ -308,8 +308,8 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
             onClick={() => setActiveTabMode('revision_notes')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTabMode === 'revision_notes'
-                ? 'bg-[#1E40AF] text-white shadow-xs'
-                : 'text-[#334155] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-amber-400" />
@@ -332,15 +332,15 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
               onClick={() => setSelectedSubjectId(subj.id)}
               className={`px-4 py-3 rounded-2xl shrink-0 font-bold text-xs transition-all border flex items-center gap-3 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#1E40AF] text-white border-[#1E40AF] shadow-md'
-                  : 'bg-white dark:bg-[#111C38] text-[#334155] dark:text-slate-200 border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/40'
+                  ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-md'
+                  : 'bg-white dark:bg-[#121215] text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40'
               }`}
             >
               <div className="text-right">
                 <span className="block text-xs font-extrabold">{subj.name}</span>
                 <span
                   className={`text-[10px] block ${
-                    isSelected ? 'text-amber-300' : 'text-[#64748B] dark:text-slate-400'
+                    isSelected ? 'text-amber-300' : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 >
                   {pct}% منجز ({done}/{total})
@@ -352,23 +352,23 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
       </div>
 
       {/* Progress Bar for Current Subject */}
-      <div className="bg-white dark:bg-[#111C38] p-4 rounded-xl border border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between gap-4 transition-colors duration-200">
+      <div className="bg-white dark:bg-[#121215] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4 transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 flex items-center justify-center font-bold">
             {progressPercent}%
           </div>
           <div>
-            <span className="text-xs font-bold text-[#0F172A] dark:text-white block">
+            <span className="text-xs font-bold text-zinc-900 dark:text-white block">
               تقدمك في مادة {currentSubject.name}
             </span>
-            <span className="text-[11px] text-[#64748B] dark:text-slate-400">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               أنهيت {completedCount} درس من إجمالي {allLessons.length} درس
             </span>
           </div>
         </div>
-        <div className="w-1/3 h-2.5 bg-[#E2E8F0] dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className="w-1/3 h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#1E40AF] dark:bg-blue-500 rounded-full transition-all duration-500"
+            className="h-full bg-[#DC2626] dark:bg-red-500 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -381,14 +381,14 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
           {currentSubject.chapters.map((chapter) => (
             <div
               key={chapter.id}
-              className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs transition-colors duration-200"
+              className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs transition-colors duration-200"
             >
               {/* Chapter Title */}
-              <div className="flex items-center justify-between border-b border-[#E2E8F0] dark:border-slate-800 pb-3 mb-3">
+              <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-3 gap-2 flex-wrap">
                 <div>
-                  <h3 className="font-extrabold text-sm text-[#0F172A] dark:text-white">{chapter.title}</h3>
+                  <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">{chapter.title}</h3>
                   {chapter.unitTitle && (
-                    <span className="text-[11px] text-[#64748B] dark:text-slate-400 font-medium">{chapter.unitTitle}</span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">{chapter.unitTitle}</span>
                   )}
                 </div>
                 <button
@@ -398,9 +398,9 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                       `أستاذ نَهج، اشرحلي أهم أفكار وتركات الامتحان في: ${chapter.title}`
                     )
                   }
-                  className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#1E40AF] dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800/40 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                  className="px-2.5 py-1 bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/40 text-[#DC2626] dark:text-red-300 rounded-lg text-xs font-bold border border-red-200 dark:border-red-900/50 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
-                  <Bot className="w-3.5 h-3.5 text-[#1E40AF] dark:text-blue-400" />
+                  <Bot className="w-3.5 h-3.5 text-[#DC2626] dark:text-red-400" />
                   <span>اسأل أستاذ نَهج عن هذا الباب (مجاناً)</span>
                 </button>
               </div>
@@ -413,19 +413,19 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                     onClick={() => onToggleLesson(currentSubject.id, chapter.id, lesson.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       lesson.isCompleted
-                        ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/50 text-blue-950 dark:text-blue-200 shadow-2xs'
-                        : 'bg-[#F8FAFC] dark:bg-[#0B132B]/60 border-[#E2E8F0] dark:border-slate-800 hover:border-[#1E40AF]/30 dark:hover:border-blue-500/40 text-[#0F172A] dark:text-slate-200'
+                        ? 'bg-red-50/70 dark:bg-red-950/35 border-red-200 dark:border-red-900/50 text-red-950 dark:text-red-200 shadow-2xs'
+                        : 'bg-zinc-50 dark:bg-[#09090B]/70 border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40 dark:hover:border-red-500/40 text-zinc-900 dark:text-zinc-200'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       {lesson.isCompleted ? (
-                        <CheckCircle2 className="w-5 h-5 text-[#1E40AF] dark:text-blue-400 shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-[#DC2626] dark:text-red-400 shrink-0" />
                       ) : (
-                        <Circle className="w-5 h-5 text-gray-400 dark:text-slate-500 shrink-0" />
+                        <Circle className="w-5 h-5 text-zinc-400 dark:text-zinc-500 shrink-0" />
                       )}
                       <span
                         className={`text-xs font-bold leading-relaxed ${
-                          lesson.isCompleted ? 'line-through text-blue-800/70 dark:text-blue-400/70' : ''
+                          lesson.isCompleted ? 'line-through text-red-800/70 dark:text-red-400/70' : ''
                         }`}
                       >
                         {lesson.title}
@@ -449,12 +449,12 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                     value={newLessonTitle}
                     onChange={(e) => setNewLessonTitle(e.target.value)}
                     placeholder="اسم الدرس أو الفصل الإضافي..."
-                    className="grow px-3 py-2 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:border-[#1E40AF] focus:outline-none"
+                    className="grow px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-lg focus:border-[#DC2626] focus:outline-none"
                     autoFocus
                   />
                   <button
                     onClick={() => handleAddLessonSubmit(chapter.id)}
-                    className="px-4 py-2 bg-[#1E40AF] text-white font-bold text-xs rounded-lg"
+                    className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-xs rounded-lg cursor-pointer"
                   >
                     حفظ
                   </button>
@@ -463,7 +463,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                       setAddingToChapterId(null);
                       setNewLessonTitle('');
                     }}
-                    className="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-lg"
+                    className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs rounded-lg cursor-pointer"
                   >
                     إلغاء
                   </button>
@@ -471,7 +471,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
               ) : (
                 <button
                   onClick={() => setAddingToChapterId(chapter.id)}
-                  className="mt-3 text-[11px] text-[#1E40AF] hover:underline font-bold flex items-center gap-1"
+                  className="mt-3 text-[11px] text-[#DC2626] dark:text-red-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>إضافة درس أو موضوع إضافي لهذا الباب</span>
@@ -483,8 +483,8 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
       ) : activeTabMode === 'summaries' ? (
         /* Concise Key Concepts Summaries Mode (كبسولات ومفاتيح الامتحان) */
         <div className="space-y-5">
-          <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3">
-            <Lightbulb className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+            <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block font-bold text-sm mb-0.5">
                 كبسولات المراجعة السريعة ومفاتيح حل الامتحانات
@@ -496,15 +496,15 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
           {currentSubject.chapters.map((chapter) => (
             <div
               key={chapter.id}
-              className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/20 dark:border-blue-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors duration-200"
+              className="bg-white dark:bg-[#121215] border-2 border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors duration-200"
             >
               {/* Chapter Summary Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800 gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 gap-2">
                 <div>
-                  <span className="text-[11px] font-bold text-[#8C7A52] dark:text-amber-300 block">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 block">
                     {chapter.title}
                   </span>
-                  <h3 className="font-extrabold text-base text-[#0F172A] dark:text-white">
+                  <h3 className="font-extrabold text-base text-zinc-900 dark:text-white">
                     💡 {chapter.summary.title}
                   </h3>
                 </div>
@@ -516,7 +516,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                       `أستاذ نَهج، اختبرني في ${chapter.title} بـ 4 أسئلة اختيار من متعدد نظام حديث وشوف إجابتي!`
                     )
                   }
-                  className="px-3 py-1.5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+                  className="px-3 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
                 >
                   <Bot className="w-3.5 h-3.5 text-amber-300" />
                   <span>اختبرني في هذا الباب الآن</span>
@@ -525,17 +525,17 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
               {/* Key Concept Points */}
               <div>
-                <h4 className="text-xs font-black text-[#1E40AF] dark:text-blue-400 mb-2 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#1E40AF] dark:bg-blue-400" />
+                <h4 className="text-xs font-black text-[#DC2626] dark:text-red-400 mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#DC2626] dark:bg-red-400" />
                   <span>المفاهيم المحورية والقواعد الذهبية:</span>
                 </h4>
                 <ul className="space-y-2">
                   {chapter.summary.keyPoints.map((point, idx) => (
                     <li
                       key={idx}
-                      className="text-xs text-[#1E293B] dark:text-slate-200 leading-relaxed bg-[#F8FAFC] dark:bg-[#0B132B]/60 p-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 flex items-start gap-2"
+                      className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed bg-zinc-50 dark:bg-[#09090B]/70 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-start gap-2"
                     >
-                      <span className="text-[#1E40AF] dark:text-blue-400 font-bold text-sm shrink-0">✦</span>
+                      <span className="text-[#DC2626] dark:text-red-400 font-bold text-sm shrink-0">✦</span>
                       <span>{point}</span>
                     </li>
                   ))}
@@ -544,7 +544,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
               {/* Exam Traps & Tips */}
               {chapter.summary.examTips.length > 0 && (
-                <div className="bg-[#FFFDF5] dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-xl p-3.5">
+                <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-xl p-3.5">
                   <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 mb-2 flex items-center gap-1.5">
                     <span className="text-amber-600 dark:text-amber-400">⚡</span>
                     <span>تركات الامتحان التي يقع فيها أغلب الطلاب:</span>
@@ -562,11 +562,11 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
               {/* Core Formula or Memory Nugget */}
               {chapter.summary.formulaOrNugget && (
-                <div className="bg-[#F0F5F2] dark:bg-slate-900/80 border border-[#1E40AF]/30 dark:border-blue-900/40 rounded-xl p-3 text-center">
-                  <span className="text-[11px] font-bold text-[#1E40AF] dark:text-blue-400 block mb-0.5">
+                <div className="bg-red-50/60 dark:bg-[#09090B] border border-red-200 dark:border-red-900/40 rounded-xl p-3 text-center">
+                  <span className="text-[11px] font-bold text-[#DC2626] dark:text-red-400 block mb-0.5">
                     معادلة / ثمرة الباب المختصرة:
                   </span>
-                  <span className="font-mono text-xs font-black text-[#0F172A] dark:text-white" dir="ltr">
+                  <span className="font-mono text-xs font-black text-zinc-900 dark:text-white" dir="ltr">
                     {chapter.summary.formulaOrNugget}
                   </span>
                 </div>
@@ -578,16 +578,16 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
         /* Final Revision Notes Mode (User Request: مذكرات المراجعة النهائية) */
         <div className="space-y-5 animate-in fade-in duration-200">
           {/* Section Banner */}
-          <div className="bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 dark:from-blue-950/40 dark:via-[#111C38] dark:to-blue-950/40 border-2 border-blue-200/80 dark:border-blue-900/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-red-50/90 via-zinc-50 to-red-50/80 dark:from-red-950/40 dark:via-[#121215] dark:to-[#09090B] border-2 border-red-200/80 dark:border-red-900/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#1E40AF] text-white rounded-full text-[11px] font-bold">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#DC2626] text-white rounded-full text-[11px] font-bold">
                 <FileText className="w-3.5 h-3.5" />
                 <span>مذكرات المراجعة النهائية وقوانين الدروس</span>
               </div>
-              <h3 className="font-black text-base text-[#0F172A] dark:text-white">
+              <h3 className="font-black text-base text-zinc-900 dark:text-white">
                 كبسولاتك النصية الخاصة بمادة {currentSubject.name}
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-xl">
                 اكتب ولخص أهم القوانين والملاحظات لكل درس، وقم بنسخها كنقاط للمراجعة السريعة أو تصديرها كملف نصي (.txt) للمذاكرة بدون إنترنت أو للطباعة.
               </p>
             </div>
@@ -603,7 +603,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                 setNoteTraps('');
                 setIsCreatingNote(true);
               }}
-              className="px-4 py-2.5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-center shrink-0 active:scale-95"
+              className="px-4 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-center shrink-0 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>إنشاء مذكرة جديدة للدرس</span>
@@ -612,16 +612,16 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
           {/* Note Creation / Editing Box */}
           {isCreatingNote && (
-            <div className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF] dark:border-blue-500 rounded-3xl p-5 sm:p-6 shadow-md space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-                <h4 className="font-black text-sm text-[#0F172A] dark:text-white flex items-center gap-2">
-                  <Edit3 className="w-4 h-4 text-[#1E40AF] dark:text-blue-400" />
+            <div className="bg-white dark:bg-[#121215] border-2 border-[#DC2626] dark:border-red-600 rounded-3xl p-5 sm:p-6 shadow-md space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                <h4 className="font-black text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Edit3 className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
                   <span>{editingNoteId ? 'تعديل مذكرة الدرس' : 'إنشاء مذكرة مراجعة نهائية جديدة'}</span>
                 </h4>
                 <button
                   type="button"
                   onClick={() => setIsCreatingNote(false)}
-                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer font-bold"
+                  className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer font-bold"
                 >
                   إلغاء ✕
                 </button>
@@ -629,13 +629,13 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 block">
                     اختر الباب / الفصل:
                   </label>
                   <select
                     value={noteChapter}
                     onChange={(e) => setNoteChapter(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[#0F172A] dark:text-white focus:outline-none focus:border-[#1E40AF]"
+                    className="w-full text-xs p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626]"
                   >
                     {currentSubject.chapters.map((ch) => (
                       <option key={ch.id} value={ch.title}>
@@ -646,7 +646,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 block">
                     عنوان الدرس أو الموضوع:
                   </label>
                   <input
@@ -654,14 +654,14 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                     value={noteLesson}
                     onChange={(e) => setNoteLesson(e.target.value)}
                     placeholder="مثال: قوانين كيرشوف وحل الدوائر الكهربية المعقدة"
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[#0F172A] dark:text-white focus:outline-none focus:border-[#1E40AF]"
+                    className="w-full text-xs p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626]"
                   />
                 </div>
               </div>
 
               {/* Laws & Formulas */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-[#1E40AF] dark:text-blue-400 block">
+                <label className="text-[11px] font-bold text-[#DC2626] dark:text-red-400 block">
                   ⚡ أهم القوانين والمعادلات الذهبية للدرس:
                 </label>
                 <textarea
@@ -669,13 +669,13 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                   onChange={(e) => setNoteLaws(e.target.value)}
                   rows={3}
                   placeholder="اكتب القوانين وصيغ الحسابات الرياضية والكيميائية (سطر لكل قانون)..."
-                  className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[#0F172A] dark:text-white focus:outline-none focus:border-[#1E40AF] font-mono leading-relaxed"
+                  className="w-full text-xs p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626] font-mono leading-relaxed"
                 />
               </div>
 
               {/* Key Bullet Points */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300 block">
                   ✦ نقاط ومعلومات المراجعة السريعة (اكتب كل نقطة في سطر منفصل):
                 </label>
                 <textarea
@@ -683,7 +683,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                   onChange={(e) => setNotePointsText(e.target.value)}
                   rows={4}
                   placeholder="• حدد مسار العروة الافتراضي أولاً&#10;• أيونات الكالسيوم تكشف مواقع الارتباط&#10;• أكسيد الحديد III لا يتفاعل مع الأحماض المخففة"
-                  className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[#0F172A] dark:text-white focus:outline-none focus:border-[#1E40AF] leading-relaxed"
+                  className="w-full text-xs p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626] leading-relaxed"
                 />
               </div>
 
@@ -697,7 +697,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                   value={noteTraps}
                   onChange={(e) => setNoteTraps(e.target.value)}
                   placeholder="مثال: المنطقة A طولها ثابت دائماً ولا يتغير بالانقباض، احذر الوقوع في هذا الفخ"
-                  className="w-full text-xs p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 text-[#0F172A] dark:text-white focus:outline-none focus:border-amber-500"
+                  className="w-full text-xs p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 text-zinc-900 dark:text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
 
@@ -705,7 +705,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                 <button
                   type="button"
                   onClick={handleSaveRevisionNote}
-                  className="py-2.5 px-5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                  className="py-2.5 px-5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>حفظ المذكرة</span>
@@ -713,7 +713,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                 <button
                   type="button"
                   onClick={() => setIsCreatingNote(false)}
-                  className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="py-2.5 px-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   إلغاء
                 </button>
@@ -728,23 +728,23 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
               .map((note) => (
                 <div
                   key={note.id}
-                  className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/20 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 hover:border-[#1E40AF]/50 transition-all"
+                  className="bg-white dark:bg-[#121215] border-2 border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 hover:border-[#DC2626]/50 transition-all"
                 >
                   {/* Note Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 gap-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 dark:bg-blue-900/50 text-[#1E40AF] dark:text-blue-300">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300">
                           {note.subjectName}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-zinc-400">
                           {note.createdAt}
                         </span>
                       </div>
-                      <h4 className="font-black text-base text-[#0F172A] dark:text-white">
+                      <h4 className="font-black text-base text-zinc-900 dark:text-white">
                         {note.lessonTitle}
                       </h4>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                         {note.chapterTitle}
                       </span>
                     </div>
@@ -757,7 +757,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                           copyFeedback === note.id
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+                            : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
                         }`}
                         title="نسخ كنقاط للمراجعة السريعة"
                       >
@@ -777,7 +777,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                       <button
                         type="button"
                         onClick={() => handleExportAsTextFile(note)}
-                        className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-[#1E40AF] dark:text-blue-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer border border-blue-200 dark:border-blue-900/50"
+                        className="px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/60 text-[#DC2626] dark:text-red-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer border border-red-200 dark:border-red-900/50"
                         title="تصدير كملف نصي (.txt)"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -787,7 +787,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                       <button
                         type="button"
                         onClick={() => handleStartEditNote(note)}
-                        className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 cursor-pointer"
+                        className="p-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 cursor-pointer"
                         title="تعديل"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -806,8 +806,8 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
                   {/* Section 1: Laws & Formulas (if present) */}
                   {note.lawsAndFormulas && (
-                    <div className="bg-[#0B132B] text-amber-300 p-3.5 rounded-2xl font-mono text-xs leading-relaxed space-y-1 shadow-inner" dir="ltr">
-                      <span className="text-[10px] text-slate-400 font-sans block text-right font-bold" dir="rtl">
+                    <div className="bg-[#09090B] text-amber-300 border border-zinc-800 p-3.5 rounded-2xl font-mono text-xs leading-relaxed space-y-1 shadow-inner" dir="ltr">
+                      <span className="text-[10px] text-zinc-400 font-sans block text-right font-bold" dir="rtl">
                         ⚡ القوانين والمعادلات الذهبية:
                       </span>
                       <pre className="whitespace-pre-wrap font-mono text-xs">
@@ -818,16 +818,16 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
 
                   {/* Section 2: Key Bullet Points */}
                   <div className="space-y-1.5">
-                    <span className="text-xs font-black text-[#1E40AF] dark:text-blue-400 block">
+                    <span className="text-xs font-black text-[#DC2626] dark:text-red-400 block">
                       ✦ أهم النقاط والمعلومات للمراجعة السريعة:
                     </span>
                     <ul className="space-y-1.5">
                       {note.keyPoints.map((pt, idx) => (
                         <li
                           key={idx}
-                          className="text-xs text-slate-700 dark:text-slate-200 bg-slate-50/80 dark:bg-[#0B132B]/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-start gap-2 leading-relaxed"
+                          className="text-xs text-zinc-700 dark:text-zinc-200 bg-zinc-50/80 dark:bg-[#09090B]/70 p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 flex items-start gap-2 leading-relaxed"
                         >
-                          <span className="text-[#1E40AF] dark:text-blue-400 font-bold shrink-0">✦</span>
+                          <span className="text-[#DC2626] dark:text-red-400 font-bold shrink-0">✦</span>
                           <span>{pt}</span>
                         </li>
                       ))}
@@ -852,12 +852,12 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
               ))}
 
             {revisionNotes.filter((n) => n.subjectId === selectedSubjectId).length === 0 && (
-              <div className="text-center py-10 bg-white dark:bg-[#111C38] rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3 p-6">
-                <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-                <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-white">
+              <div className="text-center py-10 bg-white dark:bg-[#121215] rounded-3xl border border-zinc-200 dark:border-zinc-800 space-y-3 p-6">
+                <FileText className="w-12 h-12 text-zinc-300 dark:text-zinc-600 mx-auto" />
+                <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white">
                   لا توجد مذكرات مراجعة بعد لمادة {currentSubject.name}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
                   اضغط على زر «إنشاء مذكرة جديدة للدرس» لتلخيص أهم القوانين والتركات وتصديرها للمراجعة السريعة.
                 </p>
                 <button
@@ -871,7 +871,7 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                     setNoteTraps('');
                     setIsCreatingNote(true);
                   }}
-                  className="px-4 py-2 bg-[#1E40AF] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                  className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
                 >
                   + إنشاء أول مذكرة الآن
                 </button>

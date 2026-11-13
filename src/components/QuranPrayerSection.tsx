@@ -324,13 +324,13 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* 0) Top Main Navigation Tabs: Quran & Prayers vs Azkar & Tasbih */}
-      <div className="flex items-center gap-2 p-1.5 bg-[#E2E8F0]/60 dark:bg-[#0B132B] border border-[#CBD5E1]/60 dark:border-blue-900/40 rounded-2xl">
+      <div className="flex items-center gap-2 p-1.5 bg-zinc-200/70 dark:bg-[#09090B] border border-zinc-300/70 dark:border-red-900/40 rounded-2xl">
         <button
           onClick={() => setActiveMainSection('quran')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeMainSection === 'quran'
-              ? 'bg-[#1E40AF] text-white shadow-md'
-              : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] hover:bg-white/50 dark:hover:bg-slate-800'
+              ? 'bg-[#DC2626] text-white shadow-md'
+              : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-900'
           }`}
         >
           <Compass className="w-4 h-4" />
@@ -341,13 +341,13 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
           onClick={() => setActiveMainSection('azkar')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeMainSection === 'azkar'
-              ? 'bg-[#1E40AF] text-white shadow-md'
-              : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] hover:bg-white/50 dark:hover:bg-slate-800'
+              ? 'bg-[#DC2626] text-white shadow-md'
+              : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-900'
           }`}
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span>حصن المسلم وأذكار المذاكرة والمسبحة</span>
-          <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black">
+          <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-zinc-950 text-[10px] font-black">
             جديد
           </span>
         </button>
@@ -362,17 +362,17 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
       {activeMainSection === 'quran' && (
         <>
           {/* 1) Prayer Times Card (27 Egyptian Governorates) */}
-          <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-slate-800">
+          <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#1E40AF]/10 dark:bg-blue-950/50 text-[#1E40AF] dark:text-blue-300 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-[#DC2626]/10 dark:bg-red-950/50 text-[#DC2626] dark:text-red-300 flex items-center justify-center shrink-0">
                   <Compass className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-base text-[#0F172A] dark:text-white">
+                  <h2 className="font-extrabold text-base text-zinc-900 dark:text-white">
                     مواقيت الصلاة الفلكية — مصر (الهيئة العامة للمساحة)
                   </h2>
-                  <p className="text-xs text-[#64748B] dark:text-slate-400">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     محسوبة بدقة فلكية لكل الـ 27 محافظة بنظام 12 ساعة مع صوت أذان حقيقي
                   </p>
                 </div>
@@ -384,7 +384,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 <select
                   value={selectedGov.id}
                   onChange={handleGovChange}
-                  className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                  className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
                   title="اختر المحافظة"
                 >
                   {EGYPT_GOVERNORATES.map((g) => (
@@ -396,7 +396,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
 
                 <button
                   onClick={handleDetectLocation}
-                  className="p-2 bg-[#F8FAFC] dark:bg-[#0B132B] hover:bg-[#F2EFE9] dark:hover:bg-slate-800 border border-[#CBD5E1] dark:border-slate-700 rounded-xl text-xs font-bold text-[#1E40AF] dark:text-blue-300 transition-colors cursor-pointer"
+                  className="p-2 bg-zinc-50 dark:bg-[#09090B] hover:bg-red-50 dark:hover:bg-red-950/40 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-[#DC2626] dark:text-red-300 transition-colors cursor-pointer"
                   title="تحديد المحافظة تلقائياً عبر GPS"
                 >
                   <MapPin className="w-4 h-4" />
@@ -406,7 +406,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 <select
                   value={currentMuezzinId}
                   onChange={(e) => handleChangeMuezzin(e.target.value)}
-                  className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                  className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
                   title="اختر صوت المؤذن"
                 >
                   {MUEZZINS.map((m) => (
@@ -422,7 +422,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
                     autoAdhanActive
                       ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-300 dark:border-slate-700'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
                   }`}
                   title="تفعيل أو إلغاء تشغيل الأذان تلقائياً عند دخول كل صلاة"
                 >
@@ -436,7 +436,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
                     isPlayingAdhan
                       ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs animate-pulse'
-                      : 'bg-[#1E40AF] hover:bg-[#1D4ED8] text-white'
+                      : 'bg-[#DC2626] hover:bg-[#B91C1C] text-white'
                   }`}
                   title="تشغيل أو إيقاف صوت الأذان الحقيقي"
                 >
@@ -448,7 +448,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
 
             {/* Active Adhan Notice Banner */}
             {isPlayingAdhan && (
-              <div className="p-3 bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-600/60 rounded-2xl flex items-center justify-between gap-3 text-xs font-bold text-amber-950 dark:text-amber-200">
+              <div className="p-3 bg-gradient-to-r from-amber-500/15 via-red-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-600/60 rounded-2xl flex items-center justify-between gap-3 text-xs font-bold text-amber-950 dark:text-amber-200">
                 <div className="flex items-center gap-2">
                   <span className="text-base animate-bounce">🕌</span>
                   <span>
@@ -473,13 +473,13 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                     key={p.key}
                     className={`p-3 rounded-2xl border text-center transition-all ${
                       isNext
-                        ? 'bg-[#1E40AF] text-white shadow-md ring-2 ring-[#1E40AF]/20'
-                        : 'bg-[#F8FAFC] dark:bg-[#0B132B]/70 border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white'
+                        ? 'bg-gradient-to-b from-[#DC2626] to-[#991B1B] text-white border-[#DC2626] shadow-md ring-2 ring-[#DC2626]/25'
+                        : 'bg-zinc-50 dark:bg-[#09090B]/70 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white'
                     }`}
                   >
                     <span
                       className={`text-[11px] font-bold block mb-1 ${
-                        isNext ? 'text-amber-300' : 'text-[#64748B] dark:text-slate-400'
+                        isNext ? 'text-amber-300' : 'text-zinc-500 dark:text-zinc-400'
                       }`}
                     >
                       {p.name}
@@ -502,18 +502,18 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
       {/* 2) Quran Section (Index or Single Surah Reader) */}
       {!activeSurah ? (
         /* Full Quran Catalog Index */
-        <div className="bg-white dark:bg-[#111C38] border border-[#1E40AF]/15 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
+        <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
           {/* Header & Quick Bookmark */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 rounded-full text-xs font-bold mb-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 rounded-full text-xs font-bold mb-1 border border-red-200/60 dark:border-red-900/50">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>المصحف الشريف كاملاً مكتوباً بالرسم العثماني</span>
               </div>
-              <h2 className="text-xl font-extrabold text-[#0F172A] dark:text-white">
+              <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
                 القرآن الكريم كاملاً (114 سورة — 6,236 آية)
               </h2>
-              <p className="text-xs text-[#64748B] dark:text-slate-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 مكتوب بالرسم العثماني المطابق لمصحف المدينة المنورة مع التلاوة الصوتية لأشهر 5 قرّاء
               </p>
             </div>
@@ -525,18 +525,18 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                   const s = SURAH_LIST.find((item) => item.number === bookmark.surahNumber);
                   if (s) openSurahReader(s);
                 }}
-                className="bg-amber-50 hover:bg-amber-100/80 border border-amber-300 text-amber-900 rounded-2xl p-3 text-right flex items-center gap-3 transition-all self-start md:self-auto cursor-pointer"
+                className="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 border border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 rounded-2xl p-3 text-right flex items-center gap-3 transition-all self-start md:self-auto cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold">
                   <Bookmark className="w-4 h-4 fill-current" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-amber-700 font-bold block">موضع قراءتك الأخير:</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">موضع قراءتك الأخير:</span>
                   <span className="text-xs font-black">
                     سورة {bookmark.surahName} (صـ {bookmark.page})
                   </span>
                 </div>
-                <ChevronLeft className="w-4 h-4 text-amber-700 mr-2" />
+                <ChevronLeft className="w-4 h-4 text-amber-700 dark:text-amber-400 mr-2" />
               </button>
             )}
           </div>
@@ -546,13 +546,13 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Search input */}
               <div className="relative grow">
-                <Search className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
+                <Search className="w-4 h-4 text-zinc-400 absolute right-3.5 top-3.5" />
                 <input
                   type="text"
                   value={surahSearch}
                   onChange={(e) => setSurahSearch(e.target.value)}
                   placeholder="ابحث باسم السورة (مثل: الكهف، يس، البقرة) أو رقمها..."
-                  className="w-full pr-10 pl-3 py-2.5 text-xs bg-[#F8FAFC] dark:bg-[#0B132B] text-[#0F172A] dark:text-white border border-[#CBD5E1] dark:border-slate-700 rounded-2xl focus:border-[#1E40AF] focus:outline-none"
+                  className="w-full pr-10 pl-3 py-2.5 text-xs bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 rounded-2xl focus:border-[#DC2626] focus:outline-none"
                 />
               </div>
 
@@ -563,7 +563,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                   const val = e.target.value;
                   setSelectedJuzFilter(val === 'all' ? 'all' : Number(val));
                 }}
-                className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-2xl px-3 py-2 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-2xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
               >
                 <option value="all">كل الأجزاء (٣٠ جزءاً)</option>
                 {Array.from({ length: 30 }).map((_, i) => (
@@ -580,8 +580,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 onClick={() => setSelectedFilterCategory('all')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedFilterCategory === 'all'
-                    ? 'bg-[#1E40AF] text-white shadow-2xs'
-                    : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#556358] dark:text-slate-300 border border-[#E0DCD4] dark:border-slate-700 hover:bg-[#F2EFE9] dark:hover:bg-slate-800'
+                    ? 'bg-[#DC2626] text-white shadow-2xs'
+                    : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50/60 dark:hover:bg-zinc-800'
                 }`}
               >
                 فهرس المصحف كاملاً (114)
@@ -591,8 +591,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 onClick={() => setSelectedFilterCategory('study_blessed')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   selectedFilterCategory === 'study_blessed'
-                    ? 'bg-[#1E40AF] text-white shadow-2xs'
-                    : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#556358] dark:text-slate-300 border border-[#E0DCD4] dark:border-slate-700 hover:bg-[#F2EFE9] dark:hover:bg-slate-800'
+                    ? 'bg-[#DC2626] text-white shadow-2xs'
+                    : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50/60 dark:hover:bg-zinc-800'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -603,8 +603,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 onClick={() => setSelectedFilterCategory('juz_amma')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedFilterCategory === 'juz_amma'
-                    ? 'bg-[#1E40AF] text-white shadow-2xs'
-                    : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#556358] dark:text-slate-300 border border-[#E0DCD4] dark:border-slate-700 hover:bg-[#F2EFE9] dark:hover:bg-slate-800'
+                    ? 'bg-[#DC2626] text-white shadow-2xs'
+                    : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50/60 dark:hover:bg-zinc-800'
                 }`}
               >
                 جزء عمّ كاملاً (37 سورة)
@@ -614,8 +614,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 onClick={() => setSelectedFilterCategory('juz_tabarak')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedFilterCategory === 'juz_tabarak'
-                    ? 'bg-[#1E40AF] text-white shadow-2xs'
-                    : 'bg-[#F8FAFC] dark:bg-[#0B132B] text-[#556358] dark:text-slate-300 border border-[#E0DCD4] dark:border-slate-700 hover:bg-[#F2EFE9] dark:hover:bg-slate-800'
+                    ? 'bg-[#DC2626] text-white shadow-2xs'
+                    : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50/60 dark:hover:bg-zinc-800'
                 }`}
               >
                 جزء تبارك (11 سورة)
@@ -629,17 +629,17 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
               <div
                 key={surah.number}
                 onClick={() => openSurahReader(surah)}
-                className="p-3.5 bg-[#F8FAFC] dark:bg-[#0B132B]/70 hover:bg-blue-50/70 dark:hover:bg-[#162244] border border-[#E2E8F0] dark:border-blue-900/40 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between group shadow-2xs"
+                className="p-3.5 bg-zinc-50 dark:bg-[#09090B]/70 hover:bg-red-50/70 dark:hover:bg-red-950/40 border border-zinc-200 dark:border-red-900/30 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between group shadow-2xs"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="w-6 h-6 rounded-lg bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 font-mono font-bold text-[11px] flex items-center justify-center">
+                  <span className="w-6 h-6 rounded-lg bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 font-mono font-bold text-[11px] flex items-center justify-center">
                     {surah.number}
                   </span>
                   <span
                     className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
                       surah.revelationType === 'مكية'
                         ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
-                        : 'bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300'
+                        : 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300'
                     }`}
                   >
                     {surah.revelationType}
@@ -647,15 +647,15 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 </div>
 
                 <div className="text-center py-1">
-                  <h4 className="font-['Amiri',serif] text-xl font-bold text-[#0F172A] dark:text-white group-hover:text-[#1E40AF] dark:group-hover:text-blue-400 transition-colors">
+                  <h4 className="font-['Amiri',serif] text-xl font-bold text-zinc-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-red-400 transition-colors">
                     سُورَةُ {surah.name}
                   </h4>
-                  <span className="text-[10px] text-[#64748B] dark:text-slate-400 font-medium block mt-0.5">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium block mt-0.5">
                     {surah.versesCount} آية • صـ {surah.startPage}
                   </span>
                 </div>
 
-                <span className="text-[10px] text-[#1E40AF] dark:text-blue-400 text-center font-bold mt-2 pt-1.5 border-t border-[#E2E8F0] dark:border-slate-800 block opacity-70 group-hover:opacity-100">
+                <span className="text-[10px] text-[#DC2626] dark:text-red-400 text-center font-bold mt-2 pt-1.5 border-t border-zinc-200 dark:border-zinc-800 block opacity-70 group-hover:opacity-100">
                   قراءة عثمانية ←
                 </span>
               </div>
@@ -664,16 +664,16 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
         </div>
       ) : (
         /* Dedicated Single Surah Reader Page with Full Uthmani Text */
-        <div className="bg-white dark:bg-[#111C38] border-2 border-[#1E40AF]/20 dark:border-blue-900/40 rounded-3xl p-5 sm:p-8 shadow-sm space-y-6 transition-colors duration-200">
+        <div className="bg-white dark:bg-[#121215] border-2 border-red-200/80 dark:border-red-900/40 rounded-3xl p-5 sm:p-8 shadow-sm space-y-6 transition-colors duration-200">
           {/* Reader Top Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0] dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => {
                 if (audioRef.current) audioRef.current.pause();
                 setIsPlayingAudio(false);
                 setActiveSurah(null);
               }}
-              className="text-xs font-bold text-[#1E40AF] dark:text-blue-400 hover:underline flex items-center gap-1.5 self-start cursor-pointer"
+              className="text-xs font-bold text-[#DC2626] dark:text-red-400 hover:underline flex items-center gap-1.5 self-start cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
               <span>العودة لفهرس القرآن كاملاً (114 سورة)</span>
@@ -692,11 +692,11 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
               </button>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl p-0.5 text-xs font-bold">
+              <div className="flex items-center bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl p-0.5 text-xs font-bold">
                 <button
                   onClick={() => setViewMode('mushaf')}
                   className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === 'mushaf' ? 'bg-[#1E40AF] text-white shadow-xs' : 'text-[#556358] dark:text-slate-400'
+                    viewMode === 'mushaf' ? 'bg-[#DC2626] text-white shadow-xs' : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 >
                   المصحف المتصل
@@ -704,7 +704,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 <button
                   onClick={() => setViewMode('verses')}
                   className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === 'verses' ? 'bg-[#1E40AF] text-white shadow-xs' : 'text-[#556358] dark:text-slate-400'
+                    viewMode === 'verses' ? 'bg-[#DC2626] text-white shadow-xs' : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 >
                   آية بآية
@@ -715,7 +715,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
               <select
                 value={selectedReciterId}
                 onChange={(e) => handleReciterChange(e.target.value)}
-                className="bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white focus:border-[#1E40AF] focus:outline-none"
+                className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-900 dark:text-white focus:border-[#DC2626] focus:outline-none"
               >
                 {RECITERS.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -730,7 +730,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
                   isPlayingAudio
                     ? 'bg-amber-600 text-white'
-                    : 'bg-[#1E40AF] hover:bg-[#1D4ED8] text-white'
+                    : 'bg-[#DC2626] hover:bg-[#B91C1C] text-white'
                 }`}
               >
                 {isPlayingAudio ? (
@@ -747,18 +747,18 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
               </button>
 
               {/* Font Zoom */}
-              <div className="flex items-center gap-1 bg-[#F8FAFC] dark:bg-[#0B132B] border border-[#CBD5E1] dark:border-slate-700 rounded-xl p-1">
+              <div className="flex items-center gap-1 bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl p-1">
                 <button
                   onClick={() => setFontSize((f) => Math.max(18, f - 2))}
-                  className="p-1 hover:bg-gray-200 dark:hover:bg-slate-800 rounded text-[#334155] dark:text-slate-300 cursor-pointer"
+                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-700 dark:text-zinc-300 cursor-pointer"
                   title="تصغير الخط"
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-xs font-bold px-1 text-[#334155] dark:text-slate-300">{fontSize}</span>
+                <span className="text-xs font-bold px-1 text-zinc-700 dark:text-zinc-300">{fontSize}</span>
                 <button
                   onClick={() => setFontSize((f) => Math.min(44, f + 2))}
-                  className="p-1 hover:bg-gray-200 dark:hover:bg-slate-800 rounded text-[#334155] dark:text-slate-300 cursor-pointer"
+                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-700 dark:text-zinc-300 cursor-pointer"
                   title="تكبير الخط"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
@@ -768,19 +768,19 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
           </div>
 
           {/* Surah Header Sacred Banner (Decorative Frame matching Madinah Mushaf) */}
-          <div className="text-center py-6 px-4 border-2 border-[#C59B27]/40 rounded-3xl bg-gradient-to-b from-[#FFFFFF] via-[#F0F7FF] to-[#FFFFFF] dark:from-[#0B132B] dark:via-[#111C38] dark:to-[#0B132B] relative overflow-hidden shadow-2xs">
-            <div className="inline-block px-4 py-1 rounded-full bg-[#C59B27]/15 dark:bg-[#C59B27]/25 text-[#8C7A52] dark:text-amber-300 text-xs font-bold mb-2">
+          <div className="text-center py-6 px-4 border-2 border-[#C59B27]/40 rounded-3xl bg-gradient-to-b from-white via-red-50/40 to-white dark:from-[#09090B] dark:via-[#121215] dark:to-[#09090B] relative overflow-hidden shadow-2xs">
+            <div className="inline-block px-4 py-1 rounded-full bg-[#C59B27]/15 dark:bg-[#C59B27]/25 text-amber-800 dark:text-amber-300 text-xs font-bold mb-2">
               سُورَةُ {activeSurah.name} • {activeSurah.revelationType} • {activeSurah.versesCount} آيات • صـ {activeSurah.startPage}
             </div>
 
-            <h1 className="font-['Amiri',serif] text-3xl sm:text-5xl font-black text-[#1E40AF] dark:text-blue-400 mb-4">
+            <h1 className="font-['Amiri',serif] text-3xl sm:text-5xl font-black text-[#DC2626] dark:text-red-400 mb-4">
               سُورَةُ {activeSurah.name}
             </h1>
 
             {/* Sacred Basmala (Shown for all Surahs except At-Tawbah #9) */}
             {activeSurah.number !== 9 && (
               <div className="py-2 inline-block">
-                <p className="font-['Amiri',serif] text-2xl sm:text-3xl font-bold text-[#0F172A] dark:text-[#E2E8F0] tracking-wider leading-relaxed">
+                <p className="font-['Amiri',serif] text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-200 tracking-wider leading-relaxed">
                   {UTHMANI_BASMALA}
                 </p>
               </div>
@@ -790,8 +790,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
           {/* Loading Indicator */}
           {isLoadingSurah && (
             <div className="py-16 text-center space-y-3">
-              <Loader2 className="w-8 h-8 text-[#1E40AF] animate-spin mx-auto" />
-              <p className="text-sm font-bold text-[#1E40AF] dark:text-blue-400">
+              <Loader2 className="w-8 h-8 text-[#DC2626] animate-spin mx-auto" />
+              <p className="text-sm font-bold text-[#DC2626] dark:text-red-400">
                 جاري فتح آيات سورة {activeSurah.name} المباركة بالرسم العثماني الشريف...
               </p>
             </div>
@@ -803,7 +803,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
               {viewMode === 'mushaf' ? (
                 /* Continuous Sacred Mushaf Mode */
                 <div
-                  className="font-['Amiri',serif] leading-[2.7] sm:leading-[3.0] text-justify text-[#0F172A] dark:text-[#E2E8F0] p-6 sm:p-10 bg-[#FFFFFF] dark:bg-[#0B132B] border-2 border-[#E2E8F0] dark:border-blue-900/40 rounded-3xl shadow-inner selection:bg-blue-100 dark:selection:bg-blue-900"
+                  className="font-['Amiri',serif] leading-[2.7] sm:leading-[3.0] text-justify text-zinc-900 dark:text-zinc-100 p-6 sm:p-10 bg-white dark:bg-[#09090B] border-2 border-zinc-200 dark:border-red-900/40 rounded-3xl shadow-inner selection:bg-red-100 dark:selection:bg-red-900"
                   style={{ fontSize: `${fontSize}px` }}
                 >
                   {surahAyahs.map((ayah, index) => {
@@ -813,8 +813,8 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                         key={ayah.numberInSurah}
                         className={`inline transition-colors duration-300 rounded px-1 ${
                           isCurrent
-                            ? 'bg-blue-100 dark:bg-blue-950/70 text-[#1E40AF] dark:text-blue-300 font-bold shadow-xs'
-                            : 'hover:bg-blue-50/60 dark:hover:bg-slate-800/60'
+                            ? 'bg-red-100 dark:bg-red-950/70 text-[#DC2626] dark:text-red-300 font-bold shadow-xs'
+                            : 'hover:bg-red-50/60 dark:hover:bg-zinc-800/60'
                         }`}
                       >
                         {ayah.text}{' '}
@@ -836,24 +836,24 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                         key={ayah.numberInSurah}
                         className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                           isCurrent
-                            ? 'bg-blue-50/80 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800 shadow-sm'
-                            : 'bg-[#FFFFFF] dark:bg-[#111C38] border-[#E2E8F0] dark:border-blue-900/40 hover:border-[#1E40AF]/30'
+                            ? 'bg-red-50/80 dark:bg-red-950/50 border-red-300 dark:border-red-800 shadow-sm'
+                            : 'bg-white dark:bg-[#121215] border-zinc-200 dark:border-red-900/40 hover:border-[#DC2626]/30'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#F0EBE0] dark:border-slate-800">
-                          <span className="w-7 h-7 rounded-lg bg-[#1E40AF]/10 dark:bg-blue-950/60 text-[#1E40AF] dark:text-blue-300 font-black text-xs flex items-center justify-center font-mono">
+                        <div className="flex items-center justify-between mb-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                          <span className="w-7 h-7 rounded-lg bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 font-black text-xs flex items-center justify-center font-mono">
                             {ayah.numberInSurah}
                           </span>
 
                           <button
                             onClick={() => handleCopyAyah(ayah.text, ayah.numberInSurah)}
-                            className="p-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-[#1E40AF] dark:hover:text-blue-400 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-[#DC2626] dark:hover:text-red-400 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
                             title="نسخ الآية الكريمة"
                           >
                             {isCopied ? (
                               <>
-                                <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                <span className="text-blue-600 dark:text-blue-400">تم النسخ</span>
+                                <Check className="w-3.5 h-3.5 text-[#DC2626] dark:text-red-400" />
+                                <span className="text-[#DC2626] dark:text-red-400">تم النسخ</span>
                               </>
                             ) : (
                               <>
@@ -865,7 +865,7 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
                         </div>
 
                         <p
-                          className="font-['Amiri',serif] leading-loose text-[#0F172A] dark:text-[#E2E8F0] text-right"
+                          className="font-['Amiri',serif] leading-loose text-zinc-900 dark:text-zinc-100 text-right"
                           style={{ fontSize: `${fontSize}px` }}
                         >
                           {ayah.text}{' '}
@@ -882,24 +882,24 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
           )}
 
           {/* Previous / Next Surah Navigation Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#E2E8F0]">
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => navigateSurah(-1)}
               disabled={activeSurah.number <= 1}
-              className="px-4 py-2.5 bg-[#F8FAFC] hover:bg-[#E2E8F0] disabled:opacity-40 border border-[#CBD5E1] rounded-2xl text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-zinc-50 dark:bg-[#09090B] hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-40 border border-zinc-300 dark:border-zinc-700 rounded-2xl text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
               <span>السورة السابقة</span>
             </button>
 
-            <span className="text-xs font-mono font-bold text-[#64748B]">
+            <span className="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-400">
               صفحة {activeSurah.startPage} • {activeSurah.versesCount} آية
             </span>
 
             <button
               onClick={() => navigateSurah(1)}
               disabled={activeSurah.number >= 114}
-              className="px-4 py-2.5 bg-[#F8FAFC] hover:bg-[#E2E8F0] disabled:opacity-40 border border-[#CBD5E1] rounded-2xl text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-zinc-50 dark:bg-[#09090B] hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-40 border border-zinc-300 dark:border-zinc-700 rounded-2xl text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>السورة التالية</span>
               <ChevronLeft className="w-4 h-4" />
