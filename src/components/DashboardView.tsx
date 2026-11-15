@@ -360,7 +360,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl backdrop-blur-md border border-white/15">
-            <div className="text-center px-3 border-l border-white/20">
+            <button
+              type="button"
+              onClick={() => onNavigateTab('profile')}
+              className="text-center px-3 border-l border-white/20 hover:bg-white/10 rounded-xl py-1 transition-colors cursor-pointer"
+              title="عرض تقويم وسجل الاستمرارية في الملف الشخصي"
+            >
               <span className="text-[11px] text-white/70 block">سلسلة الأيام (كل 24 س)</span>
               <span className="text-xl font-black text-amber-300">{profile.streakDays} يوم</span>
               {nextStreakAtMs && (
@@ -368,7 +373,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   +1 بعد {formatCountdownHms(streakRemainingSec)}
                 </span>
               )}
-            </div>
+              <span className="text-[10px] text-amber-200/90 font-bold block mt-0.5 underline underline-offset-2">
+                سجل الإنجازات
+              </span>
+            </button>
             <div className="text-center px-3">
               <span className="text-[11px] text-white/70 block">مجموع النقاط</span>
               <span className="text-xl font-black text-white">{profile.totalXp} XP</span>

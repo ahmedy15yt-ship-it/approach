@@ -7,7 +7,78 @@ export interface ShareableChallengePayload {
   challengerName: string;
   targetHours: number;
   challengerHours: number;
+  sessionDurationMinutes?: number;
+  sessionStartedAt?: string | null;
   createdAt: string;
+}
+
+export interface SessionTimerMetrics {
+  hasStarted: boolean;
+  isFinished: boolean;
+  durationMinutes: number;
+  elapsedSeconds: number;
+  remainingSeconds: number;
+  currentMinute: number; // 1-indexed current minute inside session
+  progressPct: number;
+}
+
+export function computeSessionTimerMetrics(
+  sessionStartedAt?: string | null,
+  sessionDurationMinutes = 50,
+  nowMs: number = Date.now()
+): SessionTimerMetrics {
+  const durationMinutes = Math.max(5, Math.min(240, Number(sessionDurationMinutes) || 50));
+  const totalSeconds = durationMinutes * 60;
+
+  if (!sessionStartedAt) {
+    return {
+      hasStarted: false,
+      isFinished: false,
+      durationMinutes,
+      elapsedSeconds: 0,
+      remainingSeconds: totalSeconds,
+      currentMinute: 0,
+      progressPct: 0,
+    };
+  }
+
+  const startedMs = new Date(sessionStartedAt).getTime();
+  if (Number.isNaN(startedMs)) {
+    return {
+      hasStarted: false,
+      isFinished: false,
+      durationMinutes,
+      elapsedSeconds: 0,
+      remainingSeconds: totalSeconds,
+      currentMinute: 0,
+      progressPct: 0,
+    };
+  }
+
+  const rawElapsed = Math.max(0, Math.floor((nowMs - startedMs) / 1000));
+  const elapsedSeconds = Math.min(totalSeconds, rawElapsed);
+  const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+  const isFinished = rawElapsed >= totalSeconds;
+  const currentMinute = isFinished
+    ? durationMinutes
+    : Math.min(durationMinutes, Math.floor(elapsedSeconds / 60) + 1);
+  const progressPct = Math.min(100, Math.round((elapsedSeconds / totalSeconds) * 100));
+
+  return {
+    hasStarted: true,
+    isFinished,
+    durationMinutes,
+    elapsedSeconds,
+    remainingSeconds,
+    currentMinute,
+    progressPct,
+  };
+}
+
+export function formatMinutesSeconds(totalSec: number): string {
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -64,6 +135,12 @@ export function decodeChallengeShareCode(rawInput: string): ShareableChallengePa
       challengerName: parsed.challengerName.slice(0, 50),
       targetHours: Math.min(24, Math.max(1, Number(parsed.targetHours) || 6)),
       challengerHours: Math.min(24, Math.max(0, Number(parsed.challengerHours) || 0)),
+      sessionDurationMinutes:
+        typeof parsed.sessionDurationMinutes === 'number'
+          ? Math.min(240, Math.max(5, parsed.sessionDurationMinutes))
+          : 50,
+      sessionStartedAt:
+        typeof parsed.sessionStartedAt === 'string' ? parsed.sessionStartedAt : null,
       createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
     };
   } catch {
@@ -77,13 +154,25 @@ export function buildChallengeShareMessage(
 ): string {
   const cleanName = studentName.split(' ')[0] || 'بطل نَهج';
   const myRounded = Number(challenge.myHours.toFixed(1));
+  const timerInfo = computeSessionTimerMetrics(
+    challenge.sessionStartedAt,
+    challenge.sessionDurationMinutes || 50
+  );
+
+  const sessionLine = timerInfo.hasStarted
+    ? timerInfo.isFinished
+      ? `⏱️ جلسة التحدي (${timerInfo.durationMinutes} دقيقة): مكتملة ✓`
+      : `⏱️ الجلسة المباشرة الآن: الدقيقة ${timerInfo.currentMinute} من أصل ${timerInfo.durationMinutes} دقيقة (المتبقي ${formatMinutesSeconds(timerInfo.remainingSeconds)})`
+    : `⏱️ مدة الجلسة المحددة: ${timerInfo.durationMinutes} دقيقة`;
+
   return [
     `🔥 تحدي مذاكرة تالتة ثانوي على منصة نَهج!`,
     `📌 التحدي: ${challenge.title}`,
     `👤 المتحدي: ${cleanName} (ضد ${challenge.friendName})`,
-    `⏱️ تقدمي اليوم: ${myRounded} / ${challenge.targetHours} ساعات`,
+    `📊 تقدمي اليوم: ${myRounded} / ${challenge.targetHours} ساعات`,
+    sessionLine,
     ``,
-    `انسخ كود التحدي التالي وأدخله في قسم «تحدي الأصدقاء» داخل نَهج للمنافسة وتحديث ساعاتك:`,
+    `انسخ كود التحدي التالي وأدخله في قسم «تحدي الأصدقاء» داخل نَهج لتدخل نفس الجلسة وتعرف إحنا في الدقيقة كام:`,
     challenge.shareCode,
   ].join('\n');
 }

@@ -137,17 +137,50 @@ interface StudentCode {
 
 const STORAGE_FILE = path.join(__dirname, '.nahj_data.json');
 
+export interface ServerStudentAccount {
+  phone: string;
+  normalizedPhone: string;
+  username: string;
+  createdAt: string;
+  lastLoginAt: string;
+  lastSyncedAt?: string;
+  snapshot?: any;
+}
+
+export interface ServerChallengeRoom {
+  id: string;
+  title: string;
+  sessionDurationMinutes: number;
+  sessionStartedAt: string | null;
+  participants: Record<
+    string,
+    {
+      name: string;
+      hours: number;
+      lastSeenAt: string;
+    }
+  >;
+  updatedAt: string;
+}
+
 interface AppData {
   ownerPin: string;
   telegramSupportUrl: string;
   codes: StudentCode[];
+  accounts?: Record<string, ServerStudentAccount>;
+  challengeRooms?: Record<string, ServerChallengeRoom>;
 }
 
 function loadData(): AppData {
   try {
     if (fs.existsSync(STORAGE_FILE)) {
       const raw = fs.readFileSync(STORAGE_FILE, 'utf-8');
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return {
+        ...parsed,
+        accounts: parsed.accounts || {},
+        challengeRooms: parsed.challengeRooms || {},
+      };
     }
   } catch (e) {
     console.error('Error reading storage, using defaults:', e);
@@ -175,6 +208,7 @@ function loadData(): AppData {
         usageCount: 0,
       },
     ],
+    accounts: {},
   };
 }
 
@@ -252,6 +286,209 @@ app.get('/api/settings', (req, res) => {
   return res.json({
     telegramSupportUrl: appData.telegramSupportUrl,
   });
+});
+
+// Normalize Egyptian/International phone digits server-side
+function normalizeServerPhone(raw: string): string {
+  const arabic = '٠١٢٣٤٥٦٧٨٩';
+  const persian = '۰۱۲۳۴۵۶۷۸۹';
+  const ascii = String(raw || '')
+    .replace(/[٠-٩]/g, (d) => String(arabic.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(persian.indexOf(d)))
+    .trim();
+  const hasPlus = ascii.startsWith('+');
+  const digits = ascii.replace(/\D/g, '');
+  if (digits.startsWith('0020') && digits.length === 14) return `0${digits.slice(4)}`;
+  if (digits.startsWith('20') && digits.length === 12 && digits[2] === '1') {
+    return `0${digits.slice(2)}`;
+  }
+  if (digits.length === 10 && digits.startsWith('1')) return `0${digits}`;
+  return hasPlus && !digits.startsWith('20') ? `+${digits}` : digits;
+}
+
+// Student Login / Registration via Phone Number + Username
+app.post('/api/accounts/login', (req, res) => {
+  const { phone, username, confirmNameUpdate } = req.body || {};
+  const cleanName = typeof username === 'string' ? username.trim() : '';
+  const normalizedPhone = normalizeServerPhone(String(phone || ''));
+  const digitsOnly = normalizedPhone.replace(/\D/g, '');
+
+  if (cleanName.length < 2) {
+    return res.status(400).json({
+      success: false,
+      message: 'يرجى كتابة اسم المستخدم (حرفين على الأقل).',
+    });
+  }
+
+  if (digitsOnly.length < 9 || digitsOnly.length > 15) {
+    return res.status(400).json({
+      success: false,
+      message: 'يرجى إدخال رقم تليفون صحيح.',
+    });
+  }
+
+  if (!appData.accounts) {
+    appData.accounts = {};
+  }
+
+  const nowIso = new Date().toISOString();
+  const existing = appData.accounts[normalizedPhone];
+
+  if (existing) {
+    const namesMatch =
+      existing.username.trim().toLowerCase() === cleanName.toLowerCase();
+    if (!namesMatch && !confirmNameUpdate) {
+      return res.status(409).json({
+        success: false,
+        code: 'USERNAME_MISMATCH',
+        registeredUsername: existing.username,
+        message: `رقم التليفون مسجل مسبقاً باسم «${existing.username}».`,
+      });
+    }
+
+    existing.username = cleanName;
+    existing.lastLoginAt = nowIso;
+    if (existing.snapshot && existing.snapshot.profile) {
+      existing.snapshot.username = cleanName;
+      existing.snapshot.profile.name = cleanName;
+    }
+    saveData();
+
+    return res.json({
+      success: true,
+      isNewAccount: false,
+      account: existing,
+    });
+  }
+
+  const created: ServerStudentAccount = {
+    phone: normalizedPhone,
+    normalizedPhone,
+    username: cleanName,
+    createdAt: nowIso,
+    lastLoginAt: nowIso,
+    lastSyncedAt: nowIso,
+  };
+  appData.accounts[normalizedPhone] = created;
+  saveData();
+
+  return res.json({
+    success: true,
+    isNewAccount: true,
+    account: created,
+  });
+});
+
+// Sync Full Student Activity Snapshot to Server
+app.post('/api/accounts/sync', (req, res) => {
+  const { phone, username, snapshot } = req.body || {};
+  const normalizedPhone = normalizeServerPhone(String(phone || ''));
+  if (!normalizedPhone || !snapshot || typeof snapshot !== 'object') {
+    return res.status(400).json({ success: false, message: 'بيانات المزامنة غير مكتملة' });
+  }
+
+  if (!appData.accounts) {
+    appData.accounts = {};
+  }
+
+  const nowIso = new Date().toISOString();
+  const existing = appData.accounts[normalizedPhone];
+  appData.accounts[normalizedPhone] = {
+    phone: normalizedPhone,
+    normalizedPhone,
+    username:
+      typeof username === 'string' && username.trim()
+        ? username.trim()
+        : existing?.username || 'طالب نَهج',
+    createdAt: existing?.createdAt || nowIso,
+    lastLoginAt: existing?.lastLoginAt || nowIso,
+    lastSyncedAt: nowIso,
+    snapshot,
+  };
+  saveData();
+
+  return res.json({ success: true, lastSyncedAt: nowIso });
+});
+
+// Retrieve Latest Activity Snapshot for a Logged-In Student
+app.get('/api/accounts/me', (req, res) => {
+  const normalizedPhone = normalizeServerPhone(String(req.query.phone || ''));
+  if (!normalizedPhone || !appData.accounts?.[normalizedPhone]) {
+    return res.status(404).json({ success: false, message: 'الحساب غير موجود' });
+  }
+  return res.json({
+    success: true,
+    account: appData.accounts[normalizedPhone],
+  });
+});
+
+// Live Challenge Session Room Sync (Synchronized shared session timer)
+app.post('/api/challenges/room/sync', (req, res) => {
+  const {
+    challengeId,
+    title,
+    participantName,
+    participantHours,
+    sessionDurationMinutes,
+    sessionStartedAt,
+    resetSession,
+  } = req.body || {};
+
+  if (!challengeId || typeof challengeId !== 'string') {
+    return res.status(400).json({ success: false, message: 'معرّف التحدي مطلوب' });
+  }
+
+  if (!appData.challengeRooms) {
+    appData.challengeRooms = {};
+  }
+
+  const nowIso = new Date().toISOString();
+  const existing = appData.challengeRooms[challengeId];
+
+  const resolvedDuration =
+    typeof sessionDurationMinutes === 'number' && sessionDurationMinutes >= 5
+      ? Math.min(240, sessionDurationMinutes)
+      : existing?.sessionDurationMinutes || 50;
+
+  let resolvedStart: string | null = existing?.sessionStartedAt || null;
+  if (resetSession) {
+    resolvedStart = null;
+  } else if (typeof sessionStartedAt === 'string' && sessionStartedAt) {
+    // Preserve earliest start time when both peers join, or apply explicit new start if none
+    resolvedStart = existing?.sessionStartedAt || sessionStartedAt;
+  }
+
+  const participants = { ...(existing?.participants || {}) };
+  if (typeof participantName === 'string' && participantName.trim()) {
+    const cleanPName = participantName.trim();
+    participants[cleanPName] = {
+      name: cleanPName,
+      hours: Number(participantHours) || 0,
+      lastSeenAt: nowIso,
+    };
+  }
+
+  const updatedRoom: ServerChallengeRoom = {
+    id: challengeId,
+    title: typeof title === 'string' && title.trim() ? title.trim() : existing?.title || 'تحدي مذاكرة',
+    sessionDurationMinutes: resolvedDuration,
+    sessionStartedAt: resolvedStart,
+    participants,
+    updatedAt: nowIso,
+  };
+
+  appData.challengeRooms[challengeId] = updatedRoom;
+  saveData();
+
+  return res.json({ success: true, room: updatedRoom });
+});
+
+app.get('/api/challenges/room/:id', (req, res) => {
+  const room = appData.challengeRooms?.[req.params.id];
+  if (!room) {
+    return res.status(404).json({ success: false, message: 'غرفة الجلسة غير موجودة بعد' });
+  }
+  return res.json({ success: true, room });
 });
 
 // Owner Login Check

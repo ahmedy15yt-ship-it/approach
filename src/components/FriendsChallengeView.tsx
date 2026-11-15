@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Swords,
   Clock,
@@ -17,14 +17,21 @@ import {
   Download,
   AlertCircle,
   Users,
+  Play,
+  RotateCcw,
+  CheckCircle2,
+  Timer,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { DailyStudyHoursLog, FriendChallenge } from '../types';
 import {
   buildChallengeShareMessage,
   buildDailyHoursShareMessage,
+  computeSessionTimerMetrics,
   decodeChallengeShareCode,
+  formatMinutesSeconds,
 } from '../utils/challengeCodes';
+import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
 
 interface FriendsChallengeViewProps {
   studentName: string;
@@ -38,14 +45,27 @@ interface FriendsChallengeViewProps {
     friendName: string;
     targetHours: number;
     friendInitialHours?: number;
+    sessionDurationMinutes?: number;
+    startSessionNow?: boolean;
   }) => FriendChallenge;
   onImportChallengeCode: (code: string) => {
     ok: boolean;
+    challengeId?: string;
     message: string;
   };
   onUpdateFriendHours: (challengeId: string, deltaHours: number) => void;
   onClaimChallengeReward: (challengeId: string) => void;
   onDeleteChallenge: (challengeId: string) => void;
+  onStartOrUpdateSession: (
+    challengeId: string,
+    options?: {
+      durationMinutes?: number;
+      startNow?: boolean;
+      reset?: boolean;
+      syncStartedAt?: string | null;
+    }
+  ) => void;
+  onCompleteChallengeSession: (challengeId: string, elapsedMinutes: number) => void;
 }
 
 const CHALLENGE_PRESETS = [
@@ -67,6 +87,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   onUpdateFriendHours,
   onClaimChallengeReward,
   onDeleteChallenge,
+  onStartOrUpdateSession,
+  onCompleteChallengeSession,
 }) => {
   // Custom study hours editor
   const [customHoursInput, setCustomHoursInput] = useState<string>('');
@@ -77,6 +99,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   const [friendName, setFriendName] = useState('');
   const [targetHours, setTargetHours] = useState<number>(6);
   const [friendInitialHours, setFriendInitialHours] = useState<number>(0);
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState<number>(50);
+  const [startSessionNow, setStartSessionNow] = useState<boolean>(true);
   const [createFeedback, setCreateFeedback] = useState<string | null>(null);
 
   // Import friend challenge code form
@@ -87,6 +111,84 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   const [copiedChallengeId, setCopiedChallengeId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'finished'>('all');
+
+  // Active Challenge Session Room state & 1-second live clock
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(() => {
+    const running = challenges.find((c) => Boolean(c.sessionStartedAt));
+    return running ? running.id : challenges[0]?.id || null;
+  });
+  const [sessionAlertedMap, setSessionAlertedMap] = useState<Record<string, boolean>>({});
+  const [roomSyncFeedback, setRoomSyncFeedback] = useState<string | null>(null);
+  const roomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeRoomChallenge =
+    challenges.find((c) => c.id === activeRoomId) ||
+    challenges.find((c) => Boolean(c.sessionStartedAt)) ||
+    challenges[0] ||
+    null;
+
+  const activeTimer = activeRoomChallenge
+    ? computeSessionTimerMetrics(
+        activeRoomChallenge.sessionStartedAt,
+        activeRoomChallenge.sessionDurationMinutes || 50,
+        nowMs
+      )
+    : null;
+
+  // Bell chime & announcement when active session timer finishes
+  useEffect(() => {
+    if (
+      activeRoomChallenge &&
+      activeTimer?.hasStarted &&
+      activeTimer.isFinished &&
+      !sessionAlertedMap[activeRoomChallenge.id]
+    ) {
+      setSessionAlertedMap((prev) => ({ ...prev, [activeRoomChallenge.id]: true }));
+      playBellChime();
+      announceSessionComplete(activeRoomChallenge.title);
+    }
+  }, [activeRoomChallenge, activeTimer?.hasStarted, activeTimer?.isFinished, sessionAlertedMap]);
+
+  // Poll server room state every 8s when inside a challenge room so peers stay synced
+  useEffect(() => {
+    if (!activeRoomChallenge) return;
+    let cancelled = false;
+
+    const syncRoom = async () => {
+      try {
+        const res = await fetch(`/api/challenges/room/${encodeURIComponent(activeRoomChallenge.id)}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const remoteStartedAt = data?.room?.sessionStartedAt || null;
+        if (
+          remoteStartedAt &&
+          !activeRoomChallenge.sessionStartedAt &&
+          remoteStartedAt !== activeRoomChallenge.sessionStartedAt
+        ) {
+          onStartOrUpdateSession(activeRoomChallenge.id, {
+            durationMinutes: data.room.sessionDurationMinutes || activeRoomChallenge.sessionDurationMinutes || 50,
+            syncStartedAt: remoteStartedAt,
+          });
+        }
+      } catch {
+        // offline or serverless — wall-clock share code keeps working seamlessly
+      }
+    };
+
+    const interval = setInterval(syncRoom, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeRoomChallenge?.id, activeRoomChallenge?.sessionStartedAt]);
 
   const dailyPct = Math.min(
     100,
@@ -142,11 +244,18 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
       friendName: friendName.trim(),
       targetHours,
       friendInitialHours,
+      sessionDurationMinutes,
+      startSessionNow,
     });
+    setActiveRoomId(created.id);
     setFriendName('');
     setFriendInitialHours(0);
-    setCreateFeedback(`تم إنشاء التحدي مع ${created.friendName} بنجاح! يمكنك نسخ كود التحدي ومشاركته الآن.`);
-    setTimeout(() => setCreateFeedback(null), 5000);
+    setCreateFeedback(
+      startSessionNow
+        ? `تم إنشاء التحدي مع ${created.friendName} وبدأت الجلسة الآن (${sessionDurationMinutes} دقيقة)! شارك الكود ليدخل زميلك على نفس الدقيقة.`
+        : `تم إنشاء التحدي مع ${created.friendName} بنجاح! اضغط «دخول الجلسة» أو شارك الكود.`
+    );
+    setTimeout(() => setCreateFeedback(null), 6000);
   };
 
   const handleImportSubmit = (e: React.FormEvent) => {
@@ -163,8 +272,44 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
     const result = onImportChallengeCode(importCodeInput);
     setImportStatus({ ok: result.ok, text: result.message });
     if (result.ok) {
+      if (result.challengeId) {
+        setActiveRoomId(result.challengeId);
+      }
       setImportCodeInput('');
     }
+  };
+
+  const handleEnterChallengeSession = (challenge: FriendChallenge) => {
+    setActiveRoomId(challenge.id);
+    if (!challenge.sessionStartedAt) {
+      setSessionAlertedMap((prev) => ({ ...prev, [challenge.id]: false }));
+      onStartOrUpdateSession(challenge.id, {
+        durationMinutes: challenge.sessionDurationMinutes || 50,
+        startNow: true,
+      });
+    }
+    setTimeout(() => {
+      roomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
+
+  const handleCompleteRoomSession = () => {
+    if (!activeRoomChallenge || !activeTimer) return;
+    const elapsedMins = Math.max(
+      1,
+      Math.round(activeTimer.elapsedSeconds / 60) || activeTimer.durationMinutes
+    );
+    onCompleteChallengeSession(activeRoomChallenge.id, elapsedMins);
+    setSessionAlertedMap((prev) => ({ ...prev, [activeRoomChallenge.id]: false }));
+    confetti({
+      particleCount: 85,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+    setRoomSyncFeedback(
+      `أحسنت! تم احتساب ${elapsedMins} دقيقة مذاكرة في تحدي «${activeRoomChallenge.title}» وإضافة +25 XP.`
+    );
+    setTimeout(() => setRoomSyncFeedback(null), 5000);
   };
 
   const handleCopyChallenge = (challenge: FriendChallenge) => {
@@ -224,6 +369,207 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Live Shared Challenge Session Room (Exact Current Minute & Countdown) */}
+      {activeRoomChallenge && activeTimer && (
+        <section
+          ref={roomRef}
+          className="bg-white dark:bg-[#121215] border-2 border-[#DC2626]/70 dark:border-red-700/60 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5 transition-colors"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-extrabold">
+                <span className="inline-flex items-center gap-1.5 text-[#DC2626] dark:text-red-400">
+                  <Timer className="w-4 h-4" />
+                  <span>غرفة مؤقت الجلسة المشتركة</span>
+                </span>
+                <span aria-hidden="true" className="text-zinc-400">·</span>
+                <span className="text-zinc-600 dark:text-zinc-400">
+                  ضد {activeRoomChallenge.friendName}
+                </span>
+                {challenges.length > 1 && (
+                  <>
+                    <span aria-hidden="true" className="text-zinc-400">·</span>
+                    <select
+                      aria-label="اختيار تحدي الجلسة"
+                      value={activeRoomChallenge.id}
+                      onChange={(e) => setActiveRoomId(e.target.value)}
+                      className="bg-zinc-100 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-[11px] font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626] cursor-pointer"
+                    >
+                      {challenges.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} ({c.friendName})
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-white">
+                {activeRoomChallenge.title}
+              </h2>
+            </div>
+
+            {/* Prominent Current Minute Indicator */}
+            <div className="flex items-center gap-3 bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 shrink-0">
+              <div className="text-right">
+                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 block">
+                  توقيت الجلسة الحالي لكما
+                </span>
+                {activeTimer.hasStarted ? (
+                  activeTimer.isFinished ? (
+                    <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      اكتملت الدقيقة {activeTimer.durationMinutes} من {activeTimer.durationMinutes} ✓
+                    </span>
+                  ) : (
+                    <span className="text-base sm:text-lg font-black text-[#DC2626] dark:text-red-400 tabular-nums">
+                      الدقيقة {activeTimer.currentMinute} من أصل {activeTimer.durationMinutes} دقيقة
+                    </span>
+                  )
+                ) : (
+                  <span className="text-sm sm:text-base font-black text-zinc-800 dark:text-zinc-200 tabular-nums">
+                    جاهزة للبدء ({activeTimer.durationMinutes} دقيقة)
+                  </span>
+                )}
+              </div>
+              <div className="h-9 w-px bg-zinc-200 dark:bg-zinc-800" />
+              <div className="text-center font-mono tabular-nums" dir="ltr">
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 block">
+                  المتبقي
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-white">
+                  {formatMinutesSeconds(activeTimer.remainingSeconds)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Elapsed/Remaining Bar & Session Controls */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-400 tabular-nums">
+              <span>
+                الوقت المنقضي:{' '}
+                <strong className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                  {formatMinutesSeconds(activeTimer.elapsedSeconds)}
+                </strong>
+              </span>
+              <span>
+                نسبة الجلسة: <strong className="text-[#DC2626] dark:text-red-400">{activeTimer.progressPct}%</strong>
+              </span>
+              <span>
+                المدة الكلية: <strong className="text-zinc-950 dark:text-white">{activeTimer.durationMinutes} دقيقة</strong>
+              </span>
+            </div>
+
+            <div className="w-full h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  activeTimer.isFinished
+                    ? 'bg-emerald-600'
+                    : 'bg-gradient-to-l from-[#DC2626] via-red-500 to-amber-400'
+                }`}
+                style={{ width: `${activeTimer.progressPct}%` }}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              {/* Duration quick selector (only editable when not running or resetting) */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 ml-1">
+                  مدة الجلسة:
+                </span>
+                {[25, 45, 50, 60, 90, 120].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    disabled={activeTimer.hasStarted && !activeTimer.isFinished}
+                    onClick={() =>
+                      onStartOrUpdateSession(activeRoomChallenge.id, {
+                        durationMinutes: mins,
+                      })
+                    }
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition-colors cursor-pointer tabular-nums disabled:opacity-50 disabled:cursor-not-allowed ${
+                      activeTimer.durationMinutes === mins
+                        ? 'bg-[#DC2626] text-white border-[#DC2626]'
+                        : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]'
+                    }`}
+                  >
+                    {mins} د
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                {!activeTimer.hasStarted ? (
+                  <button
+                    type="button"
+                    onClick={() => handleEnterChallengeSession(activeRoomChallenge)}
+                    className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>بدء مؤقت الجلسة الآن</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCompleteRoomSession}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>
+                        {activeTimer.isFinished
+                          ? 'إتمام الجلسة واحتساب الساعات (+25 XP)'
+                          : 'إنهاء واحتساب الدقائق المنجزة'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSessionAlertedMap((prev) => ({
+                          ...prev,
+                          [activeRoomChallenge.id]: false,
+                        }));
+                        onStartOrUpdateSession(activeRoomChallenge.id, { reset: true });
+                      }}
+                      className="px-3 py-2 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>إعادة ضبط</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleCopyChallenge(activeRoomChallenge)}
+                  className="px-3.5 py-2 bg-white dark:bg-[#09090B] hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-[#DC2626] dark:text-red-300 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {copiedChallengeId === activeRoomChallenge.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>تم نسخ كود الجلسة ✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>مشاركة الكود بنفس الدقيقة</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {roomSyncFeedback && (
+              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-2 rounded-xl">
+                ✅ {roomSyncFeedback}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Daily Study Hours Tracker + Share Card */}
       <div className="bg-white dark:bg-[#121215] border-2 border-red-200/80 dark:border-red-900/50 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
@@ -421,7 +767,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
                   هدف التحدي (ساعات):
@@ -434,6 +780,22 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   {[2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
                     <option key={h} value={h}>
                       {h} ساعات
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                  مدة الجلسة الواحدة:
+                </label>
+                <select
+                  value={sessionDurationMinutes}
+                  onChange={(e) => setSessionDurationMinutes(Number(e.target.value))}
+                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626] tabular-nums"
+                >
+                  {[25, 45, 50, 60, 90, 120].map((m) => (
+                    <option key={m} value={m}>
+                      {m} دقيقة
                     </option>
                   ))}
                 </select>
@@ -453,6 +815,16 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 />
               </div>
             </div>
+
+            <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={startSessionNow}
+                onChange={(e) => setStartSessionNow(e.target.checked)}
+                className="w-4 h-4 accent-[#DC2626] rounded cursor-pointer"
+              />
+              <span>بدء مؤقت الجلسة الآن فور الإنشاء ليظهر لزميلك في أي دقيقة أنتما</span>
+            </label>
           </div>
 
           {createFeedback && (
@@ -592,6 +964,11 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
               const diff = Number((challenge.myHours - challenge.friendHours).toFixed(1));
               const canClaimReward =
                 !challenge.rewardClaimed && challenge.myHours >= challenge.targetHours;
+              const cardTimer = computeSessionTimerMetrics(
+                challenge.sessionStartedAt,
+                challenge.sessionDurationMinutes || 50,
+                nowMs
+              );
               const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
                 buildChallengeShareMessage(challenge, studentName)
               )}`;
@@ -744,6 +1121,48 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Session Timer Bar on Card */}
+                  <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold">
+                      <Timer className="w-4 h-4 text-[#DC2626] shrink-0" />
+                      {cardTimer.hasStarted ? (
+                        cardTimer.isFinished ? (
+                          <span className="text-emerald-700 dark:text-emerald-400 tabular-nums">
+                            اكتملت الجلسة ({cardTimer.durationMinutes} من {cardTimer.durationMinutes} دقيقة) ✓
+                          </span>
+                        ) : (
+                          <span className="text-zinc-900 dark:text-white tabular-nums">
+                            في <strong className="text-[#DC2626] dark:text-red-400">الدقيقة {cardTimer.currentMinute}</strong> من {cardTimer.durationMinutes} د · متبقي{' '}
+                            <span className="font-mono" dir="ltr">
+                              {formatMinutesSeconds(cardTimer.remainingSeconds)}
+                            </span>
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-zinc-600 dark:text-zinc-400 tabular-nums">
+                          جلسة {cardTimer.durationMinutes} دقيقة — جاهزة للبدء
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleEnterChallengeSession(challenge)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1 cursor-pointer transition-colors ${
+                        cardTimer.hasStarted && !cardTimer.isFinished
+                          ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C]'
+                          : 'bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-black'
+                      }`}
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>
+                        {cardTimer.hasStarted && !cardTimer.isFinished
+                          ? 'فتح غرفة الجلسة'
+                          : 'دخول الجلسة'}
+                      </span>
+                    </button>
                   </div>
 
                   {/* Reward Claim OR Share Controls */}

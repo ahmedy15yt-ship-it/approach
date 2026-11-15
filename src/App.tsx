@@ -16,6 +16,7 @@ import {
   X,
   Sparkles,
   Swords,
+  User,
 } from 'lucide-react';
 
 import {
@@ -27,12 +28,14 @@ import {
   LeaderboardUser,
   DailyStudyHoursLog,
   FriendChallenge,
+  StreakHistoryEntry,
+  AccountSession,
+  StudentActivitySnapshot,
 } from './types';
 import { INITIAL_CURRICULUM } from './data/curriculum';
 import {
   EGYPT_GOVERNORATES,
   calculatePrayerTimes,
-  PrayerTime,
 } from './data/prayer';
 import {
   INITIAL_LEADERBOARD,
@@ -53,6 +56,8 @@ import { TasksLeaderboardView } from './components/TasksLeaderboardView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
 import { FriendsChallengeView } from './components/FriendsChallengeView';
+import { ProfileView } from './components/ProfileView';
+import { PhoneLoginPage } from './components/PhoneLoginPage';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
@@ -61,9 +66,22 @@ import {
   encodeChallengeShareCode,
   decodeChallengeShareCode,
 } from './utils/challengeCodes';
+import {
+  getLocalDateKey,
+  loadStreakHistory,
+} from './utils/streakHistory';
+import {
+  getActiveAccountSession,
+  setActiveAccountSession,
+  loadLocalAccountSnapshot,
+  saveLocalAccountSnapshot,
+  syncAccountSnapshotToServer,
+  extractLegacyGuestSnapshotParts,
+  markLegacyGuestMigrated,
+  maskPhoneNumber,
+} from './utils/accountStorage';
 
 export default function App() {
-
   const [telegramSupportUrl, setTelegramSupportUrl] = useState('https://t.me/Y_lI11');
 
   // Dark Mode State
@@ -82,6 +100,147 @@ export default function App() {
       localStorage.setItem('nahj_theme', 'light');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.telegramSupportUrl) setTelegramSupportUrl(data.telegramSupportUrl);
+      })
+      .catch(() => {});
+  }, []);
+
+  const [accountSession, setAccountSession] = useState<AccountSession | null>(() =>
+    getActiveAccountSession()
+  );
+
+  const handleLoginSuccess = ({
+    session,
+    snapshot,
+    isNewAccount,
+    importGuestData,
+  }: {
+    session: AccountSession;
+    snapshot: StudentActivitySnapshot | null;
+    isNewAccount: boolean;
+    importGuestData: boolean;
+  }) => {
+    if (!snapshot && isNewAccount && importGuestData) {
+      const legacy = extractLegacyGuestSnapshotParts();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const currentCycle = getCurrentTaskCycleIndex();
+      const migratedSnapshot: StudentActivitySnapshot = {
+        username: session.username,
+        phone: session.phone,
+        normalizedPhone: session.normalizedPhone,
+        profile: {
+          name: session.username,
+          codeMasked: maskPhoneNumber(session.phone),
+          streakDays: legacy.profile?.streakDays ?? 0,
+          totalXp: legacy.profile?.totalXp ?? 0,
+          rankTitle: legacy.profile?.rankTitle || 'طبيب المستقبل 🩺',
+          governorate: legacy.profile?.governorate || 'القاهرة',
+          dailyWaterCups: legacy.profile?.dailyWaterCups ?? 0,
+          dailyWin:
+            legacy.profile?.dailyWin ||
+            'أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!',
+          weightKg: legacy.profile?.weightKg || 68,
+          heightCm: legacy.profile?.heightCm || 172,
+          weeklyHoursAllocation: legacy.profile?.weeklyHoursAllocation || {
+            biology: 6,
+            chemistry: 5,
+            physics: 5,
+            geology: 4,
+            arabic: 5,
+            english: 4,
+            'second-language': 3,
+          },
+        },
+        curriculum: Array.isArray(legacy.curriculum) ? legacy.curriculum : INITIAL_CURRICULUM,
+        backlogItems: Array.isArray(legacy.backlogItems) ? legacy.backlogItems : [],
+        dailyTasks:
+          Array.isArray(legacy.dailyTasks) && legacy.taskCycleIndex === currentCycle
+            ? legacy.dailyTasks
+            : getTasksForCycle(currentCycle),
+        taskCycleIndex: currentCycle,
+        todayStudyLog: legacy.todayStudyLog || {
+          date: todayStr,
+          hours: 0,
+          sessionsCount: 0,
+          dailyGoalHours: 8,
+          updatedAt: new Date().toISOString(),
+        },
+        friendChallenges: Array.isArray(legacy.friendChallenges) ? legacy.friendChallenges : [],
+        streakHistory: legacy.streakHistory || {},
+        streakLastTickMs: legacy.streakLastTickMs || Date.now(),
+        updatedAt: new Date().toISOString(),
+      };
+      saveLocalAccountSnapshot(migratedSnapshot);
+      syncAccountSnapshotToServer(migratedSnapshot);
+      markLegacyGuestMigrated();
+    } else if (!snapshot) {
+      markLegacyGuestMigrated();
+    }
+
+    setActiveAccountSession(session);
+    setAccountSession(session);
+  };
+
+  const handleLogout = () => {
+    setActiveAccountSession(null);
+    setAccountSession(null);
+  };
+
+  if (!accountSession) {
+    return (
+      <PhoneLoginPage
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
+  return (
+    <AuthenticatedApp
+      key={accountSession.normalizedPhone}
+      accountSession={accountSession}
+      onUpdateSession={(updated) => {
+        setActiveAccountSession(updated);
+        setAccountSession(updated);
+      }}
+      onLogout={handleLogout}
+      isDarkMode={isDarkMode}
+      onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+      telegramSupportUrl={telegramSupportUrl}
+    />
+  );
+}
+
+interface AuthenticatedAppProps {
+  accountSession: AccountSession;
+  onUpdateSession: (session: AccountSession) => void;
+  onLogout: () => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+  telegramSupportUrl: string;
+}
+
+function AuthenticatedApp({
+  accountSession,
+  onUpdateSession,
+  onLogout,
+  isDarkMode,
+  onToggleDarkMode,
+  telegramSupportUrl,
+}: AuthenticatedAppProps) {
+  const initialAccountSnapshot = useRef<StudentActivitySnapshot | null>(
+    loadLocalAccountSnapshot(accountSession.normalizedPhone)
+  ).current;
+
+  const [lastSyncedAt, setLastSyncedAt] = useState<string>(
+    accountSession.lastSyncedAt || initialAccountSnapshot?.updatedAt || new Date().toISOString()
+  );
 
   // Voice alerts state
   const [voiceAlertsEnabled, setVoiceAlertsEnabled] = useState<boolean>(() => {
@@ -103,16 +262,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Curriculum State
+  // Curriculum State (Scoped to logged-in phone account)
   const [curriculum, setCurriculum] = useState<Subject[]>(() => {
-    const saved = localStorage.getItem('nahj_curriculum');
-    return saved ? JSON.parse(saved) : INITIAL_CURRICULUM;
+    if (initialAccountSnapshot?.curriculum) return initialAccountSnapshot.curriculum;
+    return INITIAL_CURRICULUM;
   });
 
   // Backlog items state
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>(() => {
-    const saved = localStorage.getItem('nahj_backlog');
-    if (saved) return JSON.parse(saved);
+    if (initialAccountSnapshot?.backlogItems && initialAccountSnapshot.backlogItems.length > 0) {
+      return initialAccountSnapshot.backlogItems;
+    }
     const todayStr = new Date().toISOString().split('T')[0];
     return [
       {
@@ -146,42 +306,33 @@ export default function App() {
   const [taskCycleIndex, setTaskCycleIndex] = useState<number>(() => getCurrentTaskCycleIndex());
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
     const currentCycle = getCurrentTaskCycleIndex();
-    const savedCycle = Number(localStorage.getItem('nahj_tasks_cycle'));
-    const saved = localStorage.getItem('nahj_tasks');
-    if (saved && !Number.isNaN(savedCycle) && savedCycle === currentCycle) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === 6) {
-          return parsed;
-        }
-      } catch {
-        // fallback to fresh cycle tasks
-      }
+    if (
+      initialAccountSnapshot &&
+      initialAccountSnapshot.taskCycleIndex === currentCycle &&
+      Array.isArray(initialAccountSnapshot.dailyTasks) &&
+      initialAccountSnapshot.dailyTasks.length === 6
+    ) {
+      return initialAccountSnapshot.dailyTasks;
     }
-    const freshTasks = getTasksForCycle(currentCycle);
-    localStorage.setItem('nahj_tasks_cycle', String(currentCycle));
-    localStorage.setItem('nahj_tasks', JSON.stringify(freshTasks));
-    return freshTasks;
+    return getTasksForCycle(currentCycle);
   });
 
-  // Student Profile state - XP starts at 0 for every student, increments progressively
+  // Student Profile state (Scoped to logged-in phone & username)
   const [profile, setProfile] = useState<StudentProfile>(() => {
-    const saved = localStorage.getItem('nahj_profile');
-    const savedWeight = localStorage.getItem('nahj_student_weight');
-    const savedHeight = localStorage.getItem('nahj_student_height');
-    const parsed = saved ? JSON.parse(saved) : null;
+    const p = initialAccountSnapshot?.profile;
     return {
-      name: parsed?.name || 'طالب نَهج المجتهد 🩺',
-      codeMasked: 'مفتوح للجميع',
-      streakDays: (parsed?.streakDays !== undefined && parsed?.streakDays !== 18) ? parsed.streakDays : 0,
-      totalXp: (parsed?.totalXp !== undefined && parsed?.totalXp !== 2450) ? parsed.totalXp : 0,
-      rankTitle: parsed?.rankTitle || 'طبيب المستقبل 🩺',
-      governorate: parsed?.governorate || 'القاهرة',
-      dailyWaterCups: parsed?.dailyWaterCups ?? 0,
-      dailyWin: parsed?.dailyWin || 'أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!',
-      weightKg: parsed?.weightKg || (savedWeight ? Number(savedWeight) : 68),
-      heightCm: parsed?.heightCm || (savedHeight ? Number(savedHeight) : 172),
-      weeklyHoursAllocation: parsed?.weeklyHoursAllocation || {
+      name: p?.name || accountSession.username,
+      codeMasked: maskPhoneNumber(accountSession.phone),
+      streakDays: p?.streakDays ?? 0,
+      totalXp: p?.totalXp ?? 0,
+      rankTitle: p?.rankTitle || 'طبيب المستقبل 🩺',
+      governorate: p?.governorate || 'القاهرة',
+      dailyWaterCups: p?.dailyWaterCups ?? 0,
+      dailyWin:
+        p?.dailyWin || 'أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!',
+      weightKg: p?.weightKg || 68,
+      heightCm: p?.heightCm || 172,
+      weeklyHoursAllocation: p?.weeklyHoursAllocation || {
         biology: 6,
         chemistry: 5,
         physics: 5,
@@ -195,13 +346,10 @@ export default function App() {
 
   const STREAK_INTERVAL_MS = 24 * 60 * 60 * 1000;
   const [streakLastTickMs, setStreakLastTickMs] = useState<number>(() => {
-    const savedTick = Number(localStorage.getItem('nahj_streak_last_tick_ms'));
-    if (savedTick && !Number.isNaN(savedTick) && savedTick > 0) {
-      return savedTick;
+    if (initialAccountSnapshot?.streakLastTickMs && initialAccountSnapshot.streakLastTickMs > 0) {
+      return initialAccountSnapshot.streakLastTickMs;
     }
-    const now = Date.now();
-    localStorage.setItem('nahj_streak_last_tick_ms', String(now));
-    return now;
+    return Date.now();
   });
 
   useEffect(() => {
@@ -212,11 +360,26 @@ export default function App() {
         const completedCycles = Math.floor(elapsed / STREAK_INTERVAL_MS);
         const nextTick = streakLastTickMs + completedCycles * STREAK_INTERVAL_MS;
         setStreakLastTickMs(nextTick);
-        localStorage.setItem('nahj_streak_last_tick_ms', String(nextTick));
         setProfile((prev) => ({
           ...prev,
           streakDays: (prev.streakDays || 0) + completedCycles,
         }));
+        const todayKey = getLocalDateKey();
+        setStreakHistory((prev) => {
+          const existing = prev[todayKey];
+          return {
+            ...prev,
+            [todayKey]: {
+              date: todayKey,
+              status: existing?.status === 'freeze' ? 'freeze' : 'completed',
+              studyHours: existing?.studyHours || 0,
+              tasksCompleted: existing?.tasksCompleted || 0,
+              xpEarned: existing?.xpEarned || 0,
+              note: existing?.note || 'تحديث تلقائي بعد إتمام دورة الـ 24 ساعة',
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        });
         if (voiceAlertsEnabled) {
           announceTask(`تمت إضافة ${completedCycles} يوم جديد لسلسلة الالتزام كل 24 ساعة!`);
         }
@@ -246,31 +409,24 @@ export default function App() {
 
   const [todayStudyLog, setTodayStudyLog] = useState<DailyStudyHoursLog>(() => {
     const today = new Date().toISOString().split('T')[0];
-    try {
-      const saved = localStorage.getItem('nahj_study_hours_log');
-      if (saved) {
-        const parsed = JSON.parse(saved) as DailyStudyHoursLog;
-        if (parsed && parsed.date === today) {
-          return {
-            date: today,
-            hours: Number(parsed.hours) || 0,
-            sessionsCount: Number(parsed.sessionsCount) || 0,
-            dailyGoalHours: Number(parsed.dailyGoalHours) || 8,
-            updatedAt: parsed.updatedAt || new Date().toISOString(),
-          };
-        }
-        if (parsed && parsed.dailyGoalHours) {
-          return {
-            date: today,
-            hours: 0,
-            sessionsCount: 0,
-            dailyGoalHours: Number(parsed.dailyGoalHours) || 8,
-            updatedAt: new Date().toISOString(),
-          };
-        }
+    const savedLog = initialAccountSnapshot?.todayStudyLog;
+    if (savedLog) {
+      if (savedLog.date === today) {
+        return {
+          date: today,
+          hours: Number(savedLog.hours) || 0,
+          sessionsCount: Number(savedLog.sessionsCount) || 0,
+          dailyGoalHours: Number(savedLog.dailyGoalHours) || 8,
+          updatedAt: savedLog.updatedAt || new Date().toISOString(),
+        };
       }
-    } catch {
-      // ignore malformed storage
+      return {
+        date: today,
+        hours: 0,
+        sessionsCount: 0,
+        dailyGoalHours: Number(savedLog.dailyGoalHours) || 8,
+        updatedAt: new Date().toISOString(),
+      };
     }
     return {
       date: today,
@@ -281,16 +437,10 @@ export default function App() {
     };
   });
 
-  // Friends Study Challenges (Persisted in localStorage under nahj_friend_challenges)
+  // Friends Study Challenges (Scoped to logged-in account)
   const [friendChallenges, setFriendChallenges] = useState<FriendChallenge[]>(() => {
-    try {
-      const saved = localStorage.getItem('nahj_friend_challenges');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {
-      // ignore malformed storage
+    if (initialAccountSnapshot?.friendChallenges) {
+      return initialAccountSnapshot.friendChallenges;
     }
     const seedId = 'ch-starter-1';
     const seedCreated = new Date().toISOString();
@@ -305,13 +455,18 @@ export default function App() {
         status: 'active',
         rewardXp: 80,
         rewardClaimed: false,
+        sessionDurationMinutes: 50,
+        sessionStartedAt: null,
+        sessionCompletedCount: 0,
         shareCode: encodeChallengeShareCode({
           v: 1,
           id: seedId,
           title: 'ماراثون 6 ساعات فيزياء وكيمياء ⚡',
-          challengerName: 'طالب نَهج',
+          challengerName: accountSession.username.split(' ')[0] || 'طالب نَهج',
           targetHours: 6,
           challengerHours: 0,
+          sessionDurationMinutes: 50,
+          sessionStartedAt: null,
           createdAt: seedCreated,
         }),
         createdAt: seedCreated,
@@ -320,20 +475,140 @@ export default function App() {
     ];
   });
 
-  useEffect(() => {
-    localStorage.setItem('nahj_study_hours_log', JSON.stringify(todayStudyLog));
-  }, [todayStudyLog]);
+  // Streak History Calendar state (Scoped to logged-in account)
+  const [streakHistory, setStreakHistory] = useState<Record<string, StreakHistoryEntry>>(() => {
+    if (initialAccountSnapshot?.streakHistory && Object.keys(initialAccountSnapshot.streakHistory).length > 0) {
+      return initialAccountSnapshot.streakHistory;
+    }
+    return loadStreakHistory(
+      profile.streakDays,
+      todayStudyLog.hours,
+      dailyTasks.filter((t) => t.isDone).length
+    );
+  });
 
+  // Build current full activity snapshot for immediate & server persistence
+  const buildCurrentSnapshot = (): StudentActivitySnapshot => ({
+    username: profile.name || accountSession.username,
+    phone: accountSession.phone,
+    normalizedPhone: accountSession.normalizedPhone,
+    profile,
+    curriculum,
+    backlogItems,
+    dailyTasks,
+    taskCycleIndex,
+    todayStudyLog,
+    friendChallenges,
+    streakHistory,
+    streakLastTickMs,
+    updatedAt: new Date().toISOString(),
+  });
+
+  // Persist account activity snapshot locally on every change and sync to server
   useEffect(() => {
-    localStorage.setItem('nahj_friend_challenges', JSON.stringify(friendChallenges));
-  }, [friendChallenges]);
+    const snapshot = buildCurrentSnapshot();
+    saveLocalAccountSnapshot(snapshot);
+    setLastSyncedAt(snapshot.updatedAt);
+
+    const timer = setTimeout(() => {
+      syncAccountSnapshotToServer(snapshot);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [
+    profile,
+    curriculum,
+    backlogItems,
+    dailyTasks,
+    taskCycleIndex,
+    todayStudyLog,
+    friendChallenges,
+    streakHistory,
+    streakLastTickMs,
+  ]);
+
+  const handleFlushAndLogout = async () => {
+    const snapshot = buildCurrentSnapshot();
+    saveLocalAccountSnapshot(snapshot);
+    await syncAccountSnapshotToServer(snapshot);
+    onLogout();
+  };
+
+  const recordTodayAchievement = (patch: {
+    studyHours?: number;
+    tasksDelta?: number;
+    xpDelta?: number;
+  }) => {
+    const todayKey = getLocalDateKey();
+    setStreakHistory((prev) => {
+      const existing = prev[todayKey];
+      const nextHours =
+        patch.studyHours !== undefined ? patch.studyHours : existing?.studyHours || 0;
+      const nextTasks = Math.max(
+        0,
+        (existing?.tasksCompleted || 0) + (patch.tasksDelta || 0)
+      );
+      const nextXp = Math.max(0, (existing?.xpEarned || 0) + (patch.xpDelta || 0));
+      return {
+        ...prev,
+        [todayKey]: {
+          date: todayKey,
+          status: existing?.status === 'freeze' ? 'freeze' : 'completed',
+          studyHours: Number(nextHours.toFixed(2)),
+          tasksCompleted: nextTasks,
+          xpEarned: nextXp,
+          note: existing?.note,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    });
+  };
+
+  const handleUpsertStreakDay = (
+    dateKey: string,
+    patch: {
+      status: 'completed' | 'freeze' | 'missed';
+      studyHours?: number;
+      note?: string;
+    }
+  ) => {
+    setStreakHistory((prev) => {
+      if (patch.status === 'missed') {
+        const next = { ...prev };
+        delete next[dateKey];
+        return next;
+      }
+      const existing = prev[dateKey];
+      return {
+        ...prev,
+        [dateKey]: {
+          date: dateKey,
+          status: patch.status,
+          studyHours:
+            patch.studyHours !== undefined ? patch.studyHours : existing?.studyHours || 0,
+          tasksCompleted: existing?.tasksCompleted || 0,
+          xpEarned: existing?.xpEarned || 0,
+          note: patch.note !== undefined ? patch.note : existing?.note,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    });
+  };
 
   const syncMyHoursAcrossChallenges = (deltaHours: number, sessionIncrement = 0) => {
     const today = getTodayIso();
+    const baseHours = todayStudyLog.date === today ? todayStudyLog.hours : 0;
+    const computedNextHours = Math.max(
+      0,
+      Math.min(24, Number((baseHours + deltaHours).toFixed(2)))
+    );
+
     setTodayStudyLog((prev) => {
-      const baseHours = prev.date === today ? prev.hours : 0;
+      const prevBaseHours = prev.date === today ? prev.hours : 0;
       const baseSessions = prev.date === today ? prev.sessionsCount : 0;
-      const nextHours = Math.max(0, Math.min(24, Number((baseHours + deltaHours).toFixed(2))));
+      const nextHours = Math.max(
+        0,
+        Math.min(24, Number((prevBaseHours + deltaHours).toFixed(2)))
+      );
       return {
         date: today,
         hours: nextHours,
@@ -342,6 +617,10 @@ export default function App() {
         updatedAt: new Date().toISOString(),
       };
     });
+
+    if (deltaHours > 0) {
+      recordTodayAchievement({ studyHours: computedNextHours });
+    }
 
     if (deltaHours !== 0) {
       setFriendChallenges((prev) =>
@@ -361,6 +640,8 @@ export default function App() {
               challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
               targetHours: ch.targetHours,
               challengerHours: updatedHours,
+              sessionDurationMinutes: ch.sessionDurationMinutes || 50,
+              sessionStartedAt: ch.sessionStartedAt || null,
               createdAt: ch.createdAt,
             }),
             updatedAt: new Date().toISOString(),
@@ -389,10 +670,14 @@ export default function App() {
     friendName: string;
     targetHours: number;
     friendInitialHours?: number;
+    sessionDurationMinutes?: number;
+    startSessionNow?: boolean;
   }): FriendChallenge => {
     const id = `ch-${Date.now()}`;
     const now = new Date().toISOString();
     const myInitial = Number(todayStudyLog.hours.toFixed(2));
+    const durationMins = input.sessionDurationMinutes || 50;
+    const startedAt = input.startSessionNow ? now : null;
     const shareCode = encodeChallengeShareCode({
       v: 1,
       id,
@@ -400,6 +685,8 @@ export default function App() {
       challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
       targetHours: input.targetHours,
       challengerHours: myInitial,
+      sessionDurationMinutes: durationMins,
+      sessionStartedAt: startedAt,
       createdAt: now,
     });
     const created: FriendChallenge = {
@@ -413,10 +700,27 @@ export default function App() {
       rewardXp: 80,
       rewardClaimed: false,
       shareCode,
+      sessionDurationMinutes: durationMins,
+      sessionStartedAt: startedAt,
+      sessionCompletedCount: 0,
       createdAt: now,
       updatedAt: now,
     };
     setFriendChallenges((prev) => [created, ...prev]);
+
+    fetch('/api/challenges/room/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        challengeId: id,
+        title: input.title,
+        participantName: profile.name.split(' ')[0] || 'طالب نَهج',
+        participantHours: myInitial,
+        sessionDurationMinutes: durationMins,
+        sessionStartedAt: startedAt,
+      }),
+    }).catch(() => {});
+
     return created;
   };
 
@@ -436,12 +740,28 @@ export default function App() {
     );
 
     if (existing) {
+      const nextDuration =
+        decoded.sessionDurationMinutes || existing.sessionDurationMinutes || 50;
+      const nextStartedAt = decoded.sessionStartedAt ?? existing.sessionStartedAt ?? null;
       setFriendChallenges((prev) =>
         prev.map((c) =>
           c.id === existing.id
             ? {
                 ...c,
                 friendHours: decoded.challengerHours,
+                sessionDurationMinutes: nextDuration,
+                sessionStartedAt: nextStartedAt,
+                shareCode: encodeChallengeShareCode({
+                  v: 1,
+                  id: c.id,
+                  title: c.title,
+                  challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+                  targetHours: c.targetHours,
+                  challengerHours: c.myHours,
+                  sessionDurationMinutes: nextDuration,
+                  sessionStartedAt: nextStartedAt,
+                  createdAt: c.createdAt,
+                }),
                 updatedAt: new Date().toISOString(),
               }
             : c
@@ -449,12 +769,15 @@ export default function App() {
       );
       return {
         ok: true,
-        message: `تم تحديث تقدم ${existing.friendName} إلى ${decoded.challengerHours.toFixed(1)} ساعة في تحدي «${existing.title}»!`,
+        challengeId: existing.id,
+        message: `تم تحديث تقدم ${existing.friendName} إلى ${decoded.challengerHours.toFixed(1)} ساعة ومزامنة مؤقت الجلسة في تحدي «${existing.title}»!`,
       };
     }
 
     const now = new Date().toISOString();
     const myHoursNow = Number(todayStudyLog.hours.toFixed(2));
+    const durationMins = decoded.sessionDurationMinutes || 50;
+    const startedAt = decoded.sessionStartedAt || null;
     const newCh: FriendChallenge = {
       id: decoded.id,
       title: decoded.title,
@@ -465,6 +788,9 @@ export default function App() {
       status: 'active',
       rewardXp: 80,
       rewardClaimed: false,
+      sessionDurationMinutes: durationMins,
+      sessionStartedAt: startedAt,
+      sessionCompletedCount: 0,
       shareCode: encodeChallengeShareCode({
         v: 1,
         id: decoded.id,
@@ -472,16 +798,126 @@ export default function App() {
         challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
         targetHours: decoded.targetHours,
         challengerHours: myHoursNow,
+        sessionDurationMinutes: durationMins,
+        sessionStartedAt: startedAt,
         createdAt: decoded.createdAt,
       }),
       createdAt: now,
       updatedAt: now,
     };
     setFriendChallenges((prev) => [newCh, ...prev]);
+
+    fetch('/api/challenges/room/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        challengeId: decoded.id,
+        title: decoded.title,
+        participantName: profile.name.split(' ')[0] || 'طالب نَهج',
+        participantHours: myHoursNow,
+        sessionDurationMinutes: durationMins,
+        sessionStartedAt: startedAt,
+      }),
+    }).catch(() => {});
+
     return {
       ok: true,
-      message: `تم الانضمام لتحدي «${decoded.title}» ضد ${decoded.challengerName}! شارك كودك معه الآن.`,
+      challengeId: decoded.id,
+      message: startedAt
+        ? `تم الانضمام لجلسة «${decoded.title}» ضد ${decoded.challengerName} ومزامنة المؤقت المباشر!`
+        : `تم الانضمام لتحدي «${decoded.title}» ضد ${decoded.challengerName}! اضغط «دخول الجلسة» لبدء المؤقت.`,
     };
+  };
+
+  const handleStartOrUpdateChallengeSession = (
+    challengeId: string,
+    options?: {
+      durationMinutes?: number;
+      startNow?: boolean;
+      reset?: boolean;
+      syncStartedAt?: string | null;
+    }
+  ) => {
+    const nowIso = new Date().toISOString();
+    setFriendChallenges((prev) =>
+      prev.map((ch) => {
+        if (ch.id !== challengeId) return ch;
+        const nextDuration = options?.durationMinutes || ch.sessionDurationMinutes || 50;
+        let nextStartedAt = ch.sessionStartedAt || null;
+        if (options?.reset) {
+          nextStartedAt = null;
+        } else if (options?.syncStartedAt !== undefined) {
+          nextStartedAt = options.syncStartedAt;
+        } else if (options?.startNow && !nextStartedAt) {
+          nextStartedAt = nowIso;
+        }
+
+        const updatedShareCode = encodeChallengeShareCode({
+          v: 1,
+          id: ch.id,
+          title: ch.title,
+          challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+          targetHours: ch.targetHours,
+          challengerHours: ch.myHours,
+          sessionDurationMinutes: nextDuration,
+          sessionStartedAt: nextStartedAt,
+          createdAt: ch.createdAt,
+        });
+
+        fetch('/api/challenges/room/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            challengeId: ch.id,
+            title: ch.title,
+            participantName: profile.name.split(' ')[0] || 'طالب نَهج',
+            participantHours: ch.myHours,
+            sessionDurationMinutes: nextDuration,
+            sessionStartedAt: nextStartedAt,
+            resetSession: Boolean(options?.reset),
+          }),
+        }).catch(() => {});
+
+        return {
+          ...ch,
+          sessionDurationMinutes: nextDuration,
+          sessionStartedAt: nextStartedAt,
+          shareCode: updatedShareCode,
+          updatedAt: nowIso,
+        };
+      })
+    );
+  };
+
+  const handleCompleteChallengeSession = (challengeId: string, elapsedMinutes: number) => {
+    const safeMinutes = Math.max(1, elapsedMinutes);
+    handleLogStudyMinutes(safeMinutes);
+    handleAwardBonusXp(25);
+    recordTodayAchievement({ xpDelta: 25 });
+    const nowIso = new Date().toISOString();
+    setFriendChallenges((prev) =>
+      prev.map((ch) => {
+        if (ch.id !== challengeId) return ch;
+        const nextCompletedCount = (ch.sessionCompletedCount || 0) + 1;
+        return {
+          ...ch,
+          sessionStartedAt: null,
+          sessionCompletedCount: nextCompletedCount,
+          shareCode: encodeChallengeShareCode({
+            v: 1,
+            id: ch.id,
+            title: ch.title,
+            challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+            targetHours: ch.targetHours,
+            challengerHours: ch.myHours,
+            sessionDurationMinutes: ch.sessionDurationMinutes || 50,
+            sessionStartedAt: null,
+            createdAt: ch.createdAt,
+          }),
+          updatedAt: nowIso,
+        };
+      })
+    );
   };
 
   const handleUpdateFriendHours = (challengeId: string, deltaHours: number) => {
@@ -530,20 +966,6 @@ export default function App() {
   const [tutorSubject, setTutorSubject] = useState<string>('الأحياء');
   const [tutorPrompt, setTutorPrompt] = useState<string>('');
 
-  // Save to LocalStorage on updates
-  useEffect(() => {
-    localStorage.setItem('nahj_curriculum', JSON.stringify(curriculum));
-  }, [curriculum]);
-
-  useEffect(() => {
-    localStorage.setItem('nahj_backlog', JSON.stringify(backlogItems));
-  }, [backlogItems]);
-
-  useEffect(() => {
-    localStorage.setItem('nahj_tasks', JSON.stringify(dailyTasks));
-    localStorage.setItem('nahj_tasks_cycle', String(taskCycleIndex));
-  }, [dailyTasks, taskCycleIndex]);
-
   // Automatic 13-hour task rotation check every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -552,8 +974,6 @@ export default function App() {
         const rotatedTasks = getTasksForCycle(latestCycle);
         setTaskCycleIndex(latestCycle);
         setDailyTasks(rotatedTasks);
-        localStorage.setItem('nahj_tasks_cycle', String(latestCycle));
-        localStorage.setItem('nahj_tasks', JSON.stringify(rotatedTasks));
         if (voiceAlertsEnabled) {
           announceTask('تجددت مهامك الستة لدورة الـ 13 ساعة الجديدة!');
         }
@@ -561,20 +981,6 @@ export default function App() {
     }, 30000);
     return () => clearInterval(interval);
   }, [taskCycleIndex, voiceAlertsEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem('nahj_profile', JSON.stringify(profile));
-  }, [profile]);
-
-  // Fetch Public settings from Server
-  useEffect(() => {
-    fetch('/api/settings')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.telegramSupportUrl) setTelegramSupportUrl(data.telegramSupportUrl);
-      })
-      .catch(() => {});
-  }, []);
 
   // Compute Prayers for current governorate
   const currentGov =
@@ -628,6 +1034,7 @@ export default function App() {
                 const nextDone = !les.isCompleted;
                 if (nextDone) {
                   setProfile((p) => ({ ...p, totalXp: p.totalXp + 20 }));
+                  recordTodayAchievement({ xpDelta: 20 });
                 } else {
                   setProfile((p) => ({ ...p, totalXp: Math.max(0, p.totalXp - 20) }));
                 }
@@ -668,6 +1075,7 @@ export default function App() {
         const nextDone = !t.isDone;
         if (nextDone) {
           setProfile((p) => ({ ...p, totalXp: p.totalXp + t.xp }));
+          recordTodayAchievement({ tasksDelta: 1, xpDelta: t.xp });
           if (voiceAlertsEnabled) {
             announceTask(`إنجاز مهمة ${t.title} وزيادة ${t.xp} نقطة`);
           }
@@ -746,6 +1154,7 @@ export default function App() {
     { id: 'tasks', label: 'المهام والأوائل', icon: Trophy },
     { id: 'challenges', label: 'تحدي الأصدقاء', icon: Swords },
     { id: 'analytics', label: 'المتابعة والتقييم', icon: TrendingUp },
+    { id: 'profile', label: 'الملف الشخصي', icon: User },
   ];
 
   return (
@@ -754,11 +1163,16 @@ export default function App() {
       <Navbar
         profile={profile}
         telegramSupportUrl={telegramSupportUrl}
-        onUpdateName={(newName) => setProfile((p) => ({ ...p, name: newName }))}
+        onUpdateName={(newName) => {
+          setProfile((p) => ({ ...p, name: newName }));
+          onUpdateSession({ ...accountSession, username: newName });
+        }}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+        onToggleDarkMode={onToggleDarkMode}
+        accountPhone={accountSession.phone}
+        onLogout={handleFlushAndLogout}
       />
 
       {/* Main Layout: Sidebar on Desktop + Content */}
@@ -923,6 +1337,8 @@ export default function App() {
               onUpdateFriendHours={handleUpdateFriendHours}
               onClaimChallengeReward={handleClaimChallengeReward}
               onDeleteChallenge={handleDeleteChallenge}
+              onStartOrUpdateSession={handleStartOrUpdateChallengeSession}
+              onCompleteChallengeSession={handleCompleteChallengeSession}
             />
           )}
 
@@ -932,6 +1348,42 @@ export default function App() {
               weeklyHours={profile.weeklyHoursAllocation}
               streakDays={profile.streakDays}
               totalXp={profile.totalXp}
+            />
+          )}
+
+          {activeTab === 'profile' && (
+            <ProfileView
+              profile={profile}
+              streakHistory={streakHistory}
+              todayStudyHours={todayStudyLog.hours}
+              dailyGoalHours={todayStudyLog.dailyGoalHours}
+              completedLessonsCount={curriculum.reduce(
+                (acc, s) =>
+                  acc + s.chapters.reduce((cAcc, c) => cAcc + c.lessons.filter((l) => l.isCompleted).length, 0),
+                0
+              )}
+              totalLessonsCount={curriculum.reduce(
+                (acc, s) => acc + s.chapters.reduce((cAcc, c) => cAcc + c.lessons.length, 0),
+                0
+              )}
+              nextStreakAtMs={streakLastTickMs + STREAK_INTERVAL_MS}
+              onUpdateName={(name) => {
+                setProfile((p) => ({ ...p, name }));
+                onUpdateSession({ ...accountSession, username: name });
+              }}
+              onUpdateRankTitle={(rankTitle) => setProfile((p) => ({ ...p, rankTitle }))}
+              onUpdateGovernorate={(gov) => setProfile((p) => ({ ...p, governorate: gov }))}
+              onUpdateDailyGoal={(goalHours) =>
+                setTodayStudyLog((prev) => ({
+                  ...prev,
+                  dailyGoalHours: goalHours,
+                  updatedAt: new Date().toISOString(),
+                }))
+              }
+              onUpsertStreakDay={handleUpsertStreakDay}
+              accountPhone={accountSession.phone}
+              lastSyncedAt={lastSyncedAt}
+              onLogout={handleFlushAndLogout}
             />
           )}
         </main>
@@ -1019,6 +1471,7 @@ export default function App() {
           onComplete={(elapsedMins) => {
             setProfile((p) => ({ ...p, totalXp: p.totalXp + 25 }));
             handleLogStudyMinutes(elapsedMins);
+            recordTodayAchievement({ xpDelta: 25 });
             setActiveFocusSession(null);
           }}
         />

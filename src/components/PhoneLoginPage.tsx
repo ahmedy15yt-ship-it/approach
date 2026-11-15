@@ -1,0 +1,366 @@
+import React, { useState, useMemo } from 'react';
+import {
+  Phone,
+  User,
+  ArrowLeft,
+  Moon,
+  Sun,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Flame,
+  Award,
+} from 'lucide-react';
+import { AccountSession, StudentActivitySnapshot } from '../types';
+import {
+  getSavedAccountsSummary,
+  hasUnmigratedGuestData,
+  loginWithPhoneAndUsername,
+  maskPhoneNumber,
+  SavedAccountSummary,
+} from '../utils/accountStorage';
+
+interface PhoneLoginPageProps {
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+  onLoginSuccess: (payload: {
+    session: AccountSession;
+    snapshot: StudentActivitySnapshot | null;
+    isNewAccount: boolean;
+    importGuestData: boolean;
+  }) => void;
+}
+
+export const PhoneLoginPage: React.FC<PhoneLoginPageProps> = ({
+  isDarkMode,
+  onToggleDarkMode,
+  onLoginSuccess,
+}) => {
+  const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
+  const [importGuestData, setImportGuestData] = useState<boolean>(() =>
+    hasUnmigratedGuestData()
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mismatchUsername, setMismatchUsername] = useState<string | null>(null);
+
+  const hasLegacyData = useMemo(() => hasUnmigratedGuestData(), []);
+  const savedAccounts = useMemo(() => getSavedAccountsSummary(), []);
+
+  const performLogin = async (
+    targetPhone: string,
+    targetUsername: string,
+    confirmNameUpdate = false
+  ) => {
+    setErrorMsg(null);
+    setMismatchUsername(null);
+    setIsLoading(true);
+
+    try {
+      const result = await loginWithPhoneAndUsername({
+        phone: targetPhone,
+        username: targetUsername,
+        confirmNameUpdate,
+      });
+
+      if (!result.ok) {
+        if (result.code === 'USERNAME_MISMATCH' && result.registeredUsername) {
+          setMismatchUsername(result.registeredUsername);
+        }
+        setErrorMsg(result.message);
+        return;
+      }
+
+      onLoginSuccess({
+        session: result.session,
+        snapshot: result.snapshot,
+        isNewAccount: result.isNewAccount,
+        importGuestData: result.isNewAccount && hasLegacyData && importGuestData,
+      });
+    } catch {
+      setErrorMsg('تعذر إتمام تسجيل الدخول حالياً، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    performLogin(phone, username, false);
+  };
+
+  const handleQuickAccountSelect = (acc: SavedAccountSummary) => {
+    setUsername(acc.username);
+    setPhone(acc.phone);
+    performLogin(acc.phone, acc.username, false);
+  };
+
+  return (
+    <div
+      dir="rtl"
+      className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] text-zinc-950 dark:text-zinc-100 flex flex-col font-['Cairo',sans-serif] transition-colors duration-200"
+    >
+      {/* Minimal Top Bar */}
+      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shadow-sm">
+            <span className="font-['Amiri',serif] text-2xl font-black">نَهْج</span>
+          </div>
+          <span className="font-extrabold text-base text-zinc-950 dark:text-white whitespace-nowrap">
+            نَهج — تالتة ثانوي علمي علوم
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onToggleDarkMode}
+          aria-label={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي'}
+          className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-red-900/40 bg-white dark:bg-[#121215] text-zinc-700 dark:text-amber-300 hover:border-[#DC2626] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shrink-0"
+        >
+          {isDarkMode ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-400" />
+              <span>نهاري</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-zinc-800" />
+              <span>ليلي</span>
+            </>
+          )}
+        </button>
+      </header>
+
+      {/* Main Centered Login Workspace */}
+      <main className="grow flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Left/Primary Card: Login Form */}
+          <section className="lg:col-span-7 bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-[#DC2626] dark:text-red-400">
+                حساب الطالب الشخصي
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white leading-tight [text-wrap:balance]">
+                سجل دخولك ليبقى كل نشاطك محفوظاً
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                أدخل اسم المستخدم ورقم التليفون ليتم ربط ساعات مذاكرتك، سلسلة أيامك، مهامك، وتقدم المنهج بحسابك تلقائياً.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Username Input */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-username"
+                  className="block text-xs font-extrabold text-zinc-800 dark:text-zinc-200"
+                >
+                  اسم المستخدم
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="login-username"
+                    type="text"
+                    required
+                    minLength={2}
+                    maxLength={60}
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (errorMsg) setErrorMsg(null);
+                      if (mismatchUsername) setMismatchUsername(null);
+                    }}
+                    placeholder="مثال: أحمد يحيى"
+                    className="w-full pr-10 pl-4 py-3 text-sm font-bold bg-zinc-50 dark:bg-[#09090B] text-zinc-950 dark:text-white border border-zinc-300 dark:border-zinc-800 rounded-xl focus:outline-none focus:border-[#DC2626] transition-colors"
+                    autoComplete="name"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number Input */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-phone"
+                  className="block text-xs font-extrabold text-zinc-800 dark:text-zinc-200"
+                >
+                  رقم التليفون
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="login-phone"
+                    type="tel"
+                    inputMode="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (errorMsg) setErrorMsg(null);
+                      if (mismatchUsername) setMismatchUsername(null);
+                    }}
+                    placeholder="01012345678"
+                    dir="ltr"
+                    className="w-full pr-10 pl-4 py-3 text-sm font-bold font-mono tabular-nums text-left bg-zinc-50 dark:bg-[#09090B] text-zinc-950 dark:text-white border border-zinc-300 dark:border-zinc-800 rounded-xl focus:outline-none focus:border-[#DC2626] transition-colors"
+                    autoComplete="tel"
+                  />
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  مثال: 010XXXXXXXX أو رقم دولي — يُستخدم كمفتاح لحفظ واستعادة سجلك.
+                </p>
+              </div>
+
+              {/* Optional Legacy Guest Data Preservation Checkbox */}
+              {hasLegacyData && (
+                <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={importGuestData}
+                    onChange={(e) => setImportGuestData(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-[#DC2626] rounded cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                    نقل نشاطي وتقدمي الحالي على هذا الجهاز إلى حسابي الجديد عند الإنشاء
+                  </span>
+                </label>
+              )}
+
+              {/* Validation or Username Mismatch Feedback */}
+              {errorMsg && (
+                <div
+                  role="alert"
+                  className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/70 text-red-800 dark:text-red-200 space-y-2.5"
+                >
+                  <div className="flex items-start gap-2 text-xs font-bold">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626] dark:text-red-400" />
+                    <span>{errorMsg}</span>
+                  </div>
+
+                  {mismatchUsername && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsername(mismatchUsername);
+                          performLogin(phone, mismatchUsername, false);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        الدخول بالاسم المسجل ({mismatchUsername})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => performLogin(phone, username, true)}
+                        className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#121215] border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-[11px] font-bold hover:border-[#DC2626] cursor-pointer transition-colors"
+                      >
+                        تحديث الاسم إلى «{username.trim()}» والمتابعة
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 px-5 bg-[#DC2626] hover:bg-[#B91C1C] active:scale-[0.99] text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>جاري التحقق وتحميل سجلك...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>دخول وتسجيل النشاط</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          </section>
+
+          {/* Right Panel: What Gets Saved + Quick Account Switcher */}
+          <aside className="lg:col-span-5 bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-base font-black text-zinc-950 dark:text-white">
+                ماذا يُحفظ داخل حسابك تلقائياً؟
+              </h2>
+
+              <ul className="space-y-3 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                  <span>سجل الاستمرارية (Streak History) وسلسلة الـ 24 ساعة وتواريخ الإنجازات.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                  <span>ساعات المذاكرة اليومية وجلسات البومودورو وتحديات الأصدقاء.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                  <span>الدروس المنتهية في المنهج، المتراكم، والمهام الستة ونقاط (XP).</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                  <span>حساب منفصل لكل رقم تليفون مع إمكانية التبديل أو تسجيل الخروج في أي وقت.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Previously Logged-In Accounts on this Device */}
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+              <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400">
+                {savedAccounts.length > 0
+                  ? 'حسابات مسجلة على هذا الجهاز (دخول سريع)'
+                  : 'أول تسجيل دخول لك'}
+              </h3>
+
+              {savedAccounts.length > 0 ? (
+                <div className="space-y-2 max-h-52 overflow-y-auto">
+                  {savedAccounts.map((acc) => (
+                    <button
+                      key={acc.normalizedPhone}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => handleQuickAccountSelect(acc)}
+                      className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626] text-right transition-colors cursor-pointer flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-xs font-extrabold text-zinc-950 dark:text-white block truncate">
+                          {acc.username}
+                        </span>
+                        <span
+                          className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 tabular-nums"
+                          dir="ltr"
+                        >
+                          {maskPhoneNumber(acc.phone)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 text-[11px] font-bold tabular-nums shrink-0">
+                        <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
+                          <Flame className="w-3.5 h-3.5" />
+                          {acc.streakDays}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[#DC2626] dark:text-red-400">
+                          <Award className="w-3.5 h-3.5" />
+                          {acc.totalXp} XP
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  عند دخولك لأول مرة برقم تليفونك واسمك، سيظهر حسابك هنا لاحقاً للوصول السريع مع كامل سجلاتك.
+                </p>
+              )}
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
+};

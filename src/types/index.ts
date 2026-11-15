@@ -114,7 +114,43 @@ export interface FriendChallenge {
   rewardXp: number;
   rewardClaimed?: boolean;
   shareCode: string;
+  sessionDurationMinutes?: number;
+  sessionStartedAt?: string | null;
+  sessionCompletedCount?: number;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface StreakHistoryEntry {
+  date: string; // YYYY-MM-DD local date
+  status: 'completed' | 'freeze' | 'missed';
+  studyHours: number;
+  tasksCompleted: number;
+  xpEarned: number;
+  note?: string;
+  updatedAt: string;
+}
+
+export interface AccountSession {
+  phone: string;
+  normalizedPhone: string;
+  username: string;
+  loggedInAt: string;
+  lastSyncedAt?: string;
+}
+
+export interface StudentActivitySnapshot {
+  username: string;
+  phone: string;
+  normalizedPhone: string;
+  profile: StudentProfile;
+  curriculum: Subject[];
+  backlogItems: BacklogItem[];
+  dailyTasks: DailyTask[];
+  taskCycleIndex: number;
+  todayStudyLog: DailyStudyHoursLog;
+  friendChallenges: FriendChallenge[];
+  streakHistory: Record<string, StreakHistoryEntry>;
+  streakLastTickMs: number;
+  updatedAt: string;
+}

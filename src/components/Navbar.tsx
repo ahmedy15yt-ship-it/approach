@@ -11,6 +11,7 @@ import {
   Sparkles,
   Moon,
   Sun,
+  LogOut,
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 import {
@@ -28,6 +29,8 @@ interface NavbarProps {
   onTabChange: (tab: string) => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
+  accountPhone?: string;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   isDarkMode = false,
   onToggleDarkMode,
+  accountPhone,
+  onLogout,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name || 'طالب نَهج المجتهد 🩺');
@@ -97,19 +102,42 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* User Stats & Interactive Badges */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Streak Counter */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 rounded-full text-xs font-bold text-amber-800 dark:text-amber-300 shadow-2xs">
+          {/* Streak Counter (navigates to Streak History in Profile) */}
+          <button
+            type="button"
+            onClick={() => onTabChange('profile')}
+            title="عرض سجل وتقويم الاستمرارية في الملف الشخصي"
+            className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 rounded-full text-xs font-bold text-amber-800 dark:text-amber-300 shadow-2xs hover:border-[#DC2626] transition-colors cursor-pointer"
+          >
             <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500 animate-pulse" />
-            <span>{profile.streakDays} يوم</span>
-          </div>
+            <span className="tabular-nums">{profile.streakDays} يوم</span>
+          </button>
 
           {/* XP Points */}
           <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-full text-xs font-bold text-[#DC2626] dark:text-red-300">
             <Award className="w-4 h-4 text-[#C59B27] dark:text-amber-400" />
-            <span>{profile.totalXp} XP</span>
+            <span className="tabular-nums">{profile.totalXp} XP</span>
           </div>
 
-          {/* Student Profile Info / Name Editor */}
+          {/* Student Profile Button & Quick Name Editor */}
+          <button
+            type="button"
+            onClick={() => onTabChange('profile')}
+            title={
+              accountPhone
+                ? `الملف الشخصي وسجل الاستمرارية (${accountPhone})`
+                : 'فتح صفحة الملف الشخصي وسجل الاستمرارية'
+            }
+            className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs ${
+              activeTab === 'profile'
+                ? 'bg-[#DC2626] text-white border-[#DC2626]'
+                : 'bg-white dark:bg-zinc-900/80 hover:bg-red-50/70 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span className="hidden lg:inline text-[11px]">ملفي</span>
+          </button>
+
           <div className="hidden md:flex items-center">
             {isEditingName ? (
               <form onSubmit={handleSaveName} className="flex items-center gap-1">
@@ -189,6 +217,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Send className="w-4 h-4" />
           </a>
+
+          {/* Logout / Switch Account Button */}
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              title="تسجيل الخروج أو تبديل الحساب"
+              className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] hover:text-[#DC2626] dark:hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden xl:inline text-[11px]">خروج</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
