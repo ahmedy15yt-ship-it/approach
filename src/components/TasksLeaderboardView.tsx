@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { DailyTask, LeaderboardUser } from '../types';
+import { getTaskCycleRemainingMs } from '../data/tasks';
 
 interface TasksLeaderboardViewProps {
   tasks: DailyTask[];
@@ -19,6 +20,7 @@ interface TasksLeaderboardViewProps {
   leaderboard: LeaderboardUser[];
   studentXp: number;
   streakDays: number;
+  nextStreakAtMs?: number;
 }
 
 export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
@@ -27,22 +29,25 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
   leaderboard,
   studentXp,
   streakDays,
+  nextStreakAtMs,
 }) => {
-  // 20-Hour Refresh Countdown
-  const [secondsRemaining, setSecondsRemaining] = useState(() => {
-    // 20 hours cycle = 72,000 seconds
-    const now = Date.now();
-    const cycleMs = 20 * 60 * 60 * 1000;
-    const remainder = cycleMs - (now % cycleMs);
-    return Math.floor(remainder / 1000);
-  });
+  // 13-Hour Refresh Countdown & 24-Hour Streak Countdown
+  const [secondsRemaining, setSecondsRemaining] = useState(() =>
+    Math.floor(getTaskCycleRemainingMs() / 1000)
+  );
+  const [streakRemainingSec, setStreakRemainingSec] = useState(() =>
+    nextStreakAtMs ? Math.max(0, Math.floor((nextStreakAtMs - Date.now()) / 1000)) : 86400
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 20 * 3600));
+      setSecondsRemaining(Math.floor(getTaskCycleRemainingMs() / 1000));
+      if (nextStreakAtMs) {
+        setStreakRemainingSec(Math.max(0, Math.floor((nextStreakAtMs - Date.now()) / 1000)));
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [nextStreakAtMs]);
 
   const formatCountdown = (totalSec: number) => {
     const hours = Math.floor(totalSec / 3600);
@@ -101,15 +106,29 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
           </p>
         </div>
 
-        {/* 20-Hour Reset Timer Banner */}
-        <div className="bg-zinc-50 dark:bg-[#09090B] border border-red-200/70 dark:border-red-900/40 px-4 py-2.5 rounded-xl text-left self-start md:self-center">
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold block flex items-center gap-1">
-            <Clock className="w-3 h-3 text-[#DC2626] dark:text-red-400" />
-            <span>تتجدد المهام تلقائياً بعد:</span>
-          </span>
-          <span className="font-mono text-xs font-black text-[#DC2626] dark:text-red-400" dir="ltr">
-            {formatCountdown(secondsRemaining)}
-          </span>
+        {/* 13-Hour Reset & 24-Hour Streak Timer Banner */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+          <div className="bg-zinc-50 dark:bg-[#09090B] border border-red-200/70 dark:border-red-900/40 px-3.5 py-2 rounded-xl text-left">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#DC2626] dark:text-red-400" />
+              <span>تتجدد المهام الستة بعد:</span>
+            </span>
+            <span className="font-mono text-xs font-black text-[#DC2626] dark:text-red-400" dir="ltr">
+              {formatCountdown(secondsRemaining)}
+            </span>
+          </div>
+
+          {nextStreakAtMs && (
+            <div className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-3.5 py-2 rounded-xl text-left">
+              <span className="text-[10px] text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1">
+                <Flame className="w-3 h-3 text-amber-500" />
+                <span>تحتسب السلسلة (+1 يوم) بعد:</span>
+              </span>
+              <span className="font-mono text-xs font-black text-amber-700 dark:text-amber-300" dir="ltr">
+                {formatCountdown(streakRemainingSec)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -118,10 +137,10 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-extrabold text-base text-zinc-900 dark:text-white">
-              مهام اليوم الستة ({completedCount}/{tasks.length})
+              مهام الدورة الحالية الستة ({completedCount}/{tasks.length}) — دورة 13 ساعة
             </h3>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              أكمل المهام لرفع رتبتك في لوحة شرف الثانوية العامة
+              تتغير تلقائياً كل 13 ساعة لإشعال الحماس ورفع رتبتك في لوحة شرف الثانوية العامة
             </span>
           </div>
 

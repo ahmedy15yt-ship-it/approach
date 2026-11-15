@@ -61,7 +61,13 @@ export function classifyServerGeminiError(err: any): { retryable: boolean; userW
       userWarning: 'تم تجاوز حد الطلبات المؤقت لخدمة Gemini، تم تقديم الرد من المحرك التعليمي البديل.',
     };
   }
-  if (msg.includes('TIMEOUT') || status >= 500 || msg.includes('ECONNRESET') || msg.includes('fetch failed')) {
+  if (msg.includes('TIMEOUT')) {
+    return {
+      retryable: false,
+      userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',
+    };
+  }
+  if (status >= 500 || msg.includes('ECONNRESET') || msg.includes('fetch failed')) {
     return {
       retryable: true,
       userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',

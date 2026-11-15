@@ -22,6 +22,7 @@ import {
   Loader2,
   X,
   FileQuestion,
+  Calendar,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -29,6 +30,9 @@ import {
   CHEAP_EGYPTIAN_SUPERFOODS,
   FOOD_COMPARISON,
   EgyptianDietPlan,
+  WEEK_DAYS_EG,
+  getTodayEgyptDayIndex,
+  getDietPlanForDay,
 } from '../data/nutrition';
 import { generateMealFallback } from '../utils/aiFallbacks';
 
@@ -84,8 +88,10 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
     categoryBadgeColor = 'bg-orange-100 text-orange-800 border-orange-300';
   }
 
-  // Active Plan view (can be overridden by user tab click)
+  // Active Plan view (can be overridden by user tab click) & rotating day of week
   const [activePlanKey, setActivePlanKey] = useState<'overweight' | 'balanced' | 'underweight'>(autoCategoryKey);
+  const todayDayIndex = getTodayEgyptDayIndex();
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayDayIndex);
 
   // Sync active plan if category changes due to slider
   const handleUpdateWeight = (newW: number) => {
@@ -118,7 +124,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
   const recommendedWaterLiters = (weight * 0.035).toFixed(1); // 35ml/kg
   const dynamicTargetCups = Math.max(8, Math.round((weight * 35) / 250)); // 250ml per cup
 
-  const activePlan: EgyptianDietPlan = EGYPTIAN_DIET_PLANS[activePlanKey];
+  const activePlan: EgyptianDietPlan = getDietPlanForDay(activePlanKey, selectedDayIndex);
 
   const handleAddWater = () => {
     const next = waterCups + 1;
@@ -736,11 +742,61 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           </div>
         </div>
 
-        {/* 5 Daily Meals Timeline */}
-        <div className="space-y-3">
-          <h4 className="font-extrabold text-sm text-zinc-950 dark:text-white">
-            جدول الوجبات الـ 5 الموزعة على مدار يوم المذاكرة:
-          </h4>
+        {/* 5 Daily Meals Timeline with Daily Variation Selector */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="font-extrabold text-sm text-zinc-950 dark:text-white flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+                <span>جدول الوجبات الـ 5 المتغير يومياً ({WEEK_DAYS_EG[selectedDayIndex]}):</span>
+              </h4>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                منيو متجدد كل يوم على مدار الأسبوع لكسر الملل (ومختلف عن وجبات جدولك اليومي)
+              </p>
+            </div>
+
+            {selectedDayIndex !== todayDayIndex && (
+              <button
+                type="button"
+                onClick={() => setSelectedDayIndex(todayDayIndex)}
+                className="text-[11px] font-black text-[#DC2626] dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900/50 hover:bg-red-100 transition-colors cursor-pointer self-start sm:self-center"
+              >
+                الرجوع لوجبات اليوم ({WEEK_DAYS_EG[todayDayIndex]})
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 bg-zinc-100/80 dark:bg-[#09090B] p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+            {WEEK_DAYS_EG.map((dayLabel, idx) => {
+              const isSelectedDay = selectedDayIndex === idx;
+              const isToday = todayDayIndex === idx;
+              return (
+                <button
+                  key={dayLabel}
+                  type="button"
+                  onClick={() => setSelectedDayIndex(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isSelectedDay
+                      ? 'bg-[#DC2626] text-white shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-900 hover:text-zinc-950 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{dayLabel}</span>
+                  {isToday && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                        isSelectedDay
+                          ? 'bg-black/35 text-amber-300'
+                          : 'bg-red-100 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300'
+                      }`}
+                    >
+                      اليوم
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activePlan.meals.map((meal, index) => (

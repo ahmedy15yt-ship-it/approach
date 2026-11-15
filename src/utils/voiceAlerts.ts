@@ -67,37 +67,109 @@ export function speakArabicAlert(text: string) {
   }, 400);
 }
 
-// Dedicated Tutor Text-to-Speech (bypasses notification toggle on manual click)
+let activeSpeechToken = 0;
+
+function pickBestArabicVoice(): SpeechSynthesisVoice | null {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  return (
+    voices.find((v) => v.lang.toLowerCase() === 'ar-eg') ||
+    voices.find((v) => v.lang.toLowerCase().startsWith('ar-')) ||
+    voices.find((v) => v.lang.toLowerCase().startsWith('ar') || v.name.includes('Arabic')) ||
+    null
+  );
+}
+
+function splitArabicSpeechChunks(text: string, maxLen = 160): string[] {
+  const sentences = text
+    .split(/(?<=[.!؟،\n])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const sentence of sentences) {
+    if (sentence.length > maxLen) {
+      if (current) {
+        chunks.push(current);
+        current = '';
+      }
+      const words = sentence.split(/\s+/);
+      let piece = '';
+      for (const word of words) {
+        if ((piece + ' ' + word).trim().length > maxLen) {
+          if (piece) chunks.push(piece.trim());
+          piece = word;
+        } else {
+          piece = (piece + ' ' + word).trim();
+        }
+      }
+      if (piece) chunks.push(piece.trim());
+    } else if ((current + ' ' + sentence).trim().length > maxLen) {
+      if (current) chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current = (current + ' ' + sentence).trim();
+    }
+  }
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+// Dedicated Tutor Text-to-Speech (chunked for reliable Chrome/Android playback of long explanations)
 export function speakTutorVoice(text: string, onEnd?: () => void, onError?: () => void): boolean {
   if (!('speechSynthesis' in window)) return false;
 
   try {
+    activeSpeechToken += 1;
+    const myToken = activeSpeechToken;
     window.speechSynthesis.cancel();
 
-    // Clean markdown symbols for natural speech
+    // Clean markdown symbols and emojis for crisp natural Arabic speech
     const cleanText = text
       .replace(/[#*`_~]/g, '')
       .replace(/https?:\/\/\S+/g, '')
-      .replace(/🎯|💡|⚡|❓|🔬|🧪|🏔️|📖|🌐/g, '')
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+      .replace(/\s+/g, ' ')
       .trim();
 
     if (!cleanText) return false;
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'ar-SA';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    const chunks = splitArabicSpeechChunks(cleanText, 160);
+    if (chunks.length === 0) return false;
 
-    const voices = window.speechSynthesis.getVoices();
-    const arVoice = voices.find((v) => v.lang.startsWith('ar') || v.name.includes('Arabic'));
-    if (arVoice) {
-      utterance.voice = arVoice;
-    }
+    const arVoice = pickBestArabicVoice();
 
-    if (onEnd) utterance.onend = onEnd;
-    if (onError) utterance.onerror = onError;
+    const speakNext = (index: number) => {
+      if (myToken !== activeSpeechToken) return;
+      if (index >= chunks.length) {
+        if (onEnd) onEnd();
+        return;
+      }
 
-    window.speechSynthesis.speak(utterance);
+      const utterance = new SpeechSynthesisUtterance(chunks[index]);
+      utterance.lang = arVoice?.lang || 'ar-EG';
+      utterance.rate = 1.02;
+      utterance.pitch = 1.0;
+      if (arVoice) {
+        utterance.voice = arVoice;
+      }
+
+      utterance.onend = () => {
+        if (myToken !== activeSpeechToken) return;
+        speakNext(index + 1);
+      };
+
+      utterance.onerror = () => {
+        if (myToken !== activeSpeechToken) return;
+        if (onError) onError();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    speakNext(0);
     return true;
   } catch (err) {
     console.warn('Tutor voice synthesis note:', err);
@@ -107,10 +179,11 @@ export function speakTutorVoice(text: string, onEnd?: () => void, onError?: () =
 }
 
 export function stopSpeaking() {
+  activeSpeechToken += 1;
   if ('speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

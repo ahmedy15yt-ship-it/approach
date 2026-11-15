@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Subject, StudySession, DaySchedule } from '../types';
 import { PrayerTime, convert24To12 } from '../data/prayer';
+import { getScheduleMealsForDay } from '../data/nutrition';
 
 interface ScheduleViewProps {
   curriculum: Subject[];
@@ -147,6 +148,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       session?: StudySession;
     }> = [];
 
+    const dayMeals = getScheduleMealsForDay(selectedDayIndex, selectedWeek);
+
     // 1. Wakeup & Fajr
     const fajrTime = prayers.find((p) => p.key === 'fajr')?.time || '5:00 ص';
     timeline.push({
@@ -156,12 +159,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       desc: 'بداية اليوم المبارك، بركة البكور واستحضار النية لله.',
     });
 
-    // 2. Breakfast & Routine
+    // 2. Breakfast & Routine (Rotates per day!)
     timeline.push({
       time: '5:40 ص',
-      title: 'فطور الدماغ + شرب كوبي ماء',
+      title: `${dayMeals.breakfast.title} + شرب كوبي ماء`,
       type: 'meal',
-      desc: 'فول بزيت حار وبيض مسلوق لإمداد المخ بالكولين وأوميجا 3 وجلوكوز مستقر.',
+      desc: dayMeals.breakfast.desc,
     });
 
     // 3. Quick Workout
@@ -182,13 +185,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       });
     }
 
-    // 5. Dhuhr Prayer & Lunch
+    // 5. Dhuhr Prayer & Lunch (Rotates per day!)
     const dhuhrTime = prayers.find((p) => p.key === 'dhuhr')?.time || '12:00 م';
     timeline.push({
       time: dhuhrTime,
-      title: `صلاة الظهر (${dhuhrTime}) وغداء خفيف واستراحة قيلولة 20 دقيقة`,
-      type: 'prayer',
-      desc: 'إعادة شحن الطاقة العصبية بدون سكر ثقيل.',
+      title: `صلاة الظهر (${dhuhrTime}) + ${dayMeals.lunch.title}`,
+      type: 'meal',
+      desc: dayMeals.lunch.desc,
     });
 
     // 6. Asr Prayer
@@ -267,13 +270,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       session: sessionObj2,
     });
 
-    // 8. Maghrib Prayer
+    // 8. Maghrib Prayer & Rotating Snack
     const maghribTime = prayers.find((p) => p.key === 'maghrib')?.time || '6:00 م';
     timeline.push({
       time: maghribTime,
-      title: `صلاة المغرب (${maghribTime}) وسناك مكسرات/فول سوداني`,
-      type: 'prayer',
-      desc: 'راحة ذهنية وتثبيت ما تم استيعابه.',
+      title: `صلاة المغرب (${maghribTime}) + ${dayMeals.snack.title}`,
+      type: 'meal',
+      desc: dayMeals.snack.desc,
     });
 
     // 9. Study Session 3 (or Backlog session)
@@ -295,13 +298,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       session: sessionObj3,
     });
 
-    // 10. Isha Prayer & Light Dinner
+    // 10. Isha Prayer & Rotating Light Dinner
     const ishaTime = prayers.find((p) => p.key === 'isha')?.time || '7:30 م';
     timeline.push({
       time: ishaTime,
-      title: `صلاة العشاء والشفع والوتر (${ishaTime}) + عشاء خفيف`,
-      type: 'prayer',
-      desc: 'جبنة قريش بزيت زيتون أو زبادي بالعسل لبروتين بطيء الامتصاص ونوم هادئ.',
+      title: `صلاة العشاء والشفع والوتر (${ishaTime}) + ${dayMeals.dinner.title}`,
+      type: 'meal',
+      desc: dayMeals.dinner.desc,
     });
 
     // 11. Day wrap-up & sleep

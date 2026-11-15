@@ -19,7 +19,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'راحة رقبة وظهر',
     benefit: 'يفرغ الضغط الشديد المتراكم على فقرات الرقبة والكتف بسبب الانحناء لساعات طويلة على مذكرات وكتب الثانوية.',
     repsOrHold: '30 ثانية لكل جانب',
-    youtubeId: 'qDEc2qD8V8M',
+    youtubeId: 'vRPmX4iaMsI',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلات العنق الجانبية والعضلة شبه المنحرفة (Trapezius)',
     instructions: [
@@ -36,7 +36,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تمدد',
     benefit: 'يعالج انحناء الظهر والكتفين (Kyphosis) ويفتح القفص الصدري لدخول أكسجين كافٍ إلى الرئتين لإنعاش الدماغ.',
     repsOrHold: '3 جولات × 25 ثانية',
-    youtubeId: '8f7qFqX0EwI',
+    youtubeId: 'wbF7obvVWaI',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلات الصدر الكبرى وأعلى الظهر بين لوحي الكتف',
     instructions: [
@@ -53,7 +53,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنشيط دورة دموية',
     benefit: 'يضخ كميات ضخمة من الدم المحمل بالأكسجين والجلوكوز إلى المخ فوراً وينهي النعاس والتكاسل في دقيقتين.',
     repsOrHold: '15 إلى 20 تكرار',
-    youtubeId: 'aclHkVaku9U',
+    youtubeId: 'jQr-Zo4m0os',
     suitableForWeight: 'النحافة والوزن المعتدل',
     targetMuscles: 'عضلات الفخذين الرباعية، المؤخرة، وعضلات الجذع',
     instructions: [
@@ -70,7 +70,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنشيط دورة دموية',
     benefit: 'تنشيط كامل للدورة الدموية بدون أي ضغط أو إجهاد على مفاصل الركبة أو أسفل الظهر لأصحاب الوزن الزائد.',
     repsOrHold: 'دقيقتان متواصلتان بإيقاع هادئ',
-    youtubeId: 'ml6cT4AZdqI',
+    youtubeId: 'AAyW-CRr-sk',
     suitableForWeight: 'الوزن الزائد',
     targetMuscles: 'عضلات الساقين، الحوض، وعضلة القلب',
     instructions: [
@@ -87,7 +87,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنشيط دورة دموية',
     benefit: 'يقوي عضلات الصدر والكتف والترايسبس ويقضي على الخمول البدني دون الحاجة للنزول على الأرض.',
     repsOrHold: '3 جولات × 12 تكرار',
-    youtubeId: '54P_mY5U904',
+    youtubeId: 'zkU6Ok44_CI',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلات الصدر، مقدمة الكتف، والعضلة ثلاثية الرؤوس (Triceps)',
     instructions: [
@@ -104,7 +104,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'راحة رقبة وظهر',
     benefit: 'يعالج آلام العصعص والقطنية الناتجة عن الجلوس 6 إلى 8 ساعات متواصلة أثناء المذاكرة.',
     repsOrHold: '10 تكرارات هادئة مع تثبيت',
-    youtubeId: '8a3_E0sC7Fw',
+    youtubeId: '7Tnyx5hkFwA',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلات الفقرات القطنية، الحوض، وأسفل الظهر',
     instructions: [
@@ -121,7 +121,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنشيط دورة دموية',
     benefit: 'تسمى عضلة السمانة بالقلب الثاني؛ تضخ الدم الراكد في الساقين إلى المخ والقلب فتقضي على تورم القدمين.',
     repsOrHold: '25 تكراراً سريعاً',
-    youtubeId: '2eA2Ko_fPvY',
+    youtubeId: 'ORT4oJ_R8Qs',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلة السمانة (Gastrocnemius & Soleus)',
     instructions: [
@@ -138,7 +138,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنفس واسترخاء',
     benefit: 'يريح عضلات العين الداخلية ويمنع الصداع النصفي وإجهاد النظر الناتج عن المذاكرة على الشاشات أو الورق المتقارب.',
     repsOrHold: 'دقيقة كاملة',
-    youtubeId: 'bQLG53WJtLg',
+    youtubeId: 'ji7lW25UKqY',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلات العين الهدبية والملتحمة',
     instructions: [
@@ -155,7 +155,7 @@ export const QUICK_ROUTINE: Exercise[] = [
     category: 'تنفس واسترخاء',
     benefit: 'يخفض فوراً مستوى هرمون التوتر (الكورتيزول) ويبطئ ضربات القلب ويزيل نوبات الهلع والقلق قبل الامتحانات.',
     repsOrHold: '4 دورات تنفس كاملة',
-    youtubeId: '1ZYbU8csdVY',
+    youtubeId: 'Egr8iGBg8Oc',
     suitableForWeight: 'الجميع',
     targetMuscles: 'عضلة الحجاب الحاجز والجهاز العصبي الباراسمبثاوي',
     instructions: [

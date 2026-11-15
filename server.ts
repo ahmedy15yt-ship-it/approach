@@ -6,6 +6,11 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import { generateTutorFallback, generateMealFallback } from './src/utils/aiFallbacks.js';
+import {
+  buildTutorSystemPrompt,
+  buildTutorFormattedContents,
+  TutorDeepMode,
+} from './src/utils/tutorPrompts.js';
 
 dotenv.config();
 
@@ -80,7 +85,13 @@ function classifyGeminiError(err: any): { retryable: boolean; userWarning: strin
       userWarning: 'تم تجاوز حد الطلبات المؤقت لخدمة Gemini، تم تقديم الرد من المحرك التعليمي البديل.',
     };
   }
-  if (msg.includes('TIMEOUT') || status >= 500 || msg.includes('ECONNRESET') || msg.includes('fetch failed')) {
+  if (msg.includes('TIMEOUT')) {
+    return {
+      retryable: false,
+      userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',
+    };
+  }
+  if (status >= 500 || msg.includes('ECONNRESET') || msg.includes('fetch failed')) {
     return {
       retryable: true,
       userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',
@@ -369,42 +380,123 @@ app.get('/api/gemini/status', (_req, res) => {
 });
 
 // ----------------- Gemini AI Tutor ("أستاذ نَهج") -----------------
+app.post('/api/gemini/tutor-stream', async (req, res) => {
+  const { message, context, subject, history, tutorMode, deepMode } = req.body || {};
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  let closed = false;
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      closed = true;
+    }
+  });
+
+  const activeAi = getGeminiClient();
+  const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+  const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
+  const formattedContents = buildTutorFormattedContents({
+    message,
+    subject,
+    context,
+    history,
+  });
+
+  let streamedAnyChunk = false;
+  let apiWarning: string | undefined;
+
+  if (activeAi) {
+    const abortController = new AbortController();
+    const firstChunkTimeout = setTimeout(() => {
+      abortController.abort();
+    }, 12000);
+
+    try {
+      const thinkingLevel =
+        modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW;
+
+      const streamResult = await activeAi.models.generateContentStream({
+        model: 'gemini-4-hydrogen',
+        contents: formattedContents,
+        config: {
+          abortSignal: abortController.signal,
+          systemInstruction: systemPrompt,
+          thinkingConfig: { thinkingLevel },
+        },
+      });
+
+      for await (const chunk of streamResult) {
+        if (closed) break;
+        const piece = chunk?.text;
+        if (piece) {
+          if (!streamedAnyChunk) {
+            clearTimeout(firstChunkTimeout);
+          }
+          streamedAnyChunk = true;
+          res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
+        }
+      }
+
+      clearTimeout(firstChunkTimeout);
+
+      if (streamedAnyChunk && !closed) {
+        res.write(`data: ${JSON.stringify({ done: true, source: 'gemini', isFree: true })}\n\n`);
+        return res.end();
+      }
+    } catch (err: any) {
+      clearTimeout(firstChunkTimeout);
+      const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
+      const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
+      apiWarning = classified.userWarning;
+      console.warn('Gemini tutor stream fallback triggered:', err?.message || err);
+    }
+  } else {
+    apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم الرد عبر المحرك التعليمي المحلي.';
+  }
+
+  if (!streamedAnyChunk && !closed) {
+    const fallbackReply = generateTutorFallback({ message, subject, tutorMode });
+    res.write(`data: ${JSON.stringify({ chunk: fallbackReply })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        done: true,
+        source: 'fallback',
+        warning: apiWarning,
+        isFree: true,
+      })}\n\n`
+    );
+  } else if (!closed) {
+    res.write(`data: ${JSON.stringify({ done: true, source: 'gemini', isFree: true })}\n\n`);
+  }
+
+  return res.end();
+});
+
 app.post('/api/gemini/tutor', async (req, res) => {
   try {
-    const { message, context, subject, history, tutorMode } = req.body;
+    const { message, context, subject, history, tutorMode, deepMode } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
     }
 
     const activeAi = getGeminiClient();
-
-    const modeDirective =
-      tutorMode === 'quiz'
-        ? 'نمط التحدي: اطرح على الطالب 3 أسئلة اختيار من متعدد قوية بنظام الربط والاستنتاج الحديث، ولا تكشف الإجابات حتى يجيب هو أولاً!'
-        : tutorMode === 'problem'
-        ? 'نمط المسائل والتركات: ركز على القوانين، التعويض الرياضي بالخطوات والأرقام، وتنبيهات الوحدات والتحويلات الفيزيائية والكيميائية.'
-        : tutorMode === 'plan'
-        ? 'نمط الخطة: صمم خطة عملية محكمة بالأيام والساعات لإنهاء وتصفية هذا الجزء في أقصر وقت ممكن.'
-        : 'نمط الشرح التفاعلي: فكك السؤال، اشرح المفهوم العلمي ببساطة، ركز على تركات الامتحان، واختم بسؤال تفاعلي سريع.';
-
-    const systemPrompt = `أنت «أستاذ نَهج»، المعلم الأكاديمي والمرشد التربوي الذكي الأول لطلاب الثانوية العامة في مصر (شعبة علمي علوم).
-طريقتك وأسلوبك:
-- تتحدث بالعامية المصرية الراقية والذكية، كأستاذ ثانوية عامة عبقري ومخلص يشرح بحب ووضوح، يشجع طالبه ويزرع فيه الثقة والهمة.
-- التوجيه الحالي: ${modeDirective}
-- منهجية الإجابة الذهبية لتوضيح كل سؤال وتفاعل الطالب (اجعل الرد مركزاً وواضحاً في حدود 180-320 كلمة بدون إطالة مملة):
-  1. 🎯 **تفكيك السؤال وفهم المطلوب:** وضح للطالب أولاً ماذا يطلب السؤال ولماذا يبدو خادعاً أو ما الفكرة المفتاحية التي يبحث عنها واضع الامتحان.
-  2. 💡 **الشرح وخطوات الحل النموذجية:** شرح علمي منظم بالخطوات، القوانين، والمعادلات مع ضرب مثال واقعي يرسخ في الذهن.
-  3. ⚡ **تركة الامتحان ومصيدة الطلاب:** نبهه صراحة على الخطأ الشائع الذي يقع فيه أغلب الطلاب في هذا الموضوع.
-  4. ❓ **سؤال تفاعلي سريع لك يا بطل:** اطرح في نهاية كل إجابة سؤالاً تطبيقياً قصيراً (اختيار من متعدد أو مسألة صغيرة) وتحداه أن يجاوب عليها الآن لتقييم إجابته!
-- متخصص ومتمكن في:
-  * الأحياء (الدعامة والحركة، الهرمونات، التكاثر، المناعة، البيولوجيا الجزيئية DNA & RNA).
-  * الكيمياء (العناصر الانتقالية، التحليل، الاتزان، الكهربية، الكيمياء العضوية).
-  * الفيزياء (الكهربية وقوانين كيرشوف، التأثير المغناطيسي، الحث، دوائر المتردد، الفيزياء الحديثة).
-  * الجيولوجيا والعلوم البيئية (التراكيب، المعادن، الصخور، التكتونية، التجوية، البيئة).
-  * اللغة العربية (النحو، البلاغة، الأدب، النصوص، القراءة) واللغة الإنجليزية.
-- إذا أرسل الطالب إجابة على سؤال سابق، قيّم إجابته بصراحة وصحح له الخطأ إن وجد أو احتفل بإصابته، ثم انتقل لخطوة أعلى.
-- ردودك سريعة ومباشرة دون حشو، وتستخدم علامات التنسيق الواضحة والنقاط.`;
+    const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+    const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
+    const formattedContents = buildTutorFormattedContents({
+      message,
+      subject,
+      context,
+      history,
+    });
 
     let reply: string = '';
     let responseSource: 'gemini' | 'fallback' = 'fallback';
@@ -412,36 +504,20 @@ app.post('/api/gemini/tutor', async (req, res) => {
 
     if (activeAi) {
       try {
-        const formattedContents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-        if (Array.isArray(history) && history.length > 0) {
-          const recentTurns = history.slice(-6);
-          for (const item of recentTurns) {
-            if (item?.text && typeof item.text === 'string' && item.text.trim()) {
-              formattedContents.push({
-                role: (item.sender === 'user' || item.role === 'user') ? 'user' : 'model',
-                parts: [{ text: item.text }],
-              });
-            }
-          }
-        }
-
-        const currentPrompt = `[المادة المستهدفة: ${subject || 'علمي علوم'}] ${context ? `[سياق: ${context}]` : ''}\nسؤال الطالب:\n${message}`;
-        formattedContents.push({
-          role: 'user',
-          parts: [{ text: currentPrompt }],
-        });
-
         const result = await runWithRetry(async () => {
           const response = await activeAi.models.generateContent({
             model: 'gemini-4-hydrogen',
             contents: formattedContents,
             config: {
               systemInstruction: systemPrompt,
-              thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+              thinkingConfig: {
+                thinkingLevel:
+                  modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+              },
             },
           });
           return response.text || '';
-        }, 2, 28000);
+        }, 1, 25000);
 
         if (result && result.trim()) {
           reply = result.trim();

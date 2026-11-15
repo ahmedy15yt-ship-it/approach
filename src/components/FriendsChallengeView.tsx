@@ -1,0 +1,798 @@
+import React, { useState } from 'react';
+import {
+  Swords,
+  Clock,
+  Plus,
+  Minus,
+  Copy,
+  Check,
+  Trophy,
+  Flame,
+  Share2,
+  UserPlus,
+  Trash2,
+  Sparkles,
+  Target,
+  Award,
+  Download,
+  AlertCircle,
+  Users,
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { DailyStudyHoursLog, FriendChallenge } from '../types';
+import {
+  buildChallengeShareMessage,
+  buildDailyHoursShareMessage,
+  decodeChallengeShareCode,
+} from '../utils/challengeCodes';
+
+interface FriendsChallengeViewProps {
+  studentName: string;
+  studyLog: DailyStudyHoursLog;
+  challenges: FriendChallenge[];
+  onAdjustTodayHours: (deltaHours: number) => void;
+  onSetTodayHours: (exactHours: number) => void;
+  onUpdateDailyGoal: (goalHours: number) => void;
+  onCreateChallenge: (input: {
+    title: string;
+    friendName: string;
+    targetHours: number;
+    friendInitialHours?: number;
+  }) => FriendChallenge;
+  onImportChallengeCode: (code: string) => {
+    ok: boolean;
+    message: string;
+  };
+  onUpdateFriendHours: (challengeId: string, deltaHours: number) => void;
+  onClaimChallengeReward: (challengeId: string) => void;
+  onDeleteChallenge: (challengeId: string) => void;
+}
+
+const CHALLENGE_PRESETS = [
+  'ماراثون 6 ساعات فيزياء وكيمياء ⚡',
+  'تحدي 8 ساعات تركيز بدون تشتيت 🔥',
+  'سباق تصفية متراكم الأحياء والجيولوجيا 🧬',
+  'تحدي 4 ساعات حل امتحانات شاملة 📝',
+];
+
+export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
+  studentName,
+  studyLog,
+  challenges,
+  onAdjustTodayHours,
+  onSetTodayHours,
+  onUpdateDailyGoal,
+  onCreateChallenge,
+  onImportChallengeCode,
+  onUpdateFriendHours,
+  onClaimChallengeReward,
+  onDeleteChallenge,
+}) => {
+  // Custom study hours editor
+  const [customHoursInput, setCustomHoursInput] = useState<string>('');
+  const [copiedDailyReport, setCopiedDailyReport] = useState(false);
+
+  // Create challenge form
+  const [challengeTitle, setChallengeTitle] = useState(CHALLENGE_PRESETS[0]);
+  const [friendName, setFriendName] = useState('');
+  const [targetHours, setTargetHours] = useState<number>(6);
+  const [friendInitialHours, setFriendInitialHours] = useState<number>(0);
+  const [createFeedback, setCreateFeedback] = useState<string | null>(null);
+
+  // Import friend challenge code form
+  const [importCodeInput, setImportCodeInput] = useState('');
+  const [importStatus, setImportStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Copy & delete states per challenge card
+  const [copiedChallengeId, setCopiedChallengeId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'finished'>('all');
+
+  const dailyPct = Math.min(
+    100,
+    Math.round((studyLog.hours / Math.max(1, studyLog.dailyGoalHours)) * 100)
+  );
+
+  const activeChallengesCount = challenges.filter((c) => c.status === 'active').length;
+  const wonChallengesCount = challenges.filter((c) => c.status === 'won').length;
+
+  const filteredChallenges = challenges.filter((c) => {
+    if (statusFilter === 'active') return c.status === 'active';
+    if (statusFilter === 'finished') return c.status !== 'active';
+    return true;
+  });
+
+  const handleCopyDailyReport = () => {
+    const text = buildDailyHoursShareMessage(
+      studentName,
+      studyLog.hours,
+      studyLog.dailyGoalHours,
+      studyLog.sessionsCount
+    );
+    navigator.clipboard.writeText(text);
+    setCopiedDailyReport(true);
+    setTimeout(() => setCopiedDailyReport(false), 2500);
+  };
+
+  const dailyWhatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+    buildDailyHoursShareMessage(
+      studentName,
+      studyLog.hours,
+      studyLog.dailyGoalHours,
+      studyLog.sessionsCount
+    )
+  )}`;
+
+  const handleSetExactHours = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = Number(customHoursInput);
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > 24) return;
+    onSetTodayHours(parsed);
+    setCustomHoursInput('');
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!friendName.trim()) {
+      setCreateFeedback('يرجى كتابة اسم الصديق أو الزميل أولاً.');
+      return;
+    }
+    const created = onCreateChallenge({
+      title: challengeTitle.trim() || CHALLENGE_PRESETS[0],
+      friendName: friendName.trim(),
+      targetHours,
+      friendInitialHours,
+    });
+    setFriendName('');
+    setFriendInitialHours(0);
+    setCreateFeedback(`تم إنشاء التحدي مع ${created.friendName} بنجاح! يمكنك نسخ كود التحدي ومشاركته الآن.`);
+    setTimeout(() => setCreateFeedback(null), 5000);
+  };
+
+  const handleImportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importCodeInput.trim()) return;
+    const preview = decodeChallengeShareCode(importCodeInput);
+    if (!preview) {
+      setImportStatus({
+        ok: false,
+        text: 'الكود غير صالح أو غير مكتمل. تأكد من لصق الكود الذي يبدأ بـ NAHJ-CH: كاملاً.',
+      });
+      return;
+    }
+    const result = onImportChallengeCode(importCodeInput);
+    setImportStatus({ ok: result.ok, text: result.message });
+    if (result.ok) {
+      setImportCodeInput('');
+    }
+  };
+
+  const handleCopyChallenge = (challenge: FriendChallenge) => {
+    const shareText = buildChallengeShareMessage(challenge, studentName);
+    navigator.clipboard.writeText(shareText);
+    setCopiedChallengeId(challenge.id);
+    setTimeout(() => setCopiedChallengeId(null), 2500);
+  };
+
+  const handleClaimReward = (challenge: FriendChallenge) => {
+    onClaimChallengeReward(challenge.id);
+    confetti({
+      particleCount: 90,
+      spread: 75,
+      origin: { y: 0.6 },
+    });
+  };
+
+  return (
+    <div className="space-y-6 font-['Cairo',sans-serif]">
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 sm:p-7 shadow-lg border border-red-900/40 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full text-xs font-black text-amber-300 border border-white/15">
+              <Swords className="w-3.5 h-3.5" />
+              <span>ساحة المنافسة الإيجابية • محفوظة في جهازك</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              تحدي الأصدقاء وساعات المذاكرة اليومية ⚔️
+            </h1>
+            <p className="text-xs sm:text-sm text-white/85 max-w-2xl leading-relaxed">
+              سجّل ساعات مذاكرتك اليوم (أو دع مؤقت بومودورو يسجلها لك تلقائياً)، أنشئ تحدياً مع زميلك، وشارك كود التحدي لمتابعة التقدم وجهاً لوجه وحصد نقاط XP!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5 bg-black/40 p-3 rounded-2xl border border-white/15 shrink-0">
+            <div className="text-center px-2.5 border-l border-white/15">
+              <span className="text-[10px] text-white/70 block">ساعات اليوم</span>
+              <span className="text-lg sm:text-xl font-black text-amber-300">
+                {studyLog.hours.toFixed(1)} س
+              </span>
+            </div>
+            <div className="text-center px-2.5 border-l border-white/15">
+              <span className="text-[10px] text-white/70 block">تحديات نشطة</span>
+              <span className="text-lg sm:text-xl font-black text-white">
+                {activeChallengesCount}
+              </span>
+            </div>
+            <div className="text-center px-2.5">
+              <span className="text-[10px] text-white/70 block">انتصاراتك</span>
+              <span className="text-lg sm:text-xl font-black text-emerald-400">
+                {wonChallengesCount} 🏆
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Study Hours Tracker + Share Card */}
+      <div className="bg-white dark:bg-[#121215] border-2 border-red-200/80 dark:border-red-900/50 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Clock className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white">
+                سجل ساعات مذاكرتك اليوم ({studyLog.date})
+              </h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                كل ساعة تضيفها تُحدّث تقدمك تلقائياً داخل جميع تحدياتك النشطة
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
+              هدف اليوم:
+            </label>
+            <select
+              value={studyLog.dailyGoalHours}
+              onChange={(e) => onUpdateDailyGoal(Number(e.target.value))}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-2.5 py-1 text-xs font-black text-[#DC2626] dark:text-red-300 focus:outline-none focus:border-[#DC2626]"
+            >
+              {[4, 5, 6, 7, 8, 9, 10, 12].map((h) => (
+                <option key={h} value={h}>
+                  {h} ساعات
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Big Hours Meter + Quick Step Buttons */}
+        <div className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl sm:text-4xl font-black text-[#DC2626] dark:text-red-400 font-mono" dir="ltr">
+                {studyLog.hours.toFixed(1)}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-zinc-600 dark:text-zinc-400">
+                من {studyLog.dailyGoalHours} ساعات ({dailyPct}%) • {studyLog.sessionsCount} جلسة بومودورو
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onAdjustTodayHours(-0.5)}
+                disabled={studyLog.hours <= 0}
+                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs font-black text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+              >
+                <Minus className="w-3 h-3" />
+                <span>0.5 س</span>
+              </button>
+              {[0.5, 1, 2].map((inc) => (
+                <button
+                  key={inc}
+                  type="button"
+                  onClick={() => onAdjustTodayHours(inc)}
+                  className="px-3 py-1.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-black flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{inc} س</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-l from-[#DC2626] via-red-500 to-amber-400 transition-all duration-300 rounded-full"
+              style={{ width: `${dailyPct}%` }}
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            {/* Manual Exact Hours Input */}
+            <form onSubmit={handleSetExactHours} className="flex items-center gap-2">
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="24"
+                value={customHoursInput}
+                onChange={(e) => setCustomHoursInput(e.target.value)}
+                placeholder="تعديل دقيق (مثال: 5.5)"
+                className="w-40 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 hover:bg-black text-white rounded-xl text-xs font-black cursor-pointer"
+              >
+                تثبيت الرقم
+              </button>
+            </form>
+
+            {/* Share Daily Hours Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyDailyReport}
+                className="px-3.5 py-2 bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs font-black text-[#DC2626] dark:text-red-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {copiedDailyReport ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-700 dark:text-emerald-400">تم نسخ التقرير!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>نسخ ساعات اليوم للمشاركة</span>
+                  </>
+                )}
+              </button>
+
+              <a
+                href={dailyWhatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>تحدَّ أصدقاءك على واتساب</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Challenge + Import Friend Code Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Card A: Create New Challenge */}
+        <form
+          onSubmit={handleCreateSubmit}
+          className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 flex items-center justify-center">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white">
+                إنشاء تحدي جديد مع زميل
+              </h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                تولّد لك المنصة كود تحدي فوري ترسله لزميلك
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                اسم الصديق / الزميل المتحدي:
+              </label>
+              <input
+                type="text"
+                value={friendName}
+                onChange={(e) => setFriendName(e.target.value)}
+                placeholder="مثال: يوسف طارق أو سارة محمود"
+                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                عنوان التحدي (اختر أو اكتب بنفسك):
+              </label>
+              <input
+                type="text"
+                value={challengeTitle}
+                onChange={(e) => setChallengeTitle(e.target.value)}
+                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+              />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {CHALLENGE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setChallengeTitle(preset)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                      challengeTitle === preset
+                        ? 'bg-red-50 dark:bg-red-950/60 border-[#DC2626] text-[#DC2626] dark:text-red-300'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                  هدف التحدي (ساعات):
+                </label>
+                <select
+                  value={targetHours}
+                  onChange={(e) => setTargetHours(Number(e.target.value))}
+                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                >
+                  {[2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
+                    <option key={h} value={h}>
+                      {h} ساعات
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                  ساعات زميلك المبدئية:
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  value={friendInitialHours}
+                  onChange={(e) => setFriendInitialHours(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {createFeedback && (
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+              ✅ {createFeedback}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-gradient-to-r from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D] text-white rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+          >
+            <Swords className="w-4 h-4 text-amber-300" />
+            <span>بدء التحدي وتوليد كود المشاركة</span>
+          </button>
+        </form>
+
+        {/* Card B: Import / Sync Friend Challenge Code */}
+        <form
+          onSubmit={handleImportSubmit}
+          className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4 transition-colors duration-200"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Download className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white">
+                  قبول تحدي أو تحديث ساعات صديق بكود
+                </h3>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  الصق رسالة التحدي أو الكود الذي يبدأ بـ <span className="font-mono">NAHJ-CH:</span> ليُحدّث التقدم فوراً
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1.5">
+                كود التحدي المُرسل من زميلك:
+              </label>
+              <textarea
+                rows={4}
+                value={importCodeInput}
+                onChange={(e) => {
+                  setImportCodeInput(e.target.value);
+                  if (importStatus) setImportStatus(null);
+                }}
+                placeholder="الصق هنا رسالة التحدي كاملة أو الكود (NAHJ-CH:...)..."
+                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626] resize-none"
+                dir="auto"
+              />
+            </div>
+
+            {importStatus && (
+              <div
+                className={`p-3 rounded-xl border text-xs font-bold flex items-start gap-2 ${
+                  importStatus.ok
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                    : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200'
+                }`}
+              >
+                {importStatus.ok ? (
+                  <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626]" />
+                )}
+                <span>{importStatus.text}</span>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={!importCodeInput.trim()}
+            className="w-full py-2.5 bg-zinc-900 dark:bg-amber-600 hover:bg-black dark:hover:bg-amber-500 disabled:opacity-40 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-all"
+          >
+            <Users className="w-4 h-4" />
+            <span>استيراد التحدي وتحديث الساعات الآن</span>
+          </button>
+        </form>
+      </div>
+
+      {/* Challenges List Header & Filter */}
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-[#C59B27] dark:text-amber-400" />
+            <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white">
+              سجل التحديات والمنافسات ({filteredChallenges.length})
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-white dark:bg-[#121215] p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+            {[
+              { id: 'all', label: 'الكل' },
+              { id: 'active', label: 'النشطة' },
+              { id: 'finished', label: 'المنتهية' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id as any)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  statusFilter === tab.id
+                    ? 'bg-[#DC2626] text-white'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {filteredChallenges.length === 0 ? (
+          <div className="bg-white dark:bg-[#121215] border border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl p-8 text-center space-y-2">
+            <Sparkles className="w-8 h-8 text-[#DC2626] mx-auto" />
+            <h3 className="text-sm font-black text-zinc-950 dark:text-white">
+              لا توجد تحديات في هذا التصنيف حالياً
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              أنشئ تحدياً جديداً بالأعلى أو استقبل كود تحدي من صديقك لتبدأ المنافسة!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredChallenges.map((challenge) => {
+              const myPct = Math.min(
+                100,
+                Math.round((challenge.myHours / Math.max(1, challenge.targetHours)) * 100)
+              );
+              const friendPct = Math.min(
+                100,
+                Math.round((challenge.friendHours / Math.max(1, challenge.targetHours)) * 100)
+              );
+              const diff = Number((challenge.myHours - challenge.friendHours).toFixed(1));
+              const canClaimReward =
+                !challenge.rewardClaimed && challenge.myHours >= challenge.targetHours;
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+                buildChallengeShareMessage(challenge, studentName)
+              )}`;
+
+              return (
+                <div
+                  key={challenge.id}
+                  className={`bg-white dark:bg-[#121215] border-2 rounded-3xl p-5 shadow-xs space-y-4 transition-all ${
+                    challenge.rewardClaimed
+                      ? 'border-emerald-300 dark:border-emerald-800/70'
+                      : diff >= 0
+                      ? 'border-red-200 dark:border-red-900/50'
+                      : 'border-amber-300 dark:border-amber-800/60'
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 border border-red-200 dark:border-red-800/60 flex items-center gap-1">
+                          <Target className="w-3 h-3" />
+                          <span>الهدف: {challenge.targetHours} ساعات</span>
+                        </span>
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                          +{challenge.rewardXp} XP
+                        </span>
+                      </div>
+                      <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white mt-2">
+                        {challenge.title}
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        المنافس: <strong className="text-zinc-900 dark:text-zinc-200">{challenge.friendName}</strong>
+                      </p>
+                    </div>
+
+                    {/* 2-step delete button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirmDeleteId === challenge.id) {
+                          onDeleteChallenge(challenge.id);
+                          setConfirmDeleteId(null);
+                        } else {
+                          setConfirmDeleteId(challenge.id);
+                          setTimeout(() => setConfirmDeleteId(null), 3500);
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
+                        confirmDeleteId === challenge.id
+                          ? 'bg-red-600 text-white border-red-600'
+                          : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-400 hover:text-red-600 border-zinc-200 dark:border-zinc-800'
+                      }`}
+                      title="حذف التحدي"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {confirmDeleteId === challenge.id && <span>تأكيد؟</span>}
+                    </button>
+                  </div>
+
+                  {/* Lead Status Pill */}
+                  <div
+                    className={`p-2.5 rounded-xl text-xs font-black flex items-center justify-between ${
+                      diff > 0
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
+                        : diff === 0
+                        ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800'
+                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 shrink-0" />
+                      {diff > 0
+                        ? `أنت متقدم بفارق +${diff} ساعة 🔥`
+                        : diff === 0
+                        ? 'تعادل قوي بينكما الآن ⚖️'
+                        : `${challenge.friendName} متقدم بفارق ${Math.abs(diff)} س — شد حيلك! ⚡`}
+                    </span>
+                    {challenge.rewardClaimed && (
+                      <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                        مُنجز ✓
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Head-to-Head Progress Bars */}
+                  <div className="space-y-3 bg-zinc-50 dark:bg-[#09090B] p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                    {/* My Bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-extrabold">
+                        <span className="text-[#DC2626] dark:text-red-400">
+                          أنت ({studentName.split(' ')[0]})
+                        </span>
+                        <span className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                          {challenge.myHours.toFixed(1)} / {challenge.targetHours} h ({myPct}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-l from-[#DC2626] to-red-500 rounded-full transition-all duration-300"
+                          style={{ width: `${myPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Friend Bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-extrabold">
+                        <span className="text-amber-700 dark:text-amber-300">
+                          {challenge.friendName}
+                        </span>
+                        <span className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                          {challenge.friendHours.toFixed(1)} / {challenge.targetHours} h ({friendPct}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-l from-amber-500 to-amber-400 rounded-full transition-all duration-300"
+                          style={{ width: `${friendPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Manual Friend Progress Sync Controls */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                        تحديث ساعات {challenge.friendName}:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onUpdateFriendHours(challenge.id, -0.5)}
+                          disabled={challenge.friendHours <= 0}
+                          className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[10px] font-black text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer"
+                        >
+                          -0.5 س
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateFriendHours(challenge.id, 0.5)}
+                          className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black cursor-pointer"
+                        >
+                          +0.5 س
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateFriendHours(challenge.id, 1)}
+                          className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black cursor-pointer"
+                        >
+                          +1 س
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reward Claim OR Share Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canClaimReward && (
+                      <button
+                        type="button"
+                        onClick={() => handleClaimReward(challenge)}
+                        className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Award className="w-4 h-4" />
+                        <span>حققّت الهدف! استلم مكافأة +{challenge.rewardXp} XP 🏆</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyChallenge(challenge)}
+                      className="grow py-2 px-3 bg-zinc-100 dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {copiedChallengeId === challenge.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700 dark:text-emerald-400">تم نسخ الكود والدعوة ✓</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-[#DC2626]" />
+                          <span>نسخ كود التحدي للمشاركة</span>
+                        </>
+                      )}
+                    </button>
+
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>واتساب</span>
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

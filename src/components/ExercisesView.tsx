@@ -15,6 +15,7 @@ import {
   Ruler,
   ChevronRight,
   Flame,
+  Activity,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { QUICK_ROUTINE, Exercise } from '../data/exercises';
@@ -81,7 +82,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   const [selectedExercise, setSelectedExercise] = useState<Exercise>(QUICK_ROUTINE[0]);
   const [secondsLeft, setSecondsLeft] = useState(QUICK_ROUTINE[0].durationSeconds);
   const [isRunning, setIsRunning] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [playerMode, setPlayerMode] = useState<'youtube' | 'guided'>('youtube');
+  const [isVideoStarted, setIsVideoStarted] = useState(true);
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   useEffect(() => {
     let timer: any = null;
@@ -96,10 +99,22 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
     return () => clearInterval(timer);
   }, [isRunning, secondsLeft]);
 
+  // Cycle active step indicator during guided visual playback or active timer
+  useEffect(() => {
+    const stepCount = Math.max(1, selectedExercise.instructions.length);
+    const elapsed = selectedExercise.durationSeconds - secondsLeft;
+    const stepDuration = Math.max(5, Math.floor(selectedExercise.durationSeconds / stepCount));
+    if (isRunning) {
+      setActiveStepIndex(Math.min(stepCount - 1, Math.floor(elapsed / stepDuration)));
+    }
+  }, [secondsLeft, isRunning, selectedExercise]);
+
   const selectExercise = (ex: Exercise) => {
     setIsRunning(false);
     setSelectedExercise(ex);
     setSecondsLeft(ex.durationSeconds);
+    setActiveStepIndex(0);
+    setIsVideoStarted(true);
   };
 
   const toggleTimer = () => {
@@ -272,31 +287,140 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               {selectedExercise.benefit}
             </p>
 
-            {/* Embedded YouTube Player */}
-            <div className="rounded-2xl overflow-hidden border-2 border-white/20 shadow-md bg-black/50 aspect-video relative">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${selectedExercise.youtubeId}?rel=0&modestbranding=1`}
-                title={selectedExercise.name}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
+            {/* Video Player Mode Switcher */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1 bg-black/35 p-1 rounded-xl border border-white/15">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlayerMode('youtube');
+                    setIsVideoStarted(true);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                    playerMode === 'youtube'
+                      ? 'bg-white text-zinc-950 shadow-xs'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5 text-[#DC2626]" />
+                  <span>فيديو يوتيوب المباشر</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlayerMode('guided')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                    playerMode === 'guided'
+                      ? 'bg-amber-400 text-zinc-950 shadow-xs'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>المدرب التفاعلي (بدون نت)</span>
+                </button>
+              </div>
+
+              <a
+                href={`https://www.youtube.com/watch?v=${selectedExercise.youtubeId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-amber-300 flex items-center gap-1 underline text-[11px] text-white/85"
+              >
+                <span>فتح على يوتيوب</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* Embedded YouTube Player OR Interactive Motion Guide */}
+            <div className="rounded-2xl overflow-hidden border-2 border-white/25 shadow-md bg-black/70 aspect-video relative">
+              {playerMode === 'youtube' ? (
+                isVideoStarted ? (
+                  <iframe
+                    key={`${selectedExercise.id}-${selectedExercise.youtubeId}`}
+                    src={`https://www.youtube.com/embed/${selectedExercise.youtubeId}?rel=0&playsinline=1&modestbranding=1`}
+                    title={selectedExercise.name}
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsVideoStarted(true)}
+                    className="w-full h-full relative group cursor-pointer flex items-center justify-center bg-black"
+                  >
+                    <img
+                      src={`https://i.ytimg.com/vi/${selectedExercise.youtubeId}/hqdefault.jpg`}
+                      alt={selectedExercise.name}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                    <span className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center gap-2">
+                      <span className="w-16 h-16 rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                        <Play className="w-7 h-7 fill-current translate-x-[-1px]" />
+                      </span>
+                      <span className="text-xs font-black bg-black/70 px-3 py-1 rounded-full text-white">
+                        اضغط لتشغيل فيديو التمرين
+                      </span>
+                    </span>
+                  </button>
+                )
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#09090B] via-[#1A090B] to-[#09090B] p-5 flex flex-col justify-between text-right">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-1 rounded-full bg-[#DC2626] text-white text-[11px] font-black flex items-center gap-1.5">
+                      <Activity className={`w-3.5 h-3.5 ${isRunning ? 'animate-pulse' : ''}`} />
+                      <span>الخطوة {activeStepIndex + 1} من {selectedExercise.instructions.length}</span>
+                    </span>
+                    <span className="font-mono text-sm font-black text-amber-300" dir="ltr">
+                      {formatTimer(secondsLeft)}
+                    </span>
+                  </div>
+
+                  <div className="my-auto py-3 space-y-3 text-center">
+                    <div className={`w-16 h-16 mx-auto rounded-2xl border-2 border-amber-400/60 bg-red-950/60 flex items-center justify-center ${isRunning ? 'animate-bounce' : ''}`}>
+                      <Dumbbell className="w-8 h-8 text-amber-300" />
+                    </div>
+                    <p className="text-sm sm:text-base font-black text-white leading-relaxed max-w-lg mx-auto">
+                      {selectedExercise.instructions[activeStepIndex] || selectedExercise.instructions[0]}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-1.5">
+                      {selectedExercise.instructions.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveStepIndex(idx)}
+                          className={`h-2 rounded-full transition-all cursor-pointer ${
+                            idx === activeStepIndex ? 'w-7 bg-amber-400' : 'w-2 bg-white/30 hover:bg-white/60'
+                          }`}
+                          title={`الخطوة ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleTimer}
+                      className="px-3.5 py-1.5 rounded-xl bg-white text-zinc-950 text-xs font-black flex items-center gap-1 cursor-pointer"
+                    >
+                      {isRunning ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                      <span>{isRunning ? 'إيقاف' : 'تشغيل التوجيه'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-xs text-white/75">
               <span className="flex items-center gap-1.5">
                 <Video className="w-4 h-4 text-amber-300" />
-                <span>فيديو توضيحي مباشر للحركة الصحيحة</span>
+                <span>
+                  {playerMode === 'youtube'
+                    ? 'اضغط تشغيل داخل المشغل أو جرّب «المدرب التفاعلي» في أي وقت'
+                    : 'المدرب التفاعلي يوجّهك خطوة بخطوة مع المؤقت'}
+                </span>
               </span>
-              <a
-                href={`https://www.youtube.com/watch?v=${selectedExercise.youtubeId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-amber-300 flex items-center gap-1 underline text-[11px]"
-              >
-                <span>مشاهدة على تطبيق يوتيوب</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
             </div>
 
             {/* Step-by-Step Written Guide */}

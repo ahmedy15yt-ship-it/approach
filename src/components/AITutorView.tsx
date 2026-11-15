@@ -21,10 +21,13 @@ import {
   Target,
   ArrowRight,
   Flame,
+  Mic,
+  MicOff,
+  Radio,
 } from 'lucide-react';
 import { Subject } from '../types';
 import { speakTutorVoice, stopSpeaking } from '../utils/voiceAlerts';
-import { generateTutorFallback } from '../utils/aiFallbacks';
+import { streamTutorReply } from '../utils/tutorStreamClient';
 
 interface Message {
   id: string;
@@ -251,7 +254,9 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
   const [inputMessage, setInputMessage] = useState(initialPrompt || '');
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || 'الأحياء');
   const [tutorMode, setTutorMode] = useState<TutorMode>('explain');
+  const [deepMode, setDeepMode] = useState<'fast' | 'deep'>('fast');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<'normal' | 'large'>('large');
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -260,8 +265,19 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
   const [geminiConfigured, setGeminiConfigured] = useState<boolean | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // Voice Chat (الدردشة الصوتية) states
+  const [isListening, setIsListening] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [voiceAutoReply, setVoiceAutoReply] = useState<boolean>(() => {
+    return localStorage.getItem('nahj_tutor_voice_reply') === 'true';
+  });
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const transcriptBufferRef = useRef<string>('');
+  const voiceCancelledRef = useRef<boolean>(false);
 
   useEffect(() => {
     fetch('/api/gemini/status')
@@ -272,7 +288,20 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
         }
       })
       .catch(() => {});
+
+    return () => {
+      stopSpeaking();
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        // ignore cleanup error
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nahj_tutor_voice_reply', voiceAutoReply ? 'true' : 'false');
+  }, [voiceAutoReply]);
 
   useEffect(() => {
     if (initialPrompt) {
@@ -295,7 +324,11 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
     }
   }, [inputMessage]);
 
-  const handleSendMessage = async (customText?: string, overrideSubject?: string) => {
+  const handleSendMessage = async (
+    customText?: string,
+    overrideSubject?: string,
+    speakThisReply?: boolean
+  ) => {
     const textToSend = (customText ?? inputMessage).trim();
     const activeSubject = overrideSubject || selectedSubject;
     if (!textToSend || isLoading) return;
@@ -314,10 +347,10 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
 
     const historyPayload = messages
       .filter((m) => m.id !== 'welcome-1' && m.id !== 'welcome-reset' && !m.isError)
-      .slice(-6)
+      .slice(-4)
       .map((m) => ({
         role: m.sender === 'user' ? 'user' : 'model',
-        text: m.text,
+        text: m.text.slice(0, 900),
       }));
 
     setMessages((prev) => [...prev, userMsg]);
@@ -329,79 +362,96 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
     }
     setIsLoading(true);
 
+    const shouldSpeak = Boolean(speakThisReply || voiceAutoReply);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 36000);
+    const tutorMsgId = `tutor-${Date.now()}`;
+    let hasCreatedStreamBubble = false;
+
     try {
-      const res = await fetch('/api/gemini/tutor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: textToSend,
-          subject: activeSubject,
-          tutorMode: tutorMode,
-          history: historyPayload,
-        }),
+      const result = await streamTutorReply({
+        message: textToSend,
+        subject: activeSubject,
+        tutorMode,
+        deepMode,
+        history: historyPayload,
+        signal: controller.signal,
+        onChunk: (accumulated) => {
+          if (!hasCreatedStreamBubble) {
+            hasCreatedStreamBubble = true;
+            setStreamingMessageId(tutorMsgId);
+            const initialBubble: Message = {
+              id: tutorMsgId,
+              sender: 'tutor',
+              text: accumulated,
+              timestamp: new Date().toLocaleTimeString('ar-EG', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              subject: activeSubject,
+              mode: tutorMode,
+              source: 'gemini',
+            };
+            setMessages((prev) => [...prev, initialBubble]);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === tutorMsgId ? { ...m, text: accumulated } : m))
+            );
+          }
+        },
       });
 
-      const rawText = await res.text();
-      let data: any = null;
-      try {
-        data = rawText ? JSON.parse(rawText) : null;
-      } catch {
-        data = null;
-      }
-
-      if (!res.ok) {
-        if (res.status === 404) {
-          const fallbackReply = generateTutorFallback({
-            message: textToSend,
-            subject: activeSubject,
-            tutorMode,
-          });
-          const tutorMsg: Message = {
-            id: `tutor-${Date.now()}`,
-            sender: 'tutor',
-            text: fallbackReply,
-            timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-            subject: activeSubject,
-            mode: tutorMode,
-            source: 'fallback',
-            warning: 'تم التجاوب عبر المحرك التعليمي الذكي المدمج.',
-          };
-          setMessages((prev) => [...prev, tutorMsg]);
-          return;
-        }
-        const errDetail =
-          data?.error ||
-          data?.message ||
-          (res.status === 429
-            ? 'تم تجاوز حد الطلبات المؤقت لخدمة الذكاء الاصطناعي، يرجى الانتظار قليلاً ثم المحاولة.'
-            : res.status === 401 || res.status === 403
-            ? 'تعذر التحقق من صلاحية مفتاح Gemini API على الخادم.'
-            : `تعذر الحصول على رد من الخادم (كود ${res.status}).`);
-        throw new Error(errDetail);
-      }
-
-      if (data && typeof data.reply === 'string' && data.reply.trim()) {
-        const tutorMsg: Message = {
-          id: `tutor-${Date.now()}`,
+      const replyText = result.reply;
+      if (!hasCreatedStreamBubble) {
+        const finalBubble: Message = {
+          id: tutorMsgId,
           sender: 'tutor',
-          text: data.reply.trim(),
-          timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+          text: replyText,
+          timestamp: new Date().toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
           subject: activeSubject,
           mode: tutorMode,
-          source: data.source,
-          warning: data.warning,
+          source: result.source,
+          warning: result.warning,
         };
-        setMessages((prev) => [...prev, tutorMsg]);
+        setMessages((prev) => [...prev, finalBubble]);
       } else {
-        throw new Error(data?.error || 'وصل رد فارغ من المعلم الذكي، يرجى إعادة المحاولة.');
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tutorMsgId
+              ? {
+                  ...m,
+                  text: replyText,
+                  source: result.source,
+                  warning: result.warning,
+                }
+              : m
+          )
+        );
+      }
+
+      if (shouldSpeak) {
+        const started = speakTutorVoice(
+          replyText,
+          () => setSpeakingMessageId(null),
+          () => setSpeakingMessageId(null)
+        );
+        if (started) setSpeakingMessageId(tutorMsgId);
       }
     } catch (err: any) {
-      const errMessage =
-        err?.message && typeof err.message === 'string'
-          ? err.message
-          : 'حدث انقطاع مؤقت في الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة.';
+      const isTimeout = err?.name === 'AbortError';
+      const errMessage = isTimeout
+        ? 'استغرق الرد وقتاً أطول من المعتاد؛ يمكنك الضغط على «إعادة المحاولة» للإرسال الفوري.'
+        : err?.message && typeof err.message === 'string'
+        ? err.message
+        : 'حدث انقطاع مؤقت في الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة.';
       setApiError(errMessage);
       setLastFailedPayload({ text: textToSend, subject: activeSubject });
+      if (hasCreatedStreamBubble) {
+        setMessages((prev) => prev.filter((m) => m.id !== tutorMsgId));
+      }
       const errorMsg: Message = {
         id: `err-${Date.now()}`,
         sender: 'tutor',
@@ -411,7 +461,109 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
+      clearTimeout(timeoutId);
+      setStreamingMessageId(null);
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleVoiceListening = () => {
+    if (isListening) {
+      voiceCancelledRef.current = false;
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        setIsListening(false);
+      }
+      return;
+    }
+
+    const SpeechRecognitionClass =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionClass) {
+      setVoiceNotice(
+        'متصفحك الحالي لا يدعم الإدخال الصوتي عبر الميكروفون؛ استخدم متصفح Chrome على الهاتف أو الكمبيوتر، ويمكنك تفعيل «رد صوتي تلقائي» لسماع إجابات الأستاذ.'
+      );
+      return;
+    }
+
+    setVoiceNotice(null);
+    stopSpeaking();
+    setSpeakingMessageId(null);
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.lang = 'ar-EG';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      transcriptBufferRef.current = '';
+      voiceCancelledRef.current = false;
+      setLiveTranscript('');
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let finalStr = '';
+        let interimStr = '';
+        for (let i = 0; i < event.results.length; i++) {
+          const piece = event.results[i][0]?.transcript || '';
+          if (event.results[i].isFinal) {
+            finalStr += piece + ' ';
+          } else {
+            interimStr += piece;
+          }
+        }
+        const combined = (finalStr + interimStr).trim();
+        transcriptBufferRef.current = combined;
+        setLiveTranscript(combined);
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+          setVoiceNotice('يرجى السماح بصلاحية الميكروفون في المتصفح لتشغيل الدردشة الصوتية.');
+        } else if (event?.error === 'no-speech') {
+          setVoiceNotice('لم نلتقط صوتاً واضحاً؛ اضغط على الميكروفون وتحدث بوضوح.');
+        } else if (event?.error !== 'aborted') {
+          setVoiceNotice('تعذر التقاط الصوت مؤقتاً، حاول مرة أخرى أو اكتب سؤالك.');
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        const captured = transcriptBufferRef.current.trim();
+        transcriptBufferRef.current = '';
+        setLiveTranscript('');
+        if (!voiceCancelledRef.current && captured) {
+          if (!voiceAutoReply) {
+            setVoiceAutoReply(true);
+          }
+          handleSendMessage(captured, selectedSubject, true);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceNotice('تعذر تشغيل الميكروفون حالياً، يرجى التأكد من أذونات المتصفح.');
+    }
+  };
+
+  const handleCancelVoiceListening = () => {
+    voiceCancelledRef.current = true;
+    transcriptBufferRef.current = '';
+    setLiveTranscript('');
+    setIsListening(false);
+    try {
+      recognitionRef.current?.abort();
+    } catch {
+      // ignore
     }
   };
 
@@ -537,8 +689,29 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
           </div>
         </div>
 
-        {/* Header Quick Controls: Font Size & Clear Chat */}
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        {/* Header Quick Controls: Auto Voice Reply, Font Size & Clear Chat */}
+        <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !voiceAutoReply;
+              setVoiceAutoReply(next);
+              if (!next) {
+                stopSpeaking();
+                setSpeakingMessageId(null);
+              }
+            }}
+            className={`px-2.5 py-1.5 border rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+              voiceAutoReply
+                ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
+                : 'bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200'
+            }`}
+            title="نطق ردود أستاذ نَهج تلقائياً في الدردشة الصوتية"
+          >
+            <Radio className={`w-3.5 h-3.5 ${voiceAutoReply ? 'animate-pulse' : ''}`} />
+            <span>{voiceAutoReply ? 'رد صوتي تلقائي 🔊' : 'محادثة صوتية'}</span>
+          </button>
+
           <button
             onClick={() => setFontSize(fontSize === 'large' ? 'normal' : 'large')}
             className="px-2.5 py-1.5 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer"
@@ -563,27 +736,55 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
         </div>
       </div>
 
-      {/* 2) Tutor Mode Selector Banner */}
-      <div className="bg-red-50/70 dark:bg-red-950/30 border-b border-red-200/70 dark:border-red-900/30 px-4 sm:px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        <span className="text-[11px] font-black text-[#DC2626] dark:text-red-300 shrink-0 ml-1">
-          أسلوب الرد:
-        </span>
-        {TUTOR_MODES.map((mode) => {
-          const isSelected = tutorMode === mode.id;
-          return (
-            <button
-              key={mode.id}
-              onClick={() => setTutorMode(mode.id)}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
-                isSelected
-                  ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-800 hover:border-[#DC2626]'
-              }`}
-            >
-              <span>{mode.label}</span>
-            </button>
-          );
-        })}
+      {/* 2) Tutor Mode & Depth Selector Banner */}
+      <div className="bg-red-50/70 dark:bg-red-950/30 border-b border-red-200/70 dark:border-red-900/30 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-black text-[#DC2626] dark:text-red-300 shrink-0 ml-1">
+            أسلوب الرد:
+          </span>
+          {TUTOR_MODES.map((mode) => {
+            const isSelected = tutorMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                onClick={() => setTutorMode(mode.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
+                  isSelected
+                    ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
+                    : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-800 hover:border-[#DC2626]'
+                }`}
+              >
+                <span>{mode.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Fast + Deep vs Ultra-Deep Analysis Switch */}
+        <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-red-200 dark:border-red-900/40 shrink-0">
+          <button
+            type="button"
+            onClick={() => setDeepMode('fast')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+              deepMode === 'fast'
+                ? 'bg-[#DC2626] text-white shadow-2xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+            }`}
+          >
+            ⚡ سريع وعميق
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeepMode('deep')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+              deepMode === 'deep'
+                ? 'bg-zinc-900 dark:bg-amber-600 text-white shadow-2xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+            }`}
+          >
+            🔬 شرح فائق العمق
+          </button>
+        </div>
       </div>
 
       {/* 3) Subjects Filter Bar */}
@@ -770,8 +971,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
           );
         })}
 
-        {/* Fast Loading Spinner Indicator */}
-        {isLoading && (
+        {/* Fast Loading Spinner Indicator (only shown before first streamed token arrives) */}
+        {isLoading && !streamingMessageId && (
           <div className="flex items-start gap-3.5 max-w-4xl mx-auto">
             <div className="w-9 h-9 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center shrink-0 shadow-xs">
               <Bot className="w-5 h-5 text-amber-300 animate-spin" />
@@ -780,7 +981,11 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
               <span className="inline-block animate-bounce text-amber-500">●</span>
               <span className="inline-block animate-bounce delay-150 text-[#DC2626]">●</span>
               <span className="inline-block animate-bounce delay-300 text-amber-500">●</span>
-              <span>أستاذ نَهج يفكك السؤال ويكتب لك خطوات الحل وتركات الامتحان الآن...</span>
+              <span>
+                {deepMode === 'deep'
+                  ? 'أستاذ نَهج يحلّل الفكرة بعمق ويجهّز البث الفوري للشرح...'
+                  : 'جاري الاتصال السريع بأستاذ نَهج وبث الشرح الآن...'}
+              </span>
             </div>
           </div>
         )}
@@ -834,14 +1039,78 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
         ))}
       </div>
 
-      {/* 6) Bottom Input Form: Spacious & Multi-line capable */}
+      {/* 6) Active Voice Listening Bar OR Voice Browser Notice */}
+      {isListening && (
+        <div className="bg-red-50 dark:bg-red-950/50 border-t-2 border-[#DC2626] px-4 sm:px-6 py-3 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="w-3 h-3 rounded-full bg-[#DC2626] animate-ping shrink-0" />
+            <div className="text-xs font-bold text-red-950 dark:text-red-100">
+              <span className="block font-black text-[#DC2626] dark:text-red-300">
+                🎙️ الدردشة الصوتية نشطة — تحدث بسؤالك الآن بالعربية...
+              </span>
+              {liveTranscript && (
+                <span className="text-zinc-800 dark:text-zinc-200 block mt-0.5">
+                  «{liveTranscript}»
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <button
+              type="button"
+              onClick={handleToggleVoiceListening}
+              className="px-3 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black cursor-pointer"
+            >
+              إرسال ما قلته ✓
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelVoiceListening}
+              className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold cursor-pointer"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+
+      {voiceNotice && !isListening && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800/60 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+          <span>🎙️ {voiceNotice}</span>
+          <button
+            type="button"
+            onClick={() => setVoiceNotice(null)}
+            className="text-[11px] underline cursor-pointer shrink-0"
+          >
+            إخفاء
+          </button>
+        </div>
+      )}
+
+      {/* 7) Bottom Input Form: Voice Mic + Spacious Multi-line Input + Fast Send */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSendMessage();
         }}
-        className="bg-white dark:bg-[#121215] border-t-2 border-red-200/70 dark:border-red-900/40 p-3 sm:p-4 shrink-0 flex items-end gap-2.5 transition-colors duration-200"
+        className="bg-white dark:bg-[#121215] border-t-2 border-red-200/70 dark:border-red-900/40 p-3 sm:p-4 shrink-0 flex items-end gap-2 transition-colors duration-200"
       >
+        <button
+          type="button"
+          onClick={handleToggleVoiceListening}
+          disabled={isLoading}
+          title={isListening ? 'إيقاف الميكروفون وإرسال' : 'ابدأ الدردشة الصوتية بالميكروفون'}
+          className={`h-11 px-3.5 rounded-2xl border-2 font-black text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer disabled:opacity-40 ${
+            isListening
+              ? 'bg-[#DC2626] text-white border-[#DC2626] animate-pulse shadow-md'
+              : 'bg-zinc-100 dark:bg-zinc-900 text-[#DC2626] dark:text-red-400 border-zinc-300 dark:border-zinc-700 hover:border-[#DC2626]'
+          }`}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          <span className="hidden md:inline">{isListening ? 'إيقاف' : 'صوتي'}</span>
+        </button>
+
         <div className="grow relative bg-zinc-50 dark:bg-[#09090B] border-2 border-zinc-300 dark:border-zinc-700 focus-within:border-[#DC2626] dark:focus-within:border-red-500 focus-within:bg-white dark:focus-within:bg-[#09090B] rounded-2xl transition-all p-2 flex items-center">
           <textarea
             ref={textareaRef}
@@ -849,7 +1118,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`اسأل أستاذ نَهج في ${selectedSubject} (مسألة صعبة، تركة سؤال، أو إجابتك على السؤال التفاعلي)...`}
+            placeholder={`اسأل أستاذ نَهج في ${selectedSubject} كتابةً أو اضغط 🎙️ للدردشة الصوتية...`}
             className="w-full text-xs sm:text-sm bg-transparent focus:outline-none text-zinc-950 dark:text-white font-medium resize-none max-h-36 px-2 py-1 leading-relaxed placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
           />
         </div>
@@ -857,7 +1126,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
         <button
           type="submit"
           disabled={!inputMessage.trim() || isLoading}
-          className="h-11 px-5 sm:px-6 bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-40 text-white rounded-2xl text-xs sm:text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          className="h-11 px-4 sm:px-6 bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-40 text-white rounded-2xl text-xs sm:text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">إرسال</span>

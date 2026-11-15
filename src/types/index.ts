@@ -94,3 +94,27 @@ export interface LeaderboardUser {
   badge: string;
   isCurrentUser?: boolean;
 }
+
+export interface DailyStudyHoursLog {
+  date: string; // YYYY-MM-DD
+  hours: number;
+  sessionsCount: number;
+  dailyGoalHours: number;
+  updatedAt: string;
+}
+
+export interface FriendChallenge {
+  id: string;
+  title: string;
+  friendName: string;
+  targetHours: number;
+  myHours: number;
+  friendHours: number;
+  status: 'active' | 'won' | 'completed';
+  rewardXp: number;
+  rewardClaimed?: boolean;
+  shareCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

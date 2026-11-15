@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Swords,
 } from 'lucide-react';
 
 import {
@@ -24,6 +25,8 @@ import {
   DailyTask,
   StudentProfile,
   LeaderboardUser,
+  DailyStudyHoursLog,
+  FriendChallenge,
 } from './types';
 import { INITIAL_CURRICULUM } from './data/curriculum';
 import {
@@ -31,7 +34,11 @@ import {
   calculatePrayerTimes,
   PrayerTime,
 } from './data/prayer';
-import { INITIAL_DAILY_TASKS, INITIAL_LEADERBOARD } from './data/tasks';
+import {
+  INITIAL_LEADERBOARD,
+  getCurrentTaskCycleIndex,
+  getTasksForCycle,
+} from './data/tasks';
 
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
@@ -45,10 +52,15 @@ import { QuranPrayerSection } from './components/QuranPrayerSection';
 import { TasksLeaderboardView } from './components/TasksLeaderboardView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
+import { FriendsChallengeView } from './components/FriendsChallengeView';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
 import { playAdhan, isAutoAdhanEnabled } from './utils/adhanPlayer';
+import {
+  encodeChallengeShareCode,
+  decodeChallengeShareCode,
+} from './utils/challengeCodes';
 
 export default function App() {
 
@@ -130,10 +142,26 @@ export default function App() {
     ];
   });
 
-  // Daily Tasks state
+  // Daily Tasks state (Rotates automatically every 13 hours)
+  const [taskCycleIndex, setTaskCycleIndex] = useState<number>(() => getCurrentTaskCycleIndex());
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
+    const currentCycle = getCurrentTaskCycleIndex();
+    const savedCycle = Number(localStorage.getItem('nahj_tasks_cycle'));
     const saved = localStorage.getItem('nahj_tasks');
-    return saved ? JSON.parse(saved) : INITIAL_DAILY_TASKS;
+    if (saved && !Number.isNaN(savedCycle) && savedCycle === currentCycle) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 6) {
+          return parsed;
+        }
+      } catch {
+        // fallback to fresh cycle tasks
+      }
+    }
+    const freshTasks = getTasksForCycle(currentCycle);
+    localStorage.setItem('nahj_tasks_cycle', String(currentCycle));
+    localStorage.setItem('nahj_tasks', JSON.stringify(freshTasks));
+    return freshTasks;
   });
 
   // Student Profile state - XP starts at 0 for every student, increments progressively
@@ -165,6 +193,41 @@ export default function App() {
     };
   });
 
+  const STREAK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+  const [streakLastTickMs, setStreakLastTickMs] = useState<number>(() => {
+    const savedTick = Number(localStorage.getItem('nahj_streak_last_tick_ms'));
+    if (savedTick && !Number.isNaN(savedTick) && savedTick > 0) {
+      return savedTick;
+    }
+    const now = Date.now();
+    localStorage.setItem('nahj_streak_last_tick_ms', String(now));
+    return now;
+  });
+
+  useEffect(() => {
+    const checkStreak24h = () => {
+      const now = Date.now();
+      const elapsed = now - streakLastTickMs;
+      if (elapsed >= STREAK_INTERVAL_MS) {
+        const completedCycles = Math.floor(elapsed / STREAK_INTERVAL_MS);
+        const nextTick = streakLastTickMs + completedCycles * STREAK_INTERVAL_MS;
+        setStreakLastTickMs(nextTick);
+        localStorage.setItem('nahj_streak_last_tick_ms', String(nextTick));
+        setProfile((prev) => ({
+          ...prev,
+          streakDays: (prev.streakDays || 0) + completedCycles,
+        }));
+        if (voiceAlertsEnabled) {
+          announceTask(`تمت إضافة ${completedCycles} يوم جديد لسلسلة الالتزام كل 24 ساعة!`);
+        }
+      }
+    };
+
+    checkStreak24h();
+    const interval = setInterval(checkStreak24h, 30000);
+    return () => clearInterval(interval);
+  }, [streakLastTickMs, voiceAlertsEnabled]);
+
   const handleUpdateStudentMetrics = (weight: number, height: number) => {
     setProfile((prev) => ({ ...prev, weightKg: weight, heightCm: height }));
     localStorage.setItem('nahj_student_weight', String(weight));
@@ -176,6 +239,288 @@ export default function App() {
       ...prev,
       totalXp: prev.totalXp + amount,
     }));
+  };
+
+  // Daily Study Hours Log (Persisted in localStorage under nahj_study_hours_log)
+  const getTodayIso = () => new Date().toISOString().split('T')[0];
+
+  const [todayStudyLog, setTodayStudyLog] = useState<DailyStudyHoursLog>(() => {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const saved = localStorage.getItem('nahj_study_hours_log');
+      if (saved) {
+        const parsed = JSON.parse(saved) as DailyStudyHoursLog;
+        if (parsed && parsed.date === today) {
+          return {
+            date: today,
+            hours: Number(parsed.hours) || 0,
+            sessionsCount: Number(parsed.sessionsCount) || 0,
+            dailyGoalHours: Number(parsed.dailyGoalHours) || 8,
+            updatedAt: parsed.updatedAt || new Date().toISOString(),
+          };
+        }
+        if (parsed && parsed.dailyGoalHours) {
+          return {
+            date: today,
+            hours: 0,
+            sessionsCount: 0,
+            dailyGoalHours: Number(parsed.dailyGoalHours) || 8,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      }
+    } catch {
+      // ignore malformed storage
+    }
+    return {
+      date: today,
+      hours: 0,
+      sessionsCount: 0,
+      dailyGoalHours: 8,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  // Friends Study Challenges (Persisted in localStorage under nahj_friend_challenges)
+  const [friendChallenges, setFriendChallenges] = useState<FriendChallenge[]>(() => {
+    try {
+      const saved = localStorage.getItem('nahj_friend_challenges');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore malformed storage
+    }
+    const seedId = 'ch-starter-1';
+    const seedCreated = new Date().toISOString();
+    return [
+      {
+        id: seedId,
+        title: 'ماراثون 6 ساعات فيزياء وكيمياء ⚡',
+        friendName: 'عمر شريف',
+        targetHours: 6,
+        myHours: 0,
+        friendHours: 2.5,
+        status: 'active',
+        rewardXp: 80,
+        rewardClaimed: false,
+        shareCode: encodeChallengeShareCode({
+          v: 1,
+          id: seedId,
+          title: 'ماراثون 6 ساعات فيزياء وكيمياء ⚡',
+          challengerName: 'طالب نَهج',
+          targetHours: 6,
+          challengerHours: 0,
+          createdAt: seedCreated,
+        }),
+        createdAt: seedCreated,
+        updatedAt: seedCreated,
+      },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('nahj_study_hours_log', JSON.stringify(todayStudyLog));
+  }, [todayStudyLog]);
+
+  useEffect(() => {
+    localStorage.setItem('nahj_friend_challenges', JSON.stringify(friendChallenges));
+  }, [friendChallenges]);
+
+  const syncMyHoursAcrossChallenges = (deltaHours: number, sessionIncrement = 0) => {
+    const today = getTodayIso();
+    setTodayStudyLog((prev) => {
+      const baseHours = prev.date === today ? prev.hours : 0;
+      const baseSessions = prev.date === today ? prev.sessionsCount : 0;
+      const nextHours = Math.max(0, Math.min(24, Number((baseHours + deltaHours).toFixed(2))));
+      return {
+        date: today,
+        hours: nextHours,
+        sessionsCount: baseSessions + sessionIncrement,
+        dailyGoalHours: prev.dailyGoalHours || 8,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    if (deltaHours !== 0) {
+      setFriendChallenges((prev) =>
+        prev.map((ch) => {
+          if (ch.status !== 'active') return ch;
+          const updatedHours = Math.max(
+            0,
+            Math.min(24, Number((ch.myHours + deltaHours).toFixed(2)))
+          );
+          return {
+            ...ch,
+            myHours: updatedHours,
+            shareCode: encodeChallengeShareCode({
+              v: 1,
+              id: ch.id,
+              title: ch.title,
+              challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+              targetHours: ch.targetHours,
+              challengerHours: updatedHours,
+              createdAt: ch.createdAt,
+            }),
+            updatedAt: new Date().toISOString(),
+          };
+        })
+      );
+    }
+  };
+
+  const handleSetExactStudyHours = (exactHours: number) => {
+    const today = getTodayIso();
+    const clamped = Math.max(0, Math.min(24, Number(exactHours.toFixed(2))));
+    const prevHours = todayStudyLog.date === today ? todayStudyLog.hours : 0;
+    const delta = Number((clamped - prevHours).toFixed(2));
+    syncMyHoursAcrossChallenges(delta, 0);
+  };
+
+  const handleLogStudyMinutes = (minutes: number) => {
+    const safeMinutes = Math.max(1, minutes);
+    const deltaHours = Number((safeMinutes / 60).toFixed(2));
+    syncMyHoursAcrossChallenges(deltaHours, 1);
+  };
+
+  const handleCreateChallenge = (input: {
+    title: string;
+    friendName: string;
+    targetHours: number;
+    friendInitialHours?: number;
+  }): FriendChallenge => {
+    const id = `ch-${Date.now()}`;
+    const now = new Date().toISOString();
+    const myInitial = Number(todayStudyLog.hours.toFixed(2));
+    const shareCode = encodeChallengeShareCode({
+      v: 1,
+      id,
+      title: input.title,
+      challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+      targetHours: input.targetHours,
+      challengerHours: myInitial,
+      createdAt: now,
+    });
+    const created: FriendChallenge = {
+      id,
+      title: input.title,
+      friendName: input.friendName,
+      targetHours: input.targetHours,
+      myHours: myInitial,
+      friendHours: Math.max(0, Number(input.friendInitialHours) || 0),
+      status: 'active',
+      rewardXp: 80,
+      rewardClaimed: false,
+      shareCode,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setFriendChallenges((prev) => [created, ...prev]);
+    return created;
+  };
+
+  const handleImportChallengeCode = (rawCode: string) => {
+    const decoded = decodeChallengeShareCode(rawCode);
+    if (!decoded) {
+      return {
+        ok: false,
+        message: 'تعذر قراءة الكود؛ تأكد من لصق كود NAHJ-CH:... كاملاً.',
+      };
+    }
+
+    const existing = friendChallenges.find(
+      (c) =>
+        c.id === decoded.id ||
+        (c.title === decoded.title && c.friendName === decoded.challengerName)
+    );
+
+    if (existing) {
+      setFriendChallenges((prev) =>
+        prev.map((c) =>
+          c.id === existing.id
+            ? {
+                ...c,
+                friendHours: decoded.challengerHours,
+                updatedAt: new Date().toISOString(),
+              }
+            : c
+        )
+      );
+      return {
+        ok: true,
+        message: `تم تحديث تقدم ${existing.friendName} إلى ${decoded.challengerHours.toFixed(1)} ساعة في تحدي «${existing.title}»!`,
+      };
+    }
+
+    const now = new Date().toISOString();
+    const myHoursNow = Number(todayStudyLog.hours.toFixed(2));
+    const newCh: FriendChallenge = {
+      id: decoded.id,
+      title: decoded.title,
+      friendName: decoded.challengerName,
+      targetHours: decoded.targetHours,
+      myHours: myHoursNow,
+      friendHours: decoded.challengerHours,
+      status: 'active',
+      rewardXp: 80,
+      rewardClaimed: false,
+      shareCode: encodeChallengeShareCode({
+        v: 1,
+        id: decoded.id,
+        title: decoded.title,
+        challengerName: profile.name.split(' ')[0] || 'طالب نَهج',
+        targetHours: decoded.targetHours,
+        challengerHours: myHoursNow,
+        createdAt: decoded.createdAt,
+      }),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setFriendChallenges((prev) => [newCh, ...prev]);
+    return {
+      ok: true,
+      message: `تم الانضمام لتحدي «${decoded.title}» ضد ${decoded.challengerName}! شارك كودك معه الآن.`,
+    };
+  };
+
+  const handleUpdateFriendHours = (challengeId: string, deltaHours: number) => {
+    setFriendChallenges((prev) =>
+      prev.map((ch) => {
+        if (ch.id !== challengeId) return ch;
+        const nextFriendHours = Math.max(
+          0,
+          Math.min(24, Number((ch.friendHours + deltaHours).toFixed(2)))
+        );
+        return {
+          ...ch,
+          friendHours: nextFriendHours,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleClaimChallengeReward = (challengeId: string) => {
+    const target = friendChallenges.find((c) => c.id === challengeId);
+    if (!target || target.rewardClaimed) return;
+    handleAwardBonusXp(target.rewardXp);
+    setFriendChallenges((prev) =>
+      prev.map((c) =>
+        c.id === challengeId
+          ? {
+              ...c,
+              rewardClaimed: true,
+              status: c.myHours >= c.friendHours ? 'won' : 'completed',
+              updatedAt: new Date().toISOString(),
+            }
+          : c
+      )
+    );
+  };
+
+  const handleDeleteChallenge = (challengeId: string) => {
+    setFriendChallenges((prev) => prev.filter((c) => c.id !== challengeId));
   };
 
   // Active Focus Session (Pomodoro Modal)
@@ -196,7 +541,26 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('nahj_tasks', JSON.stringify(dailyTasks));
-  }, [dailyTasks]);
+    localStorage.setItem('nahj_tasks_cycle', String(taskCycleIndex));
+  }, [dailyTasks, taskCycleIndex]);
+
+  // Automatic 13-hour task rotation check every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const latestCycle = getCurrentTaskCycleIndex();
+      if (latestCycle !== taskCycleIndex) {
+        const rotatedTasks = getTasksForCycle(latestCycle);
+        setTaskCycleIndex(latestCycle);
+        setDailyTasks(rotatedTasks);
+        localStorage.setItem('nahj_tasks_cycle', String(latestCycle));
+        localStorage.setItem('nahj_tasks', JSON.stringify(rotatedTasks));
+        if (voiceAlertsEnabled) {
+          announceTask('تجددت مهامك الستة لدورة الـ 13 ساعة الجديدة!');
+        }
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [taskCycleIndex, voiceAlertsEnabled]);
 
   useEffect(() => {
     localStorage.setItem('nahj_profile', JSON.stringify(profile));
@@ -380,6 +744,7 @@ export default function App() {
     { id: 'exercises', label: 'التمارين', icon: Dumbbell },
     { id: 'mindset', label: 'النفسية والتفكير', icon: Brain },
     { id: 'tasks', label: 'المهام والأوائل', icon: Trophy },
+    { id: 'challenges', label: 'تحدي الأصدقاء', icon: Swords },
     { id: 'analytics', label: 'المتابعة والتقييم', icon: TrendingUp },
   ];
 
@@ -448,6 +813,12 @@ export default function App() {
               voiceAlertsEnabled={voiceAlertsEnabled}
               onToggleVoiceAlerts={handleToggleVoiceAlerts}
               onOpenTutor={handleOpenTutorFromConcept}
+              todayStudyHours={todayStudyLog.hours}
+              dailyGoalHours={todayStudyLog.dailyGoalHours}
+              activeChallengesCount={friendChallenges.filter((c) => c.status === 'active').length}
+              onQuickAddStudyHours={(delta) => syncMyHoursAcrossChallenges(delta, 0)}
+              onLogStudyMinutes={handleLogStudyMinutes}
+              nextStreakAtMs={streakLastTickMs + STREAK_INTERVAL_MS}
             />
           )}
 
@@ -529,6 +900,29 @@ export default function App() {
               leaderboard={INITIAL_LEADERBOARD}
               studentXp={profile.totalXp}
               streakDays={profile.streakDays}
+              nextStreakAtMs={streakLastTickMs + STREAK_INTERVAL_MS}
+            />
+          )}
+
+          {activeTab === 'challenges' && (
+            <FriendsChallengeView
+              studentName={profile.name}
+              studyLog={todayStudyLog}
+              challenges={friendChallenges}
+              onAdjustTodayHours={(delta) => syncMyHoursAcrossChallenges(delta, 0)}
+              onSetTodayHours={handleSetExactStudyHours}
+              onUpdateDailyGoal={(goal) =>
+                setTodayStudyLog((prev) => ({
+                  ...prev,
+                  dailyGoalHours: goal,
+                  updatedAt: new Date().toISOString(),
+                }))
+              }
+              onCreateChallenge={handleCreateChallenge}
+              onImportChallengeCode={handleImportChallengeCode}
+              onUpdateFriendHours={handleUpdateFriendHours}
+              onClaimChallengeReward={handleClaimChallengeReward}
+              onDeleteChallenge={handleDeleteChallenge}
             />
           )}
 
@@ -624,6 +1018,7 @@ export default function App() {
           onClose={() => setActiveFocusSession(null)}
           onComplete={(elapsedMins) => {
             setProfile((p) => ({ ...p, totalXp: p.totalXp + 25 }));
+            handleLogStudyMinutes(elapsedMins);
             setActiveFocusSession(null);
           }}
         />

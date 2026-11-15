@@ -31,6 +31,8 @@ import {
   Send,
   AlertTriangle,
   Loader2,
+  Swords,
+  Plus,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { StudentProfile, DailyTask, StudySession, Subject } from '../types';
@@ -43,7 +45,7 @@ import {
   sendNotification,
 } from '../services/notificationService';
 import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
-import { generateTutorFallback } from '../utils/aiFallbacks';
+import { streamTutorReply } from '../utils/tutorStreamClient';
 
 interface DashboardViewProps {
   profile: StudentProfile;
@@ -58,6 +60,12 @@ interface DashboardViewProps {
   voiceAlertsEnabled?: boolean;
   onToggleVoiceAlerts?: () => void;
   onOpenTutor?: (subject: string, prompt: string) => void;
+  todayStudyHours?: number;
+  dailyGoalHours?: number;
+  activeChallengesCount?: number;
+  onQuickAddStudyHours?: (deltaHours: number) => void;
+  onLogStudyMinutes?: (minutes: number) => void;
+  nextStreakAtMs?: number;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -73,6 +81,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   voiceAlertsEnabled = true,
   onToggleVoiceAlerts,
   onOpenTutor,
+  todayStudyHours = 0,
+  dailyGoalHours = 8,
+  activeChallengesCount = 0,
+  onQuickAddStudyHours,
+  onLogStudyMinutes,
+  nextStreakAtMs,
 }) => {
   // Embedded Pomodoro Timer State
   const [pomoPresetMinutes, setPomoPresetMinutes] = useState<number>(25);
@@ -88,8 +102,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [ratingNotes, setRatingNotes] = useState<string>('');
   const [awardedXpMessage, setAwardedXpMessage] = useState<string | null>(null);
 
-  // Quick Home-Study AI Assistant State (uses server-side /api/gemini/tutor)
+  // Quick Home-Study AI Assistant State (uses fast SSE /api/gemini/tutor-stream)
   const [homeStudySubject, setHomeStudySubject] = useState<string>(nextSession.subjectName || 'الأحياء');
+  const [homeStudyDeepMode, setHomeStudyDeepMode] = useState<'fast' | 'deep'>('fast');
   const [homeStudyQuestion, setHomeStudyQuestion] = useState<string>('');
   const [homeStudyReply, setHomeStudyReply] = useState<string | null>(null);
   const [homeStudyWarning, setHomeStudyWarning] = useState<string | null>(null);
@@ -104,71 +119,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setIsHomeStudyLoading(true);
     setHomeStudyError(null);
     setHomeStudyWarning(null);
+    setHomeStudyReply(null);
     setLastHomeStudyPrompt(query);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 36000);
+
     try {
-      const res = await fetch('/api/gemini/tutor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: query,
-          subject: homeStudySubject,
-          context: `المذاكرة المنزلية — ${pomoLesson}`,
-          tutorMode: 'explain',
-        }),
+      const result = await streamTutorReply({
+        message: query,
+        subject: homeStudySubject,
+        context: `المذاكرة المنزلية — ${pomoLesson}`,
+        tutorMode: 'explain',
+        deepMode: homeStudyDeepMode,
+        signal: controller.signal,
+        onChunk: (accumulated) => {
+          setHomeStudyReply(accumulated);
+        },
       });
 
-      const rawText = await res.text();
-      let data: any = null;
-      try {
-        data = rawText ? JSON.parse(rawText) : null;
-      } catch {
-        data = null;
+      setHomeStudyReply(result.reply);
+      if (result.warning) {
+        setHomeStudyWarning(result.warning);
       }
-
-      if (!res.ok) {
-        if (res.status === 404) {
-          const fallbackReply = generateTutorFallback({
-            message: query,
-            subject: homeStudySubject,
-            tutorMode: 'explain',
-          });
-          setHomeStudyReply(fallbackReply);
-          setHomeStudyWarning('تم التجاوب عبر المحرك التعليمي المدمج.');
-          if (!customPrompt) {
-            setHomeStudyQuestion('');
-          }
-          return;
-        }
-        const msg =
-          data?.error ||
-          data?.message ||
-          (res.status === 429
-            ? 'تم تجاوز حد الطلبات المؤقت لخدمة الذكاء الاصطناعي، يرجى الانتظار قليلاً ثم المحاولة.'
-            : res.status === 401 || res.status === 403
-            ? 'تعذر التحقق من صلاحية مفتاح Gemini API على الخادم.'
-            : `تعذر جلب الرد من الخادم (كود ${res.status}).`);
-        throw new Error(msg);
-      }
-
-      if (data && typeof data.reply === 'string' && data.reply.trim()) {
-        setHomeStudyReply(data.reply.trim());
-        if (data.warning) {
-          setHomeStudyWarning(data.warning);
-        }
-        if (!customPrompt) {
-          setHomeStudyQuestion('');
-        }
-      } else {
-        throw new Error(data?.error || 'وصل رد فارغ من المساعد الذكي، يرجى إعادة المحاولة.');
+      if (!customPrompt) {
+        setHomeStudyQuestion('');
       }
     } catch (err: any) {
+      const isTimeout = err?.name === 'AbortError';
       setHomeStudyError(
-        err?.message && typeof err.message === 'string'
+        isTimeout
+          ? 'استغرق الرد وقتاً أطول من المعتاد؛ اضغط «إعادة المحاولة» للإرسال الفوري.'
+          : err?.message && typeof err.message === 'string'
           ? err.message
           : 'حدث خطأ في الاتصال بالخادم، يرجى المحاولة مرة أخرى.'
       );
     } finally {
+      clearTimeout(timeoutId);
       setIsHomeStudyLoading(false);
     }
   };
@@ -227,6 +214,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     if (onAwardBonusXp) {
       onAwardBonusXp(earnedXp);
     }
+    if (onLogStudyMinutes) {
+      const elapsedMins = Math.max(
+        1,
+        Math.round((pomoPresetMinutes * 60 - pomoSecondsLeft) / 60) || pomoPresetMinutes
+      );
+      onLogStudyMinutes(elapsedMins);
+    }
     confetti({
       particleCount: 80,
       spread: 70,
@@ -245,6 +239,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  // 24-hour Streak countdown
+  const [streakRemainingSec, setStreakRemainingSec] = useState<number>(() =>
+    nextStreakAtMs ? Math.max(0, Math.floor((nextStreakAtMs - Date.now()) / 1000)) : 0
+  );
+
+  useEffect(() => {
+    if (!nextStreakAtMs) return;
+    const updateStreakTimer = () => {
+      setStreakRemainingSec(Math.max(0, Math.floor((nextStreakAtMs - Date.now()) / 1000)));
+    };
+    updateStreakTimer();
+    const timer = setInterval(updateStreakTimer, 1000);
+    return () => clearInterval(timer);
+  }, [nextStreakAtMs]);
+
+  const formatCountdownHms = (totalSecs: number) => {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   // Prayer Countdown
@@ -345,8 +361,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl backdrop-blur-md border border-white/15">
             <div className="text-center px-3 border-l border-white/20">
-              <span className="text-[11px] text-white/70 block">سلسلة الأيام</span>
+              <span className="text-[11px] text-white/70 block">سلسلة الأيام (كل 24 س)</span>
               <span className="text-xl font-black text-amber-300">{profile.streakDays} يوم</span>
+              {nextStreakAtMs && (
+                <span className="text-[10px] font-mono text-white/75 block mt-0.5" dir="ltr">
+                  +1 بعد {formatCountdownHms(streakRemainingSec)}
+                </span>
+              )}
             </div>
             <div className="text-center px-3">
               <span className="text-[11px] text-white/70 block">مجموع النقاط</span>
@@ -595,7 +616,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => setHomeStudyDeepMode('fast')}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black cursor-pointer ${
+                  homeStudyDeepMode === 'fast'
+                    ? 'bg-[#DC2626] text-white'
+                    : 'text-zinc-600 dark:text-zinc-400'
+                }`}
+              >
+                ⚡ سريع
+              </button>
+              <button
+                type="button"
+                onClick={() => setHomeStudyDeepMode('deep')}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black cursor-pointer ${
+                  homeStudyDeepMode === 'deep'
+                    ? 'bg-zinc-900 dark:bg-amber-600 text-white'
+                    : 'text-zinc-600 dark:text-zinc-400'
+                }`}
+              >
+                🔬 عميق
+              </button>
+            </div>
+
             <select
               value={homeStudySubject}
               onChange={(e) => {
@@ -789,8 +835,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-2xl p-5 shadow-xs transition-colors duration-200">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-base font-extrabold text-zinc-950 dark:text-white">مهام اليوم الستة</h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">تتجدد كل 20 ساعة تلقائياً وتمنحك نقاط المتفوقين</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-extrabold text-zinc-950 dark:text-white">مهام اليوم الستة</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 border border-red-200 dark:border-red-900/40 font-black">
+                تتغير كل 13 ساعة
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">تتجدد وتتغير تلقائياً كل 13 ساعة وتمنحك نقاط المتفوقين</p>
           </div>
           <div className="text-left">
             <span className="text-xs font-bold text-[#DC2626] dark:text-red-400 block">
@@ -835,6 +886,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Friends Study Challenge & Daily Hours Quick Card */}
+      <div className="bg-gradient-to-l from-red-50/90 via-white to-amber-50/70 dark:from-[#121215] dark:via-[#121215] dark:to-red-950/30 border-2 border-red-200/80 dark:border-red-900/50 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors duration-200">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Swords className="w-5 h-5 text-amber-300" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-black text-zinc-950 dark:text-white">
+                تحدي الأصدقاء وساعات المذاكرة اليوم
+              </h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 font-black border border-red-200 dark:border-red-800/50">
+                {activeChallengesCount} تحدي نشط
+              </span>
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+              أنجزت اليوم <strong className="text-[#DC2626] dark:text-red-400">{todayStudyHours.toFixed(1)}</strong> من أصل <strong>{dailyGoalHours} ساعات</strong> — شارك رقمك وتحدَّ زملاءك!
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {onQuickAddStudyHours && (
+            <>
+              <button
+                type="button"
+                onClick={() => onQuickAddStudyHours(0.5)}
+                className="px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-zinc-800 border border-red-200 dark:border-red-900/40 rounded-xl text-xs font-black text-[#DC2626] dark:text-red-300 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>0.5 س</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onQuickAddStudyHours(1)}
+                className="px-3 py-1.5 bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-zinc-800 border border-red-200 dark:border-red-900/40 rounded-xl text-xs font-black text-[#DC2626] dark:text-red-300 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>1 س</span>
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => onNavigateTab('challenges')}
+            className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <span>ساحة التحديات</span>
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
