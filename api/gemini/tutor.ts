@@ -11,6 +11,7 @@ import {
   buildTutorFormattedContents,
   TutorDeepMode,
 } from '../../src/utils/tutorPrompts.js';
+import { callStrongSecondaryAI } from '../../src/utils/aiProviders.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -37,39 +38,66 @@ export default async function handler(req: any, res: any) {
 
     let reply = '';
     let responseSource: 'gemini' | 'fallback' = 'fallback';
+    let providerLabel = 'المحرك التعليمي السريع';
     let apiWarning: string | undefined;
 
     if (activeAi) {
       try {
-        const result = await runServerWithRetry(async () => {
-          const response = await activeAi.models.generateContent({
-            model: 'gemini-4-hydrogen',
-            contents: formattedContents,
-            config: {
-              systemInstruction: systemPrompt,
-              thinkingConfig: {
-                thinkingLevel:
-                  modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+        const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+        const thinkingLevel =
+          modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
+        const result = await runServerWithRetry(
+          async () => {
+            const response = await activeAi.models.generateContent({
+              model: geminiModel,
+              contents: formattedContents,
+              config: {
+                abortSignal: AbortSignal.timeout(modeDepth === 'deep' ? 8500 : 5500),
+                systemInstruction: systemPrompt,
+                thinkingConfig: { thinkingLevel },
               },
-            },
-          });
-          return response.text || '';
-        }, 1, 25000);
+            });
+            return response.text || '';
+          },
+          0,
+          modeDepth === 'deep' ? 9000 : 6000
+        );
 
         if (result && result.trim()) {
           reply = result.trim();
           responseSource = 'gemini';
+          providerLabel = geminiModel;
         }
       } catch (err: any) {
-        const classified = classifyServerGeminiError(err);
+        const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+        const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
         apiWarning = classified.userWarning;
-        console.warn('Vercel Gemini tutor fallback triggered:', err?.message || err);
+        console.warn('Vercel Gemini tutor failover triggered:', err?.message || err);
       }
-    } else {
-      apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في إعدادات البيئة؛ تم الرد عبر المحرك التعليمي السريع.';
     }
 
     if (!reply) {
+      const extMessages = formattedContents.map((c) => ({
+        role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+        content: c.parts.map((p) => p.text).join('\n'),
+      }));
+      const secondary = await callStrongSecondaryAI({
+        systemInstruction: systemPrompt,
+        messages: extMessages,
+        timeoutMs: 9000,
+      });
+      if (secondary) {
+        reply = secondary.text;
+        responseSource = 'gemini';
+        providerLabel = secondary.providerLabel;
+        apiWarning = undefined;
+      }
+    }
+
+    if (!reply) {
+      if (!activeAi && !apiWarning) {
+        apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في إعدادات البيئة؛ تم الرد عبر المحرك التعليمي السريع.';
+      }
       reply = generateTutorFallback({ message, subject, tutorMode });
     }
 
@@ -77,6 +105,7 @@ export default async function handler(req: any, res: any) {
       success: true,
       reply,
       source: responseSource,
+      providerLabel,
       warning: apiWarning,
       isFree: true,
     });

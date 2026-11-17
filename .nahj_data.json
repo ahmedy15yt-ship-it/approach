@@ -43,7 +43,7 @@
       "username": "AHMED YAHYA",
       "createdAt": "2026-11-15T16:46:10.131Z",
       "lastLoginAt": "2026-11-15T16:46:10.131Z",
-      "lastSyncedAt": "2026-11-15T16:47:32.841Z",
+      "lastSyncedAt": "2026-11-17T03:30:13.436Z",
       "snapshot": {
         "username": "AHMED YAHYA",
         "phone": "01094482324",
@@ -51,8 +51,8 @@
         "profile": {
           "name": "AHMED YAHYA",
           "codeMasked": "010••••324",
-          "streakDays": 0,
-          "totalXp": 3250,
+          "streakDays": 1,
+          "totalXp": 3310,
           "rankTitle": "طبيب المستقبل 🩺",
           "governorate": "قنا",
           "dailyWaterCups": 5,
@@ -1147,26 +1147,26 @@
         ],
         "dailyTasks": [
           {
-            "id": "c2-study",
-            "title": "حل 25 سؤال نظام حديث (اختيار من متعدد) مع تدوين أفكار الأسئلة الصعبة",
+            "id": "c1-study",
+            "title": "إتمام جلستي بومودورو مركزتين في المادة الأساسية (50 دقيقة تركيز تام)",
             "category": "study",
-            "xp": 55,
+            "xp": 50,
             "isDone": false,
-            "targetCount": 1,
+            "targetCount": 2,
             "currentCount": 0
           },
           {
-            "id": "c2-prayer",
-            "title": "أداء الصلوات الخمس في وقتها + قراءة ورد القرآن اليومي (صفحتين على الأقل)",
+            "id": "c1-prayer",
+            "title": "أداء الصلوات المكتوبة في مواقيتها + أذكار ما بعد الصلاة بتدبر",
             "category": "prayer",
-            "xp": 45,
+            "xp": 40,
             "isDone": false,
             "targetCount": 5,
             "currentCount": 0
           },
           {
-            "id": "c2-water",
-            "title": "شرب كوب ماء قبل كل جلسة مذاكرة لتقوية الذاكرة قصيرة المدى",
+            "id": "c1-water",
+            "title": "شرب 8 أكواب ماء كاملة لتنشيط الموصلات العصبية ومنع الصداع",
             "category": "water",
             "xp": 30,
             "isDone": false,
@@ -1174,8 +1174,8 @@
             "currentCount": 0
           },
           {
-            "id": "c2-backlog",
-            "title": "مراجعة وحل تطبيق عملي على أصعب درس مؤجل في الكيمياء أو الفيزياء",
+            "id": "c1-backlog",
+            "title": "إنهاء وتصفية \"نصيب النهاردة\" من قائمة الدروس المتراكمة",
             "category": "backlog",
             "xp": 60,
             "isDone": false,
@@ -1183,8 +1183,8 @@
             "currentCount": 0
           },
           {
-            "id": "c2-exercise",
-            "title": "مشي سريع أو تمرين تنفس 4-7-8 لتفريغ التوتر بين جلسات المذاكرة",
+            "id": "c1-exercise",
+            "title": "تطبيق روتين الـ 7 دقائق (إطالة الرقبة والظهر + قرفصاء لضخ الدم للمخ)",
             "category": "exercise",
             "xp": 35,
             "isDone": false,
@@ -1192,37 +1192,40 @@
             "currentCount": 0
           },
           {
-            "id": "c2-mindset",
-            "title": "اختبار نفسك مع أستاذ نَهج في 3 أسئلة تفاعلية وتصحيح أي تركة خطأ",
+            "id": "c1-mindset",
+            "title": "تدوين إنجاز الدورة في دفتر الإنجاز + قراءة كبسولة مراجعة سريعة",
             "category": "mindset",
-            "xp": 30,
+            "xp": 25,
             "isDone": false,
             "targetCount": 1,
             "currentCount": 0
           }
         ],
-        "taskCycleIndex": 38349,
+        "taskCycleIndex": 38352,
         "todayStudyLog": {
-          "date": "2026-11-15",
-          "hours": 0.25,
-          "sessionsCount": 1,
+          "date": "2026-11-17",
+          "hours": 0,
+          "sessionsCount": 0,
           "dailyGoalHours": 8,
-          "updatedAt": "2026-11-15T16:43:04.105Z"
+          "updatedAt": "2026-11-17T03:17:00.257Z"
         },
         "friendChallenges": [
           {
-            "id": "ch-1794751850042",
-            "title": "ماراثون ٤ ساعات فيزياء وكيمياء ⚡",
-            "friendName": "محمود",
-            "targetHours": 4,
+            "id": "ch-1794761311956",
+            "title": "ماراثون 6 ساعات فيزياء وكيمياء ⚡",
+            "friendName": "Ahmed",
+            "targetHours": 6,
             "myHours": 0.25,
-            "friendHours": 6,
+            "friendHours": 0,
             "status": "active",
             "rewardXp": 80,
             "rewardClaimed": false,
-            "shareCode": "NAHJ-CH:eyJ2IjoxLCJpZCI6ImNoLTE3OTQ3NTE4NTAwNDIiLCJ0aXRsZSI6ItmF2KfYsdin2KvZiNmGINmkINiz2KfYudin2Kog2YHZitiy2YrYp9ihINmI2YPZitmF2YrYp9ihIOKaoSIsImNoYWxsZW5nZXJOYW1lIjoi2KfYrdmF2K8iLCJ0YXJnZXRIb3VycyI6NCwiY2hhbGxlbmdlckhvdXJzIjowLjI1LCJjcmVhdGVkQXQiOiIyMDI2LTExLTE1VDE0OjEwOjUwLjA0MloifQ==",
-            "createdAt": "2026-11-15T14:10:50.042Z",
-            "updatedAt": "2026-11-15T16:43:04.107Z"
+            "shareCode": "NAHJ-CH:eyJ2IjoxLCJpZCI6ImNoLTE3OTQ3NjEzMTE5NTYiLCJ0aXRsZSI6ItmF2KfYsdin2KvZiNmGIDYg2LPYp9i52KfYqiDZgdmK2LLZitin2KEg2YjZg9mK2YXZitin2KEg4pqhIiwiY2hhbGxlbmdlck5hbWUiOiJBSE1FRCIsInRhcmdldEhvdXJzIjo2LCJjaGFsbGVuZ2VySG91cnMiOjAuMjUsInNlc3Npb25EdXJhdGlvbk1pbnV0ZXMiOjUwLCJzZXNzaW9uU3RhcnRlZEF0IjoiMjAyNi0xMS0xNVQxNjo0ODozMS45NTZaIiwiY3JlYXRlZEF0IjoiMjAyNi0xMS0xNVQxNjo0ODozMS45NTZaIn0=",
+            "sessionDurationMinutes": 50,
+            "sessionStartedAt": "2026-11-15T16:48:31.956Z",
+            "sessionCompletedCount": 0,
+            "createdAt": "2026-11-15T16:48:31.956Z",
+            "updatedAt": "2026-11-15T16:48:31.956Z"
           }
         ],
         "streakHistory": {
@@ -1233,10 +1236,19 @@
             "tasksCompleted": 0,
             "xpEarned": 0,
             "updatedAt": "2026-11-15T16:46:44.858Z"
+          },
+          "2026-11-17": {
+            "date": "2026-11-17",
+            "status": "completed",
+            "studyHours": 0,
+            "tasksCompleted": 0,
+            "xpEarned": 0,
+            "note": "تحديث تلقائي بعد إتمام دورة الـ 24 ساعة",
+            "updatedAt": "2026-11-17T03:17:01.153Z"
           }
         },
-        "streakLastTickMs": 1794751455489,
-        "updatedAt": "2026-11-15T16:47:30.629Z"
+        "streakLastTickMs": 1794837855489,
+        "updatedAt": "2026-11-17T03:30:09.766Z"
       }
     }
   },
@@ -1249,5 +1261,6 @@
       "participants": {},
       "updatedAt": "2026-11-15T16:47:21.066Z"
     }
-  }
+  },
+  "quizChallenges": {}
 }

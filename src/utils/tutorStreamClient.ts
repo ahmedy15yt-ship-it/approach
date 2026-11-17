@@ -14,6 +14,7 @@ export interface StreamTutorParams {
 export interface StreamTutorResult {
   reply: string;
   source?: 'gemini' | 'fallback';
+  providerLabel?: string;
   warning?: string;
 }
 
@@ -52,6 +53,7 @@ export async function streamTutorReply({
     let sseBuffer = '';
     let accumulated = '';
     let finalSource: 'gemini' | 'fallback' | undefined;
+    let finalProviderLabel: string | undefined;
     let finalWarning: string | undefined;
 
     while (true) {
@@ -78,6 +80,9 @@ export async function streamTutorReply({
             if (parsed.source) {
               finalSource = parsed.source;
             }
+            if (parsed.providerLabel) {
+              finalProviderLabel = parsed.providerLabel;
+            }
             if (parsed.warning) {
               finalWarning = parsed.warning;
             }
@@ -97,6 +102,7 @@ export async function streamTutorReply({
           onChunk(accumulated, parsed.chunk);
         }
         if (parsed.source) finalSource = parsed.source;
+        if (parsed.providerLabel) finalProviderLabel = parsed.providerLabel;
         if (parsed.warning) finalWarning = parsed.warning;
       } catch {
         // ignore
@@ -107,6 +113,7 @@ export async function streamTutorReply({
       return {
         reply: accumulated.trim(),
         source: finalSource || 'gemini',
+        providerLabel: finalProviderLabel,
         warning: finalWarning,
       };
     }
@@ -175,6 +182,7 @@ export async function streamTutorReply({
     return {
       reply: replyText,
       source: data.source,
+      providerLabel: data.providerLabel,
       warning: data.warning,
     };
   }

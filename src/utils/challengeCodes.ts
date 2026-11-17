@@ -1,4 +1,4 @@
-import { FriendChallenge } from '../types';
+import { FriendChallenge, InteractiveQuestion, QuizChallengeRoom } from '../types';
 
 export interface ShareableChallengePayload {
   v: 1;
@@ -193,3 +193,77 @@ export function buildDailyHoursShareMessage(
     `💪 مين يتحداني ويكسر الرقم ده النهارده؟!`,
   ].join('\n');
 }
+
+export interface ShareableQuizChallengePayload {
+  v: 1;
+  code: string;
+  title: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  creatorName: string;
+  questions: InteractiveQuestion[];
+  createdAt: string;
+}
+
+export function encodeQuizChallengeCode(payload: ShareableQuizChallengePayload): string {
+  try {
+    const json = JSON.stringify(payload);
+    const encoded = bytesToBase64(new TextEncoder().encode(json));
+    return `NAHJ-QZ:${encoded}`;
+  } catch {
+    return payload.code;
+  }
+}
+
+export function decodeQuizChallengeCode(rawInput: string): ShareableQuizChallengePayload | null {
+  try {
+    const trimmed = rawInput.trim();
+    const match = trimmed.match(/NAHJ-QZ:([A-Za-z0-9+/=]+)/);
+    const token = match ? match[1] : trimmed.startsWith('NAHJ-QZ:') ? trimmed.slice(8).trim() : '';
+    if (!token || token.length < 12) return null;
+
+    const jsonStr = new TextDecoder().decode(base64ToBytes(token));
+    const parsed = JSON.parse(jsonStr);
+    if (!parsed || typeof parsed.code !== 'string' || !Array.isArray(parsed.questions)) {
+      return null;
+    }
+
+    return {
+      v: 1,
+      code: parsed.code.trim().toUpperCase(),
+      title: String(parsed.title || `تحدي ${parsed.lesson || ''}`).slice(0, 100),
+      subject: String(parsed.subject || 'علمي علوم').slice(0, 60),
+      chapter: String(parsed.chapter || 'عام').slice(0, 120),
+      lesson: String(parsed.lesson || 'الدرس المحدد').slice(0, 140),
+      creatorName: String(parsed.creatorName || 'بطل نَهج').slice(0, 50),
+      questions: parsed.questions.slice(0, 15),
+      createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function extractShortQuizRoomCode(rawInput: string): string | null {
+  const upper = rawInput.trim().toUpperCase();
+  if (upper.includes('NAHJ-QZ:')) return null;
+  const match = upper.match(/(?:NHJ-Q|QZ-)[A-Z0-9]{3,8}/);
+  if (match) return match[0];
+  if (/^[A-Z0-9-]{4,12}$/.test(upper)) return upper;
+  return null;
+}
+
+export function buildQuizChallengeShareMessage(room: QuizChallengeRoom, studentName: string): string {
+  const cleanName = studentName.split(' ')[0] || 'بطل نَهج';
+  return [
+    `⚔️ تحدي أسئلة تفاعلية على منصة نَهج!`,
+    `📚 المادة: ${room.subject} — ${room.lesson}`,
+    `👤 المتحدي: ${cleanName} (${room.questions.length} أسئلة)`,
+    `🔑 كود الغرفة السريع: ${room.code}`,
+    ``,
+    `أو انسخ كود التحدي الكامل التالي وأدخله في قسم «مُنشئ الأسئلة > تحدي الأصدقاء بكود» لتدخل نفس الأسئلة وتتنافس على المركز الأول:`,
+    room.shareCode,
+  ].join('\n');
+}
+

@@ -154,3 +154,62 @@ export interface StudentActivitySnapshot {
   streakLastTickMs: number;
   updatedAt: string;
 }
+
+export type GeneratedQuestionType = 'mcq' | 'true_false' | 'short_answer';
+export type GeneratedQuestionDifficulty = 'أساسي' | 'متوسط' | 'تحدي';
+export type QuestionTypeFilter = 'mixed' | 'mcq' | 'true_false' | 'short_answer';
+export type QuestionDifficultyFilter = 'balanced' | 'basic' | 'exam' | 'advanced';
+
+export interface InteractiveQuestion {
+  id: string;
+  type: GeneratedQuestionType;
+  difficulty: GeneratedQuestionDifficulty;
+  question: string;
+  options: string[];
+  correctAnswerIndex?: number;
+  correctAnswerText: string;
+  explanation: string;
+  hint?: string;
+}
+
+export interface GeneratedQuestionSet {
+  id: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  questionTypeFilter: QuestionTypeFilter;
+  difficultyFilter: QuestionDifficultyFilter;
+  questions: InteractiveQuestion[];
+  source: 'gemini' | 'fallback';
+  providerLabel?: string;
+  warning?: string;
+  createdAt: string;
+  scoreCorrect?: number;
+  scoreTotal?: number;
+  xpAwarded?: boolean;
+}
+
+export interface QuizChallengeParticipant {
+  name: string;
+  scoreCorrect: number;
+  totalQuestions: number;
+  accuracy: number;
+  timeSeconds: number;
+  submittedAt: string;
+}
+
+export interface QuizChallengeRoom {
+  code: string;
+  title: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  creatorName: string;
+  questions: InteractiveQuestion[];
+  participants: QuizChallengeParticipant[];
+  shareCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+

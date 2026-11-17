@@ -11,6 +11,24 @@ import {
   buildTutorFormattedContents,
   TutorDeepMode,
 } from './src/utils/tutorPrompts.js';
+import {
+  buildQuestionGeneratorPrompt,
+  buildQuestionGeneratorSystemInstruction,
+  generateQuestionsFallback,
+  normalizeGeneratedQuestions,
+  QuestionGenerationParams,
+} from './src/utils/questionGenerator.js';
+import {
+  QuestionDifficultyFilter,
+  QuestionTypeFilter,
+  QuizChallengeRoom,
+} from './src/types/index.js';
+import {
+  callStrongSecondaryAI,
+  extractJsonPayloadFromText,
+  getConfiguredAIProviders,
+} from './src/utils/aiProviders.js';
+
 
 dotenv.config();
 
@@ -169,6 +187,7 @@ interface AppData {
   codes: StudentCode[];
   accounts?: Record<string, ServerStudentAccount>;
   challengeRooms?: Record<string, ServerChallengeRoom>;
+  quizChallenges?: Record<string, QuizChallengeRoom>;
 }
 
 function loadData(): AppData {
@@ -180,6 +199,7 @@ function loadData(): AppData {
         ...parsed,
         accounts: parsed.accounts || {},
         challengeRooms: parsed.challengeRooms || {},
+        quizChallenges: parsed.quizChallenges || {},
       };
     }
   } catch (e) {
@@ -607,12 +627,14 @@ app.post('/api/owner/settings', (req, res) => {
   return res.json({ success: true, message: 'تم تحديث الإعدادات بنجاح' });
 });
 
-// Gemini API configuration status (never exposes key value)
+// Gemini & Multi-AI API configuration status (never exposes key values)
 app.get('/api/gemini/status', (_req, res) => {
   const client = getGeminiClient();
+  const providers = getConfiguredAIProviders();
   return res.json({
-    configured: Boolean(client),
-    model: 'gemini-4-hydrogen',
+    configured: Boolean(client) || providers.length > 0,
+    model: 'gemini-3.1-flash-lite / gemini-4-hydrogen',
+    providers,
   });
 });
 
@@ -649,19 +671,21 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
 
   let streamedAnyChunk = false;
   let apiWarning: string | undefined;
+  let responseSource: 'gemini' | 'fallback' = 'fallback';
+  let providerLabel = 'المحرك التعليمي السريع';
 
   if (activeAi) {
+    const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+    const thinkingLevel =
+      modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
     const abortController = new AbortController();
     const firstChunkTimeout = setTimeout(() => {
       abortController.abort();
-    }, 12000);
+    }, modeDepth === 'deep' ? 8500 : 5500);
 
     try {
-      const thinkingLevel =
-        modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW;
-
       const streamResult = await activeAi.models.generateContentStream({
-        model: 'gemini-4-hydrogen',
+        model: geminiModel,
         contents: formattedContents,
         config: {
           abortSignal: abortController.signal,
@@ -685,7 +709,14 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
       clearTimeout(firstChunkTimeout);
 
       if (streamedAnyChunk && !closed) {
-        res.write(`data: ${JSON.stringify({ done: true, source: 'gemini', isFree: true })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            done: true,
+            source: 'gemini',
+            providerLabel: geminiModel,
+            isFree: true,
+          })}\n\n`
+        );
         return res.end();
       }
     } catch (err: any) {
@@ -693,10 +724,36 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
       const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
       const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
       apiWarning = classified.userWarning;
-      console.warn('Gemini tutor stream fallback triggered:', err?.message || err);
+      console.warn('Gemini tutor stream failover triggered:', err?.message || err);
     }
-  } else {
-    apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم الرد عبر المحرك التعليمي المحلي.';
+  }
+
+  // Tier 2: Try stronger secondary AI provider (OpenRouter / OpenAI GPT-4o / Claude / Groq / DeepSeek)
+  if (!streamedAnyChunk && !closed) {
+    const extMessages = formattedContents.map((c) => ({
+      role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: c.parts.map((p) => p.text).join('\n'),
+    }));
+    const secondary = await callStrongSecondaryAI({
+      systemInstruction: systemPrompt,
+      messages: extMessages,
+      timeoutMs: 9000,
+    });
+    if (secondary && !closed) {
+      streamedAnyChunk = true;
+      responseSource = 'gemini';
+      providerLabel = secondary.providerLabel;
+      res.write(`data: ${JSON.stringify({ chunk: secondary.text })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({
+          done: true,
+          source: 'gemini',
+          providerLabel: secondary.providerLabel,
+          isFree: true,
+        })}\n\n`
+      );
+      return res.end();
+    }
   }
 
   if (!streamedAnyChunk && !closed) {
@@ -705,8 +762,13 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
     res.write(
       `data: ${JSON.stringify({
         done: true,
-        source: 'fallback',
-        warning: apiWarning,
+        source: responseSource,
+        providerLabel,
+        warning:
+          apiWarning ||
+          (!activeAi
+            ? 'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم الرد عبر المحرك التعليمي السريع.'
+            : undefined),
         isFree: true,
       })}\n\n`
     );
@@ -737,40 +799,69 @@ app.post('/api/gemini/tutor', async (req, res) => {
 
     let reply: string = '';
     let responseSource: 'gemini' | 'fallback' = 'fallback';
+    let providerLabel = 'المحرك التعليمي السريع';
     let apiWarning: string | undefined;
 
     if (activeAi) {
       try {
-        const result = await runWithRetry(async () => {
-          const response = await activeAi.models.generateContent({
-            model: 'gemini-4-hydrogen',
-            contents: formattedContents,
-            config: {
-              systemInstruction: systemPrompt,
-              thinkingConfig: {
-                thinkingLevel:
-                  modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+        const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+        const thinkingLevel =
+          modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
+        const result = await runWithRetry(
+          async () => {
+            const response = await activeAi.models.generateContent({
+              model: geminiModel,
+              contents: formattedContents,
+              config: {
+                abortSignal: AbortSignal.timeout(modeDepth === 'deep' ? 8500 : 5500),
+                systemInstruction: systemPrompt,
+                thinkingConfig: { thinkingLevel },
               },
-            },
-          });
-          return response.text || '';
-        }, 1, 25000);
+            });
+            return response.text || '';
+          },
+          0,
+          modeDepth === 'deep' ? 9000 : 6000
+        );
 
         if (result && result.trim()) {
           reply = result.trim();
           responseSource = 'gemini';
+          providerLabel = geminiModel;
         }
       } catch (err: any) {
-        const classified = classifyGeminiError(err);
+        const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+        const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
         apiWarning = classified.userWarning;
-        console.warn('Gemini tutor fallback triggered:', err?.message || err);
+        console.warn('Gemini tutor failover triggered:', err?.message || err);
       }
-    } else {
-      apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم الرد عبر المحرك التعليمي المحلي.';
     }
 
-    // Intelligent Multi-Mode Pedagogical Engine (Used if API key missing or network timeout)
+    // Tier 2: Automatic stronger external AI failover if Gemini didn't reply
     if (!reply) {
+      const extMessages = formattedContents.map((c) => ({
+        role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+        content: c.parts.map((p) => p.text).join('\n'),
+      }));
+      const secondary = await callStrongSecondaryAI({
+        systemInstruction: systemPrompt,
+        messages: extMessages,
+        timeoutMs: 9000,
+      });
+      if (secondary) {
+        reply = secondary.text;
+        responseSource = 'gemini';
+        providerLabel = secondary.providerLabel;
+        apiWarning = undefined;
+      }
+    }
+
+    // Tier 3: Instant Local Pedagogical Engine
+    if (!reply) {
+      if (!activeAi && !apiWarning) {
+        apiWarning =
+          'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم الرد عبر المحرك التعليمي السريع.';
+      }
       reply = generateTutorFallback({ message, subject, tutorMode });
     }
 
@@ -778,6 +869,7 @@ app.post('/api/gemini/tutor', async (req, res) => {
       success: true,
       reply,
       source: responseSource,
+      providerLabel,
       warning: apiWarning,
       isFree: true,
     });
@@ -789,6 +881,321 @@ app.post('/api/gemini/tutor', async (req, res) => {
     });
   }
 });
+
+// ----------------- Educational Content & Interactive Question Generator -----------------
+app.post('/api/gemini/generate-questions', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const chapter = String(body.chapter || '').trim();
+    const lesson = String(body.lesson || '').trim();
+    const count = Math.min(15, Math.max(3, Number(body.count) || 6));
+    const questionType: QuestionTypeFilter = ['mixed', 'mcq', 'true_false', 'short_answer'].includes(
+      body.questionType
+    )
+      ? body.questionType
+      : 'mixed';
+    const difficulty: QuestionDifficultyFilter = ['balanced', 'basic', 'exam', 'advanced'].includes(
+      body.difficulty
+    )
+      ? body.difficulty
+      : 'balanced';
+    const focusNotes = body.focusNotes ? String(body.focusNotes).trim() : '';
+    const excludeQuestions = Array.isArray(body.excludeQuestions)
+      ? body.excludeQuestions.map((s: any) => String(s || '').trim()).filter(Boolean).slice(0, 24)
+      : [];
+    const variationSeed = body.variationSeed
+      ? String(body.variationSeed).trim()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const contextPoints = Array.isArray(body.contextPoints)
+      ? body.contextPoints.map((s: any) => String(s || '').trim()).filter(Boolean).slice(0, 6)
+      : [];
+
+    if (!subject || !lesson) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى تحديد المادة والدرس أولاً قبل توليد الأسئلة التفاعلية.',
+      });
+    }
+
+    const params: QuestionGenerationParams = {
+      subject,
+      chapter: chapter || 'الوحدة المحددة',
+      lesson,
+      count,
+      questionType,
+      difficulty,
+      focusNotes,
+      excludeQuestions,
+      variationSeed,
+      contextPoints,
+    };
+
+    const activeAi = getGeminiClient();
+    const systemInstruction = buildQuestionGeneratorSystemInstruction();
+    const userPrompt = buildQuestionGeneratorPrompt(params);
+
+    let questions = [] as ReturnType<typeof normalizeGeneratedQuestions>;
+    let responseSource: 'gemini' | 'fallback' = 'fallback';
+    let providerLabel = 'المحرك التعليمي السريع';
+    let apiWarning: string | undefined;
+
+    // Tier 1: Ultra-fast Gemini (gemini-3.1-flash-lite MINIMAL thinking for snappy ~1.5-4s speed)
+    if (activeAi) {
+      try {
+        const rawJsonText = await runWithRetry(async () => {
+          const response = await activeAi.models.generateContent({
+            model: 'gemini-3.1-flash-lite',
+            contents: userPrompt,
+            config: {
+              abortSignal: AbortSignal.timeout(6500),
+              systemInstruction,
+              thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    type: { type: Type.STRING },
+                    difficulty: { type: Type.STRING },
+                    question: { type: Type.STRING },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    correctAnswerIndex: { type: Type.INTEGER },
+                    correctAnswerText: { type: Type.STRING },
+                    explanation: { type: Type.STRING },
+                    hint: { type: Type.STRING },
+                  },
+                  required: ['type', 'difficulty', 'question', 'correctAnswerText', 'explanation'],
+                },
+              },
+            },
+          });
+          return response.text || '[]';
+        }, 0, 7000);
+
+        const parsed = extractJsonPayloadFromText(rawJsonText);
+        const normalized = normalizeGeneratedQuestions(parsed, params);
+        if (normalized.length > 0) {
+          questions = normalized;
+          responseSource = 'gemini';
+          providerLabel = 'Gemini 3.1 Flash Lite';
+        }
+      } catch (err: any) {
+        const classified = classifyGeminiError(
+          err?.name === 'TimeoutError' || err?.name === 'AbortError' ? new Error('TIMEOUT') : err
+        );
+        apiWarning = classified.userWarning;
+        console.warn('Gemini Question Generator failover triggered:', err?.message || err);
+      }
+    }
+
+    // Tier 2: Stronger secondary AI failover (OpenRouter / OpenAI GPT-4o / Claude / Groq / DeepSeek)
+    if (questions.length === 0) {
+      try {
+        const secondary = await callStrongSecondaryAI({
+          systemInstruction: `${systemInstruction}\nأعد كائن JSON يحتوي على مصفوفة باسم "questions" فقط.`,
+          messages: [{ role: 'user', content: userPrompt }],
+          jsonMode: true,
+          timeoutMs: 9000,
+        });
+        if (secondary) {
+          const parsed = extractJsonPayloadFromText(secondary.text);
+          const normalized = normalizeGeneratedQuestions(parsed, params);
+          if (normalized.length > 0) {
+            questions = normalized;
+            responseSource = 'gemini';
+            providerLabel = secondary.providerLabel;
+            apiWarning = undefined;
+          }
+        }
+      } catch (err: any) {
+        console.warn('Secondary AI Question Generator error:', err?.message || err);
+      }
+    }
+
+    if (questions.length === 0) {
+      if (!activeAi && !apiWarning) {
+        apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف؛ تم التوليد من المحرك التعليمي السريع.';
+      }
+      questions = generateQuestionsFallback(params);
+    }
+
+    return res.json({
+      success: true,
+      questions,
+      source: responseSource,
+      providerLabel,
+      warning: apiWarning,
+    });
+  } catch (error: any) {
+    console.error('Gemini Question Generator Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'تعذر توليد الأسئلة التفاعلية حالياً، يرجى إعادة المحاولة.',
+    });
+  }
+});
+
+// ----------------- Friends Quiz Challenge Rooms (Join by Code) -----------------
+function generateShortQuizCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let suffix = '';
+  for (let i = 0; i < 4; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `NHJ-Q${suffix}`;
+}
+
+app.post('/api/quiz-challenge/create', (req, res) => {
+  const { title, subject, chapter, lesson, creatorName, questions, shareCode } = req.body || {};
+
+  if (!subject || !lesson || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'يجب توفير المادة والدرس ومجموعة أسئلة صالحة لإنشاء تحدي أصدقاء.',
+    });
+  }
+
+  if (!appData.quizChallenges) {
+    appData.quizChallenges = {};
+  }
+
+  let shortCode = generateShortQuizCode();
+  while (appData.quizChallenges[shortCode]) {
+    shortCode = generateShortQuizCode();
+  }
+
+  const now = new Date().toISOString();
+  const cleanRoom: QuizChallengeRoom = {
+    code: shortCode,
+    title: String(title || `تحدي ${lesson}`).slice(0, 100),
+    subject: String(subject).slice(0, 60),
+    chapter: String(chapter || 'عام').slice(0, 120),
+    lesson: String(lesson).slice(0, 140),
+    creatorName: String(creatorName || 'بطل نَهج').slice(0, 50),
+    questions: questions.slice(0, 15),
+    participants: [],
+    shareCode: typeof shareCode === 'string' && shareCode.trim() ? shareCode.trim() : shortCode,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  appData.quizChallenges[shortCode] = cleanRoom;
+  saveData();
+
+  return res.json({ success: true, room: cleanRoom });
+});
+
+app.get('/api/quiz-challenge/room/:code', (req, res) => {
+  const cleanCode = String(req.params.code || '').trim().toUpperCase();
+  const room = appData.quizChallenges?.[cleanCode];
+  if (!room) {
+    return res.status(404).json({
+      success: false,
+      message: 'لم يتم العثور على غرفة تحدي بهذا الكود — تأكد من الكود أو استخدم كود التحدي الكامل NAHJ-QZ.',
+    });
+  }
+  return res.json({ success: true, room });
+});
+
+app.post('/api/quiz-challenge/submit', (req, res) => {
+  const {
+    code,
+    participantName,
+    scoreCorrect,
+    totalQuestions,
+    timeSeconds,
+    fallbackRoom,
+  } = req.body || {};
+
+  const cleanCode = String(code || '').trim().toUpperCase();
+  const cleanName = String(participantName || '').trim();
+
+  if (!cleanCode || !cleanName) {
+    return res.status(400).json({
+      success: false,
+      message: 'كود الغرفة واسم المتسابق مطلوبان لتسجيل النتيجة.',
+    });
+  }
+
+  if (!appData.quizChallenges) {
+    appData.quizChallenges = {};
+  }
+
+  let room = appData.quizChallenges[cleanCode];
+  if (!room && fallbackRoom && Array.isArray(fallbackRoom.questions)) {
+    const now = new Date().toISOString();
+    room = {
+      code: cleanCode,
+      title: String(fallbackRoom.title || `تحدي ${fallbackRoom.lesson || ''}`),
+      subject: String(fallbackRoom.subject || 'علمي علوم'),
+      chapter: String(fallbackRoom.chapter || 'عام'),
+      lesson: String(fallbackRoom.lesson || 'الدرس'),
+      creatorName: String(fallbackRoom.creatorName || 'بطل نَهج'),
+      questions: fallbackRoom.questions.slice(0, 15),
+      participants: [],
+      shareCode: String(fallbackRoom.shareCode || cleanCode),
+      createdAt: fallbackRoom.createdAt || now,
+      updatedAt: now,
+    };
+  }
+
+  if (!room) {
+    return res.status(404).json({
+      success: false,
+      message: 'غرفة التحدي غير موجودة.',
+    });
+  }
+
+  const safeTotal = Math.max(1, Number(totalQuestions) || room.questions.length || 1);
+  const safeCorrect = Math.min(safeTotal, Math.max(0, Number(scoreCorrect) || 0));
+  const safeTime = Math.max(1, Number(timeSeconds) || 1);
+  const accuracy = Math.round((safeCorrect / safeTotal) * 100);
+  const nowIso = new Date().toISOString();
+
+  const existingIdx = room.participants.findIndex(
+    (p) => p.name.trim().toLowerCase() === cleanName.toLowerCase()
+  );
+
+  const entry = {
+    name: cleanName,
+    scoreCorrect: safeCorrect,
+    totalQuestions: safeTotal,
+    accuracy,
+    timeSeconds: safeTime,
+    submittedAt: nowIso,
+  };
+
+  if (existingIdx >= 0) {
+    const prev = room.participants[existingIdx];
+    // Keep better score, or faster time if tied; allow updates if re-taken
+    if (
+      entry.scoreCorrect > prev.scoreCorrect ||
+      (entry.scoreCorrect === prev.scoreCorrect && entry.timeSeconds <= prev.timeSeconds)
+    ) {
+      room.participants[existingIdx] = entry;
+    }
+  } else {
+    room.participants.push(entry);
+  }
+
+  room.participants.sort((a, b) => {
+    if (b.scoreCorrect !== a.scoreCorrect) return b.scoreCorrect - a.scoreCorrect;
+    return a.timeSeconds - b.timeSeconds;
+  });
+
+  room.updatedAt = nowIso;
+  appData.quizChallenges[cleanCode] = room;
+  saveData();
+
+  return res.json({ success: true, room });
+});
+
+
 
 
 // ----------------- Smart Meal Photo & Nutritional Inspector -----------------

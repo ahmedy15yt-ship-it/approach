@@ -10,6 +10,7 @@ import {
   buildTutorFormattedContents,
   TutorDeepMode,
 } from '../../src/utils/tutorPrompts.js';
+import { callStrongSecondaryAI } from '../../src/utils/aiProviders.js';
 
 function sendSseEvent(res: any, payload: Record<string, any>) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
@@ -27,7 +28,6 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
   }
 
-  // Establish SSE headers immediately for lowest possible Time-To-First-Byte
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -57,17 +57,17 @@ export default async function handler(req: any, res: any) {
   let apiWarning: string | undefined;
 
   if (activeAi) {
+    const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
+    const thinkingLevel =
+      modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
     const abortController = new AbortController();
     const firstChunkTimeout = setTimeout(() => {
       abortController.abort();
-    }, 12000);
+    }, modeDepth === 'deep' ? 8500 : 5500);
 
     try {
-      const thinkingLevel =
-        modeDepth === 'deep' ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW;
-
       const streamResult = await activeAi.models.generateContentStream({
-        model: 'gemini-4-hydrogen',
+        model: geminiModel,
         contents: formattedContents,
         config: {
           abortSignal: abortController.signal,
@@ -91,7 +91,7 @@ export default async function handler(req: any, res: any) {
       clearTimeout(firstChunkTimeout);
 
       if (streamedAnyChunk && !closed) {
-        sendSseEvent(res, { done: true, source: 'gemini', isFree: true });
+        sendSseEvent(res, { done: true, source: 'gemini', providerLabel: geminiModel, isFree: true });
         return res.end();
       }
     } catch (err: any) {
@@ -99,20 +99,44 @@ export default async function handler(req: any, res: any) {
       const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
       const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
       apiWarning = classified.userWarning;
-      console.warn('Vercel Gemini stream fallback triggered:', err?.message || err);
+      console.warn('Vercel Gemini stream failover triggered:', err?.message || err);
     }
-  } else {
-    apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف في إعدادات البيئة؛ تم الرد عبر المحرك التعليمي السريع.';
   }
 
-  // Graceful fallback if Gemini stream produced nothing before an error
+  if (!streamedAnyChunk && !closed) {
+    const extMessages = formattedContents.map((c) => ({
+      role: (c.role === 'model' ? 'assistant' : 'user') as 'user' | 'assistant',
+      content: c.parts.map((p) => p.text).join('\n'),
+    }));
+    const secondary = await callStrongSecondaryAI({
+      systemInstruction: systemPrompt,
+      messages: extMessages,
+      timeoutMs: 9000,
+    });
+    if (secondary && !closed) {
+      streamedAnyChunk = true;
+      sendSseEvent(res, { chunk: secondary.text });
+      sendSseEvent(res, {
+        done: true,
+        source: 'gemini',
+        providerLabel: secondary.providerLabel,
+        isFree: true,
+      });
+      return res.end();
+    }
+  }
+
   if (!streamedAnyChunk && !closed) {
     const fallbackReply = generateTutorFallback({ message, subject, tutorMode });
     sendSseEvent(res, { chunk: fallbackReply });
     sendSseEvent(res, {
       done: true,
       source: 'fallback',
-      warning: apiWarning,
+      warning:
+        apiWarning ||
+        (!activeAi
+          ? 'مفتاح GEMINI_API_KEY غير مضاف في إعدادات البيئة؛ تم الرد عبر المحرك التعليمي السريع.'
+          : undefined),
       isFree: true,
     });
   } else if (!closed) {

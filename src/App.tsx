@@ -17,6 +17,7 @@ import {
   Sparkles,
   Swords,
   User,
+  FileQuestion,
 } from 'lucide-react';
 
 import {
@@ -57,6 +58,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { AITutorView } from './components/AITutorView';
 import { FriendsChallengeView } from './components/FriendsChallengeView';
 import { ProfileView } from './components/ProfileView';
+import { QuestionGeneratorView } from './components/QuestionGeneratorView';
 import { PhoneLoginPage } from './components/PhoneLoginPage';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
@@ -1145,6 +1147,7 @@ function AuthenticatedApp({
     { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
     { id: 'schedule', label: 'الجدول', icon: Calendar },
     { id: 'curriculum', label: 'المنهج والكبسولات', icon: BookOpen },
+    { id: 'question-builder', label: 'مُنشئ الأسئلة', icon: FileQuestion },
     { id: 'backlog', label: 'المتراكم', icon: Layers },
     { id: 'tutor', label: 'أستاذ نَهج', icon: Bot, highlight: true },
     { id: 'quran', label: 'القرآن والأذكار والصلاة', icon: Compass },
@@ -1270,6 +1273,16 @@ function AuthenticatedApp({
               curriculum={curriculum}
               initialSubject={tutorSubject}
               initialPrompt={tutorPrompt}
+            />
+          )}
+
+          {activeTab === 'question-builder' && (
+            <QuestionGeneratorView
+              curriculum={curriculum}
+              studentName={profile.name}
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+              onAskTutor={handleOpenTutorFromConcept}
             />
           )}
 
