@@ -362,26 +362,26 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 rounded-full text-xs font-bold mb-1.5 border border-red-200/70 dark:border-red-900/40">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-[#09090C] text-[#9A7218] dark:text-[#E8CE88] rounded-full text-xs font-bold mb-1.5 border border-amber-200 dark:border-[#D4AF37]/35">
             <Calendar className="w-3.5 h-3.5" />
             <span>محرك الجدول اليومي الذكي</span>
           </div>
-          <h2 className="text-xl font-extrabold text-zinc-950 dark:text-white">جدول يومك الكامل بدون عشوائية</h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-xl font-extrabold text-zinc-950 dark:text-[#F6E2A6]">جدول يومك الكامل بدون عشوائية</h2>
+          <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
             يبني يومك دقيقة بدقيقة: صلاة → فطار → تمارين → جلسات بأسماء الدروس → استراحات → نوم
           </p>
         </div>
 
         {/* Navigation Modes */}
-        <div className="flex bg-zinc-100 dark:bg-[#09090B] p-1 rounded-xl self-start md:self-center border border-zinc-200 dark:border-zinc-800">
+        <div className="flex bg-zinc-100 dark:bg-[#09090C] p-1 rounded-xl self-start md:self-center border border-zinc-200 dark:border-[#D4AF37]/25">
           <button
             onClick={() => setActiveTab('auto')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'auto'
-                ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white'
+                ? 'btn-luxury-gold shadow-xs'
+                : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F3DFA2]'
             }`}
           >
             الجدول التلقائي المتوازن
@@ -390,8 +390,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             onClick={() => setActiveTab('custom')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'custom'
-                ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white'
+                ? 'btn-luxury-gold shadow-xs'
+                : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F3DFA2]'
             }`}
           >
             صمّم جدولك بنفسك
@@ -400,8 +400,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             onClick={() => setActiveTab('weights')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
               activeTab === 'weights'
-                ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white'
+                ? 'btn-luxury-gold shadow-xs'
+                : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F3DFA2]'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -418,8 +418,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             onClick={() => setSelectedDayIndex(idx)}
             className={`px-4 py-2.5 rounded-xl font-bold text-xs shrink-0 transition-all border cursor-pointer ${
               selectedDayIndex === idx
-                ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
-                : 'bg-white dark:bg-[#121215] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-red-400/50 dark:hover:border-red-500/40'
+                ? 'btn-luxury-gold border-transparent shadow-xs'
+                : 'bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#B5AA92] border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]/60'
             }`}
           >
             {day}
@@ -431,22 +431,22 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       {activeTab === 'auto' && (
         <div className="space-y-4">
           {/* Weekly Dynamic Rotation Control */}
-          <div className="bg-gradient-to-r from-red-50/90 via-white to-red-50/90 dark:from-red-950/35 dark:via-[#121215] dark:to-red-950/35 border-2 border-red-200 dark:border-red-900/50 rounded-2xl p-4 space-y-3 shadow-2xs transition-colors">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-red-200/80 dark:border-red-900/40">
+          <div className="bg-gradient-to-l from-amber-50/80 via-white to-amber-50/80 dark:from-[#1E1E26] dark:via-[#121217] dark:to-[#08080A] border border-amber-300/70 dark:border-[#D4AF37]/40 rounded-2xl p-4 space-y-3 shadow-2xs transition-colors">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-amber-200/80 dark:border-[#D4AF37]/25">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#DC2626] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                <div className="w-9 h-9 rounded-xl btn-luxury-gold flex items-center justify-center font-black text-xs shrink-0 shadow-xs tabular-nums">
                   W{selectedWeek}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-xs text-zinc-950 dark:text-white">
+                    <span className="font-black text-xs text-zinc-950 dark:text-[#F6E2A6]">
                       الجدول التلقائي المتوازن — يتغير أسبوعياً
                     </span>
-                    <span className="text-[10px] px-2 py-0.2 bg-amber-400 text-black font-extrabold rounded-full">
+                    <span className="text-[10px] px-2 py-0.2 bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#9A7218] dark:text-[#F3DFA2] font-extrabold rounded-full">
                       تدوير المواد وفصول المنهج
                     </span>
                   </div>
-                  <span className="text-[11px] text-zinc-600 dark:text-zinc-300">
+                  <span className="text-[11px] text-zinc-600 dark:text-[#B5AA92]">
                     تتغير موضوعات ودروس المذاكرة آلياً كل أسبوع لتغطية أبواب المنهج بالتناوب بدون ملل
                   </span>
                 </div>
@@ -458,7 +458,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                   type="button"
                   onClick={() => handleSelectWeek(selectedWeek - 1)}
                   disabled={selectedWeek <= 1}
-                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/30 text-xs font-bold text-zinc-700 dark:text-[#B5AA92] hover:border-[#D4AF37] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                   <span>السابق</span>
@@ -467,7 +467,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                 <select
                   value={selectedWeek}
                   onChange={(e) => handleSelectWeek(Number(e.target.value))}
-                  className="bg-white dark:bg-zinc-900 border border-[#DC2626] dark:border-red-500 rounded-xl px-2.5 py-1.5 text-xs font-black text-[#DC2626] dark:text-red-300 focus:outline-none cursor-pointer"
+                  className="bg-white dark:bg-[#09090C] border border-amber-400 dark:border-[#D4AF37]/60 rounded-xl px-2.5 py-1.5 text-xs font-black text-[#9A7218] dark:text-[#F6E2A6] focus:outline-none cursor-pointer"
                 >
                   {Array.from({ length: 30 }).map((_, i) => (
                     <option key={i + 1} value={i + 1}>
@@ -480,7 +480,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                   type="button"
                   onClick={() => handleSelectWeek(selectedWeek + 1)}
                   disabled={selectedWeek >= 30}
-                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/30 text-xs font-bold text-zinc-700 dark:text-[#B5AA92] hover:border-[#D4AF37] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-all cursor-pointer"
                 >
                   <span>التالي</span>
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -489,47 +489,47 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
             </div>
 
             {/* Weekly Focus Theme Banner */}
-            <div className="bg-white/90 dark:bg-[#09090B]/90 rounded-xl p-3 border border-red-100 dark:border-red-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <div className="bg-white/90 dark:bg-[#09090C]/90 rounded-xl p-3 border border-amber-200/70 dark:border-[#D4AF37]/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="font-extrabold text-zinc-950 dark:text-white">
+                <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                <span className="font-extrabold text-zinc-950 dark:text-[#F6E2A6]">
                   محور الأسبوع {selectedWeek}: «{currentWeekTheme.title}»
                 </span>
               </div>
-              <span className="text-zinc-600 dark:text-zinc-300 text-[11px] font-medium">
+              <span className="text-zinc-600 dark:text-[#B5AA92] text-[11px] font-medium">
                 🎯 {currentWeekTheme.focus}
               </span>
             </div>
           </div>
 
           {/* Day parameters toggle */}
-          <div className="bg-white dark:bg-[#121215] p-3.5 rounded-xl border border-zinc-200 dark:border-red-900/30 flex flex-wrap items-center justify-between gap-3 text-xs transition-colors">
+          <div className="bg-white dark:bg-[#19191F] p-3.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 flex flex-wrap items-center justify-between gap-3 text-xs transition-colors">
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-zinc-950 dark:text-zinc-200">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-zinc-950 dark:text-[#F4EFE6]">
                 <input
                   type="checkbox"
                   checked={isSchoolDay}
                   onChange={(e) => setIsSchoolDay(e.target.checked)}
-                  className="rounded accent-[#DC2626] focus:ring-0 w-4 h-4"
+                  className="rounded accent-[#D4AF37] focus:ring-0 w-4 h-4"
                 />
                 <span>يوم دراسي / سناتر (تفريغ وقت الصباح)</span>
               </label>
             </div>
 
-            <div className="flex items-center gap-4 text-zinc-700 dark:text-zinc-400">
+            <div className="flex items-center gap-4 text-zinc-700 dark:text-[#B5AA92]">
               <span className="flex items-center gap-1.5 font-bold">
-                <Sun className="w-4 h-4 text-amber-500" />
+                <Sun className="w-4 h-4 text-[#D4AF37]" />
                 <span>الاستيقاظ: {convert24To12(wakeUpTime)}</span>
               </span>
               <span className="flex items-center gap-1.5 font-bold">
-                <Moon className="w-4 h-4 text-red-400" />
+                <Moon className="w-4 h-4 text-[#E8CE88]" />
                 <span>النوم: {convert24To12(bedTime)}</span>
               </span>
             </div>
           </div>
 
           {/* Timeline Cards */}
-          <div className="space-y-3 relative before:absolute before:top-4 before:bottom-4 before:right-6 before:w-0.5 before:bg-red-200 dark:before:bg-red-900/40">
+          <div className="space-y-3 relative before:absolute before:top-4 before:bottom-4 before:right-6 before:w-0.5 before:bg-amber-200 dark:before:bg-[#D4AF37]/35">
             {timelineItems.map((item, idx) => {
               const isStudy = item.type === 'study';
               const isPrayer = item.type === 'prayer';
@@ -540,23 +540,23 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                   key={idx}
                   className={`relative pr-12 p-4 rounded-2xl border transition-all ${
                     isStudy
-                      ? 'bg-white dark:bg-[#121215] border-[#DC2626]/35 dark:border-red-700/50 shadow-xs ring-1 ring-[#DC2626]/10 dark:ring-red-500/10'
+                      ? 'bg-white dark:bg-[#19191F] border-amber-400/60 dark:border-[#D4AF37]/50 shadow-xs ring-1 ring-[#D4AF37]/15'
                       : isPrayer
-                      ? 'bg-red-50/40 dark:bg-red-950/25 border-red-200 dark:border-red-900/40'
+                      ? 'bg-amber-50/40 dark:bg-[#141418] border-amber-200 dark:border-[#D4AF37]/30'
                       : isMeal
-                      ? 'bg-amber-50/40 dark:bg-amber-950/25 border-amber-200 dark:border-amber-900/50'
-                      : 'bg-zinc-50 dark:bg-[#0E0E11] border-zinc-200 dark:border-zinc-800'
+                      ? 'bg-amber-50/30 dark:bg-[#141418] border-amber-200/80 dark:border-[#D4AF37]/25'
+                      : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/20'
                   }`}
                 >
                   {/* Timeline bullet dot */}
                   <div
-                    className={`absolute right-4.5 top-5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#121215] shadow-xs ${
+                    className={`absolute right-4.5 top-5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#0D0D10] shadow-xs ${
                       isStudy
-                        ? 'bg-[#DC2626] dark:bg-red-500 ring-4 ring-[#DC2626]/20'
+                        ? 'bg-[#D4AF37] ring-4 ring-[#D4AF37]/25'
                         : isPrayer
-                        ? 'bg-red-700 dark:bg-red-400'
+                        ? 'bg-[#E8CE88]'
                         : isMeal
-                        ? 'bg-amber-600 dark:bg-amber-400'
+                        ? 'bg-[#B58722]'
                         : 'bg-zinc-400 dark:bg-zinc-600'
                     }`}
                   />
@@ -564,18 +564,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-mono text-xs font-bold text-[#8C7A52] dark:text-amber-400" dir="ltr">
+                        <span className="font-mono text-xs font-bold tabular-nums text-[#9A7218] dark:text-[#E8CE88]" dir="ltr">
                           {item.time}
                         </span>
                         <span
                           className={`text-[10px] px-2 py-0.2 rounded font-bold ${
                             isStudy
-                              ? 'bg-[#DC2626] text-white'
+                              ? 'btn-luxury-gold'
                               : isPrayer
-                              ? 'bg-red-100 dark:bg-red-900/60 text-red-900 dark:text-red-200'
+                              ? 'bg-amber-100 dark:bg-[#09090C] text-[#9A7218] dark:text-[#F3DFA2] border border-amber-200 dark:border-[#D4AF37]/30'
                               : isMeal
-                              ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                              ? 'bg-amber-100 dark:bg-[#09090C] text-amber-800 dark:text-[#E8CE88] border border-amber-200 dark:border-[#D4AF37]/25'
+                              : 'bg-zinc-100 dark:bg-[#19191F] text-zinc-700 dark:text-[#B5AA92]'
                           }`}
                         >
                           {item.type === 'study'
@@ -591,15 +591,15 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                             : 'راحة واستقرار'}
                         </span>
                       </div>
-                      <h4 className="font-extrabold text-sm text-zinc-950 dark:text-white">{item.title}</h4>
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{item.desc}</p>
+                      <h4 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6]">{item.title}</h4>
+                      <p className="text-xs text-zinc-600 dark:text-[#B5AA92] mt-0.5">{item.desc}</p>
                     </div>
 
                     {item.session && (
                       <button
                         type="button"
                         onClick={() => onStartSession(item.session!)}
-                        className="px-3.5 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer"
+                        className="btn-luxury-gold px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
                         <span>ابدأ الجلسة (بومودورو)</span>
@@ -616,8 +616,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       {/* Mode 2: Custom Schedule Builder (صمّم جدولك بنفسك) */}
       {activeTab === 'custom' && (
         <div className="space-y-5">
-          <div className="bg-zinc-50 dark:bg-[#121215] border border-red-200 dark:border-red-900/40 rounded-2xl p-4 text-xs text-zinc-800 dark:text-zinc-200">
-            <p className="font-bold text-sm text-[#DC2626] dark:text-red-400 mb-1">
+          <div className="bg-zinc-50 dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-2xl p-4 text-xs text-zinc-800 dark:text-[#B5AA92]">
+            <p className="font-bold text-sm text-[#9A7218] dark:text-[#F6E2A6] mb-1">
               صمّم جدول يومك المخصص — ليوم {DAYS[selectedDayIndex]}
             </p>
             أضف جلساتك الخاصة بالمادة والدرس ووقت البداية. الصلوات والوجبات والنوم يتولاهم التطبيق تلقائياً حول جلساتك!
@@ -626,20 +626,20 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           {/* Form to Add Custom Session */}
           <form
             onSubmit={handleAddCustomSession}
-            className="bg-white dark:bg-[#121215] p-4 sm:p-5 rounded-2xl border border-red-200/80 dark:border-red-900/40 shadow-xs space-y-3 transition-colors"
+            className="bg-white dark:bg-[#19191F] p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/30 shadow-xs space-y-3 transition-colors"
           >
-            <h4 className="text-xs font-black text-zinc-950 dark:text-white flex items-center gap-1.5">
-              <Plus className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+            <h4 className="text-xs font-black text-zinc-950 dark:text-[#F6E2A6] flex items-center gap-1.5">
+              <Plus className="w-4 h-4 text-[#D4AF37]" />
               <span>إضافة جلسة استذكار جديدة في هذا اليوم</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">المادة</label>
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#B5AA92] mb-1">المادة</label>
                 <select
                   value={newCustomSubjectId}
                   onChange={(e) => setNewCustomSubjectId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg font-bold text-zinc-950 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-lg font-bold text-zinc-950 dark:text-[#F4EFE6]"
                 >
                   {curriculum.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -650,35 +650,35 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">اسم الدرس أو الموضوع</label>
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#B5AA92] mb-1">اسم الدرس أو الموضوع</label>
                 <input
                   type="text"
                   value={newCustomLesson}
                   onChange={(e) => setNewCustomLesson(e.target.value)}
                   placeholder="مثال: الباب الثاني - التحليل الحجمي"
                   required
-                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-950 dark:text-white focus:border-[#DC2626] dark:focus:border-red-400 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-lg text-zinc-950 dark:text-[#F4EFE6] focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">وقت البدء (ساعة:دقيقة)</label>
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#B5AA92] mb-1">وقت البدء (ساعة:دقيقة)</label>
                 <input
                   type="time"
                   value={newCustomTime}
                   onChange={(e) => setNewCustomTime(e.target.value)}
                   required
-                  className="w-full px-3 py-2 text-xs font-mono bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-950 dark:text-white focus:border-[#DC2626] dark:focus:border-red-400 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-mono bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-lg text-zinc-950 dark:text-[#F4EFE6] focus:border-[#D4AF37] focus:outline-none"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1">المدة (بالدقائق)</label>
+                <label className="block text-[11px] font-bold text-zinc-700 dark:text-[#B5AA92] mb-1">المدة (بالدقائق)</label>
                 <select
                   value={newCustomDuration}
                   onChange={(e) => setNewCustomDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg font-bold text-zinc-950 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-lg font-bold text-zinc-950 dark:text-[#F4EFE6]"
                 >
                   <option value={25}>25 دقيقة (بومودورو قياسي)</option>
                   <option value={45}>45 دقيقة (جلسة متقدمة)</option>
@@ -690,7 +690,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
             <button
               type="submit"
-              className="py-2.5 px-5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-luxury-gold py-2.5 px-5 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>إدراج الجلسة في الجدول</span>
@@ -700,12 +700,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           {/* List of Custom Sessions */}
           <div className="space-y-3">
             {(customDays[selectedDayIndex] || []).length === 0 ? (
-              <div className="bg-white dark:bg-[#121215] p-8 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-center transition-colors">
-                <BookOpen className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2" />
-                <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+              <div className="bg-white dark:bg-[#19191F] p-8 rounded-2xl border border-dashed border-zinc-200 dark:border-[#D4AF37]/25 text-center transition-colors">
+                <BookOpen className="w-8 h-8 text-zinc-400 dark:text-[#B5AA92] mx-auto mb-2" />
+                <p className="text-xs font-bold text-zinc-600 dark:text-[#F4EFE6]">
                   لا توجد جلسات مخصصة مضافة ليوم {DAYS[selectedDayIndex]} بعد.
                 </p>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-500 mt-1">
+                <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92] mt-1">
                   استخدم النموذج أعلاه لإضافة جلساتك أو ارجع للجدول التلقائي.
                 </p>
               </div>
@@ -713,22 +713,22 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               (customDays[selectedDayIndex] || []).map((session) => (
                 <div
                   key={session.id}
-                  className="bg-white dark:bg-[#121215] p-4 rounded-2xl border border-red-200/80 dark:border-red-900/40 shadow-xs flex items-center justify-between gap-3 transition-colors"
+                  className="bg-white dark:bg-[#19191F] p-4 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/30 shadow-xs flex items-center justify-between gap-3 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-10 rounded-xl bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 flex items-center justify-center font-bold text-xs shrink-0" dir="ltr">
+                    <div className="w-14 h-10 rounded-xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 text-[#9A7218] dark:text-[#F3DFA2] flex items-center justify-center font-bold text-xs tabular-nums shrink-0" dir="ltr">
                       {convert24To12(session.startTime)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-black text-[#DC2626] dark:text-red-400">
+                        <span className="text-xs font-black text-[#9A7218] dark:text-[#E8CE88]">
                           {session.subjectName}
                         </span>
-                        <span className="text-[10px] px-2 py-0.2 bg-zinc-100 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded font-bold text-zinc-600 dark:text-zinc-400">
+                        <span className="text-[10px] px-2 py-0.2 bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded font-bold text-zinc-600 dark:text-[#B5AA92] tabular-nums">
                           {session.durationMinutes} دقيقة
                         </span>
                       </div>
-                      <p className="text-xs font-bold text-zinc-950 dark:text-white">{session.lessonTitle}</p>
+                      <p className="text-xs font-bold text-zinc-950 dark:text-[#F4EFE6]">{session.lessonTitle}</p>
                     </div>
                   </div>
 
@@ -736,7 +736,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onStartSession(session)}
-                      className="px-3 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="btn-luxury-gold px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>ابدأ</span>
@@ -759,12 +759,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
       {/* Mode 3: Subject Weights Allocation */}
       {activeTab === 'weights' && (
-        <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
+        <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
           <div>
-            <h3 className="font-extrabold text-sm text-zinc-950 dark:text-white mb-1">
+            <h3 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6] mb-1">
               تحديد ساعات المذاكرة الأسبوعية لكل مادة
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
               يستخدم المحرك هذه الأوزان لتوزيع أوقات الجلسات تلقائياً عبر أيام الأسبوع بحسب ثقل كل مادة لديك.
             </p>
           </div>
@@ -775,7 +775,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               return (
                 <div
                   key={subj.id}
-                  className="bg-zinc-50 dark:bg-[#09090B] p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                  className="bg-zinc-50 dark:bg-[#09090C] p-3.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -783,8 +783,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                       style={{ backgroundColor: subj.color }}
                     />
                     <div>
-                      <span className="font-bold text-xs text-zinc-950 dark:text-white block">{subj.name}</span>
-                      <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      <span className="font-bold text-xs text-zinc-950 dark:text-[#F4EFE6] block">{subj.name}</span>
+                      <span className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                         {subj.chapters.length} أبواب • {subj.chapters.flatMap((c) => c.lessons).length} درس
                       </span>
                     </div>
@@ -797,9 +797,9 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                       max="12"
                       value={currentHours}
                       onChange={(e) => onUpdateWeeklyHours(subj.id, Number(e.target.value))}
-                      className="w-32 accent-[#DC2626]"
+                      className="w-32 accent-[#D4AF37] cursor-pointer"
                     />
-                    <span className="font-black text-xs text-[#DC2626] dark:text-red-400 min-w-[70px] text-left" dir="ltr">
+                    <span className="font-black text-xs text-[#9A7218] dark:text-[#F3DFA2] min-w-[70px] text-left tabular-nums" dir="ltr">
                       {currentHours} ساعات/أسبوع
                     </span>
                   </div>

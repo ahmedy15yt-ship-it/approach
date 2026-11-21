@@ -71,7 +71,7 @@ export default async function handler(req: any, res: any) {
       contextPoints,
     };
 
-    const activeAi = getServerGeminiClient();
+    const activeAi = getServerGeminiClient(req);
     const systemInstruction = buildQuestionGeneratorSystemInstruction();
     const userPrompt = buildQuestionGeneratorPrompt(params);
 

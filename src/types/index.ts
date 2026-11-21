@@ -103,6 +103,12 @@ export interface DailyStudyHoursLog {
   updatedAt: string;
 }
 
+export interface ChallengeDailyPoint {
+  date: string; // YYYY-MM-DD
+  myHours: number;
+  friendHours: number;
+}
+
 export interface FriendChallenge {
   id: string;
   title: string;
@@ -110,6 +116,7 @@ export interface FriendChallenge {
   targetHours: number;
   myHours: number;
   friendHours: number;
+  dailyHistory?: ChallengeDailyPoint[];
   status: 'active' | 'won' | 'completed';
   rewardXp: number;
   rewardClaimed?: boolean;

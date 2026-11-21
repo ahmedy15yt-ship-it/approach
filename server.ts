@@ -41,39 +41,70 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Initialize Gemini client strictly server-side if key is present
-let cachedApiKey: string | null = null;
-let ai: GoogleGenAI | null = null;
+// Initialize Gemini client strictly server-side if key is present (propagating app domain Referer for domain-restricted keys)
+const geminiClientCache = new Map<string, GoogleGenAI>();
 
-function getGeminiClient(): GoogleGenAI | null {
+function resolveServerAppReferer(req?: any): string | undefined {
+  const origin = req?.headers?.origin;
+  if (typeof origin === 'string' && origin.startsWith('http')) {
+    return origin.endsWith('/') ? origin : `${origin}/`;
+  }
+  const referer = req?.headers?.referer || req?.headers?.referrer;
+  if (typeof referer === 'string' && referer.startsWith('http')) {
+    return referer;
+  }
+  const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host;
+  if (typeof host === 'string' && host.trim()) {
+    const proto =
+      req?.headers?.['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
+    return `${proto}://${host.trim()}/`;
+  }
+  const envUrl = process.env.APP_URL ? process.env.APP_URL.trim() : '';
+  if (envUrl && envUrl.startsWith('http') && envUrl !== 'MY_APP_URL') {
+    return envUrl.endsWith('/') ? envUrl : `${envUrl}/`;
+  }
+  return undefined;
+}
+
+function getGeminiClient(req?: any): GoogleGenAI | null {
   const rawKey = process.env.GEMINI_API_KEY;
   const trimmedKey = rawKey ? rawKey.trim() : '';
   if (!trimmedKey || trimmedKey === 'MY_GEMINI_API_KEY') {
-    cachedApiKey = null;
-    ai = null;
     return null;
   }
-  if (ai && cachedApiKey === trimmedKey) {
-    return ai;
+
+  const referer = resolveServerAppReferer(req);
+  const cacheKey = `${trimmedKey}::${referer || 'default'}`;
+  const cached = geminiClientCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
+
   try {
-    ai = new GoogleGenAI({
+    const headers: Record<string, string> = {
+      'User-Agent': 'aistudio-build',
+    };
+    if (referer) {
+      headers['Referer'] = referer;
+    }
+    const client = new GoogleGenAI({
       apiKey: trimmedKey,
       httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
+        headers,
       },
     });
-    cachedApiKey = trimmedKey;
-    return ai;
+    if (geminiClientCache.size > 16) {
+      geminiClientCache.clear();
+    }
+    geminiClientCache.set(cacheKey, client);
+    return client;
   } catch (err) {
     console.error('Gemini SDK initialization note:', err);
     return null;
   }
 }
 
-ai = getGeminiClient();
+let ai: GoogleGenAI | null = getGeminiClient();
 
 function classifyGeminiError(err: any): { retryable: boolean; userWarning: string } {
   const msg = String(err?.message || err || '');
@@ -85,10 +116,11 @@ function classifyGeminiError(err: any): { retryable: boolean; userWarning: strin
       userWarning: 'مفتاح Gemini API غير صالح — يرجى مراجعته في لوحة Settings > Secrets.',
     };
   }
-  if (status === 403 || msg.includes('PERMISSION_DENIED')) {
+  if (status === 403 || msg.includes('PERMISSION_DENIED') || msg.includes('HTTP_REFERRER_BLOCKED')) {
     return {
       retryable: false,
-      userWarning: 'تم رفض صلاحية الوصول لنموذج Gemini — يرجى التحقق من مفتاح API في Settings > Secrets.',
+      userWarning:
+        'تم رفض صلاحية الوصول أو تقييد النطاق — تأكد من إضافة نطاق التطبيق ضمن النطاقات المسموحة لمفتاح Google AI Studio.',
     };
   }
   if (status === 404 || msg.includes('NOT_FOUND')) {
@@ -628,12 +660,12 @@ app.post('/api/owner/settings', (req, res) => {
 });
 
 // Gemini & Multi-AI API configuration status (never exposes key values)
-app.get('/api/gemini/status', (_req, res) => {
-  const client = getGeminiClient();
+app.get('/api/gemini/status', (req, res) => {
+  const client = getGeminiClient(req);
   const providers = getConfiguredAIProviders();
   return res.json({
     configured: Boolean(client) || providers.length > 0,
-    model: 'gemini-3.1-flash-lite / gemini-4-hydrogen',
+    model: 'gemini-4-hydrogen / gemini-3.1-flash-lite',
     providers,
   });
 });
@@ -659,8 +691,8 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
     }
   });
 
-  const activeAi = getGeminiClient();
-  const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+  const activeAi = getGeminiClient(req);
+  const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
   const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
   const formattedContents = buildTutorFormattedContents({
     message,
@@ -675,56 +707,66 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
   let providerLabel = 'المحرك التعليمي السريع';
 
   if (activeAi) {
-    const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
-    const thinkingLevel =
-      modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
-    const abortController = new AbortController();
-    const firstChunkTimeout = setTimeout(() => {
-      abortController.abort();
-    }, modeDepth === 'deep' ? 8500 : 5500);
+    const candidateModels =
+      modeDepth === 'deep'
+        ? [
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 8500 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+          ]
+        : [
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+          ];
 
-    try {
-      const streamResult = await activeAi.models.generateContentStream({
-        model: geminiModel,
-        contents: formattedContents,
-        config: {
-          abortSignal: abortController.signal,
-          systemInstruction: systemPrompt,
-          thinkingConfig: { thinkingLevel },
-        },
-      });
+    for (const candidate of candidateModels) {
+      if (streamedAnyChunk || closed) break;
+      const abortController = new AbortController();
+      const firstChunkTimeout = setTimeout(() => {
+        abortController.abort();
+      }, candidate.timeoutMs);
 
-      for await (const chunk of streamResult) {
-        if (closed) break;
-        const piece = chunk?.text;
-        if (piece) {
-          if (!streamedAnyChunk) {
-            clearTimeout(firstChunkTimeout);
+      try {
+        const streamResult = await activeAi.models.generateContentStream({
+          model: candidate.model,
+          contents: formattedContents,
+          config: {
+            abortSignal: abortController.signal,
+            systemInstruction: systemPrompt,
+            thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+          },
+        });
+
+        for await (const chunk of streamResult) {
+          if (closed) break;
+          const piece = chunk?.text;
+          if (piece) {
+            if (!streamedAnyChunk) {
+              clearTimeout(firstChunkTimeout);
+            }
+            streamedAnyChunk = true;
+            res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
           }
-          streamedAnyChunk = true;
-          res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
         }
-      }
 
-      clearTimeout(firstChunkTimeout);
+        clearTimeout(firstChunkTimeout);
 
-      if (streamedAnyChunk && !closed) {
-        res.write(
-          `data: ${JSON.stringify({
-            done: true,
-            source: 'gemini',
-            providerLabel: geminiModel,
-            isFree: true,
-          })}\n\n`
-        );
-        return res.end();
+        if (streamedAnyChunk && !closed) {
+          res.write(
+            `data: ${JSON.stringify({
+              done: true,
+              source: 'gemini',
+              providerLabel: candidate.model,
+              isFree: true,
+            })}\n\n`
+          );
+          return res.end();
+        }
+      } catch (err: any) {
+        clearTimeout(firstChunkTimeout);
+        const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
+        const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
+        apiWarning = classified.userWarning;
+        console.warn(`Gemini tutor stream (${candidate.model}) failover:`, err?.message || err);
       }
-    } catch (err: any) {
-      clearTimeout(firstChunkTimeout);
-      const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
-      const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
-      apiWarning = classified.userWarning;
-      console.warn('Gemini tutor stream failover triggered:', err?.message || err);
     }
   }
 
@@ -787,8 +829,8 @@ app.post('/api/gemini/tutor', async (req, res) => {
       return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
     }
 
-    const activeAi = getGeminiClient();
-    const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+    const activeAi = getGeminiClient(req);
+    const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
     const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
     const formattedContents = buildTutorFormattedContents({
       message,
@@ -803,37 +845,48 @@ app.post('/api/gemini/tutor', async (req, res) => {
     let apiWarning: string | undefined;
 
     if (activeAi) {
-      try {
-        const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
-        const thinkingLevel =
-          modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
-        const result = await runWithRetry(
-          async () => {
-            const response = await activeAi.models.generateContent({
-              model: geminiModel,
-              contents: formattedContents,
-              config: {
-                abortSignal: AbortSignal.timeout(modeDepth === 'deep' ? 8500 : 5500),
-                systemInstruction: systemPrompt,
-                thinkingConfig: { thinkingLevel },
-              },
-            });
-            return response.text || '';
-          },
-          0,
-          modeDepth === 'deep' ? 9000 : 6000
-        );
+      const candidateModels =
+        modeDepth === 'deep'
+          ? [
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 9000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+            ]
+          : [
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+            ];
 
-        if (result && result.trim()) {
-          reply = result.trim();
-          responseSource = 'gemini';
-          providerLabel = geminiModel;
+      for (const candidate of candidateModels) {
+        try {
+          const result = await runWithRetry(
+            async () => {
+              const response = await activeAi.models.generateContent({
+                model: candidate.model,
+                contents: formattedContents,
+                config: {
+                  abortSignal: AbortSignal.timeout(candidate.timeoutMs),
+                  systemInstruction: systemPrompt,
+                  thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+                },
+              });
+              return response.text || '';
+            },
+            0,
+            candidate.timeoutMs + 500
+          );
+
+          if (result && result.trim()) {
+            reply = result.trim();
+            responseSource = 'gemini';
+            providerLabel = candidate.model;
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+          const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
+          apiWarning = classified.userWarning;
+          console.warn(`Gemini tutor (${candidate.model}) failover triggered:`, err?.message || err);
         }
-      } catch (err: any) {
-        const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-        const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
-        apiWarning = classified.userWarning;
-        console.warn('Gemini tutor failover triggered:', err?.message || err);
       }
     }
 
@@ -931,7 +984,7 @@ app.post('/api/gemini/generate-questions', async (req, res) => {
       contextPoints,
     };
 
-    const activeAi = getGeminiClient();
+    const activeAi = getGeminiClient(req);
     const systemInstruction = buildQuestionGeneratorSystemInstruction();
     const userPrompt = buildQuestionGeneratorPrompt(params);
 
@@ -1222,7 +1275,7 @@ app.post('/api/gemini/inspect-meal', async (req, res) => {
       category ||
       (studentBmi >= 25 ? 'overweight' : studentBmi < 18.5 ? 'underweight' : 'balanced');
 
-    const activeAi = getGeminiClient();
+    const activeAi = getGeminiClient(req);
 
     const promptText = `أنت خبير تغذية سريري مصري متخصص في تغذية طلاب الثانوية العامة (الصف الثالث الثانوي علمي علوم).
 بيانات الطالب:

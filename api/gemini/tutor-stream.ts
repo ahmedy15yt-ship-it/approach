@@ -43,8 +43,8 @@ export default async function handler(req: any, res: any) {
     }
   });
 
-  const activeAi = getServerGeminiClient();
-  const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+  const activeAi = getServerGeminiClient(req);
+  const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
   const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
   const formattedContents = buildTutorFormattedContents({
     message,
@@ -57,49 +57,64 @@ export default async function handler(req: any, res: any) {
   let apiWarning: string | undefined;
 
   if (activeAi) {
-    const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
-    const thinkingLevel =
-      modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
-    const abortController = new AbortController();
-    const firstChunkTimeout = setTimeout(() => {
-      abortController.abort();
-    }, modeDepth === 'deep' ? 8500 : 5500);
+    const candidateModels =
+      modeDepth === 'deep'
+        ? [
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 8500 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+          ]
+        : [
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+          ];
 
-    try {
-      const streamResult = await activeAi.models.generateContentStream({
-        model: geminiModel,
-        contents: formattedContents,
-        config: {
-          abortSignal: abortController.signal,
-          systemInstruction: systemPrompt,
-          thinkingConfig: { thinkingLevel },
-        },
-      });
+    for (const candidate of candidateModels) {
+      if (streamedAnyChunk || closed) break;
+      const abortController = new AbortController();
+      const firstChunkTimeout = setTimeout(() => {
+        abortController.abort();
+      }, candidate.timeoutMs);
 
-      for await (const chunk of streamResult) {
-        if (closed) break;
-        const piece = chunk?.text;
-        if (piece) {
-          if (!streamedAnyChunk) {
-            clearTimeout(firstChunkTimeout);
+      try {
+        const streamResult = await activeAi.models.generateContentStream({
+          model: candidate.model,
+          contents: formattedContents,
+          config: {
+            abortSignal: abortController.signal,
+            systemInstruction: systemPrompt,
+            thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+          },
+        });
+
+        for await (const chunk of streamResult) {
+          if (closed) break;
+          const piece = chunk?.text;
+          if (piece) {
+            if (!streamedAnyChunk) {
+              clearTimeout(firstChunkTimeout);
+            }
+            streamedAnyChunk = true;
+            sendSseEvent(res, { chunk: piece });
           }
-          streamedAnyChunk = true;
-          sendSseEvent(res, { chunk: piece });
         }
-      }
 
-      clearTimeout(firstChunkTimeout);
+        clearTimeout(firstChunkTimeout);
 
-      if (streamedAnyChunk && !closed) {
-        sendSseEvent(res, { done: true, source: 'gemini', providerLabel: geminiModel, isFree: true });
-        return res.end();
+        if (streamedAnyChunk && !closed) {
+          sendSseEvent(res, {
+            done: true,
+            source: 'gemini',
+            providerLabel: candidate.model,
+            isFree: true,
+          });
+          return res.end();
+        }
+      } catch (err: any) {
+        clearTimeout(firstChunkTimeout);
+        const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
+        const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
+        apiWarning = classified.userWarning;
+        console.warn(`Vercel Gemini stream (${candidate.model}) failover:`, err?.message || err);
       }
-    } catch (err: any) {
-      clearTimeout(firstChunkTimeout);
-      const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
-      const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
-      apiWarning = classified.userWarning;
-      console.warn('Vercel Gemini stream failover triggered:', err?.message || err);
     }
   }
 

@@ -21,9 +21,23 @@ import {
   RotateCcw,
   CheckCircle2,
   Timer,
+  BarChart3,
+  TrendingUp,
+  MonitorCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DailyStudyHoursLog, FriendChallenge } from '../types';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
+import { DailyStudyHoursLog, FriendChallenge, StreakHistoryEntry } from '../types';
 import {
   buildChallengeShareMessage,
   buildDailyHoursShareMessage,
@@ -32,11 +46,18 @@ import {
   formatMinutesSeconds,
 } from '../utils/challengeCodes';
 import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
+import { useWakeLock } from '../utils/useWakeLock';
+import {
+  buildAggregate7DaySeries,
+  buildChallenge7DaySeries,
+  ChallengeComparisonChartPoint,
+} from '../utils/challengeCharts';
 
 interface FriendsChallengeViewProps {
   studentName: string;
   studyLog: DailyStudyHoursLog;
   challenges: FriendChallenge[];
+  streakHistory?: Record<string, StreakHistoryEntry>;
   onAdjustTodayHours: (deltaHours: number) => void;
   onSetTodayHours: (exactHours: number) => void;
   onUpdateDailyGoal: (goalHours: number) => void;
@@ -75,10 +96,54 @@ const CHALLENGE_PRESETS = [
   'تحدي 4 ساعات حل امتحانات شاملة 📝',
 ];
 
+const MiniComparisonTooltip: React.FC<{
+  active?: boolean;
+  payload?: Array<{ value?: number; dataKey?: string }>;
+  label?: string;
+  myLabel: string;
+  friendLabel: string;
+}> = ({ active, payload, label, myLabel, friendLabel }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  const point = (payload[0] as unknown as { payload?: ChallengeComparisonChartPoint })?.payload;
+  const myVal = payload.find((p) => p.dataKey === 'myHours')?.value ?? point?.myHours ?? 0;
+  const friendVal =
+    payload.find((p) => p.dataKey === 'friendHours')?.value ?? point?.friendHours ?? 0;
+
+  return (
+    <div
+      dir="rtl"
+      className="bg-[#08080A]/95 text-[#F4EFE6] border border-[#D4AF37]/45 rounded-xl px-3 py-2 shadow-lg text-[11px] font-['Cairo',sans-serif] space-y-1"
+    >
+      <div className="font-black text-[#E8CE88] border-b border-[#D4AF37]/20 pb-1">
+        {point?.fullDateLabel || label}
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex items-center gap-1.5 text-[#F3DFA2] font-bold">
+          <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
+          {myLabel}:
+        </span>
+        <span className="font-mono font-black text-[#F4EFE6] tabular-nums" dir="ltr">
+          {Number(myVal).toFixed(1)} h
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex items-center gap-1.5 text-slate-300 font-bold">
+          <span className="w-2 h-2 rounded-full bg-slate-400" />
+          {friendLabel}:
+        </span>
+        <span className="font-mono font-black text-[#F4EFE6] tabular-nums" dir="ltr">
+          {Number(friendVal).toFixed(1)} h
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   studentName,
   studyLog,
   challenges,
+  streakHistory,
   onAdjustTodayHours,
   onSetTodayHours,
   onUpdateDailyGoal,
@@ -122,6 +187,10 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   const [roomSyncFeedback, setRoomSyncFeedback] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement | null>(null);
 
+  // Overview mini-chart UI state
+  const [chartStyle, setChartStyle] = useState<'area' | 'bar'>('area');
+  const [chartTargetId, setChartTargetId] = useState<string>('all');
+
   useEffect(() => {
     const timer = setInterval(() => {
       setNowMs(Date.now());
@@ -142,6 +211,18 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         nowMs
       )
     : null;
+
+  const anyChallengeTimerRunning = challenges.some((ch) => {
+    const metrics = computeSessionTimerMetrics(
+      ch.sessionStartedAt,
+      ch.sessionDurationMinutes || 50,
+      nowMs
+    );
+    return metrics.hasStarted && !metrics.isFinished;
+  });
+
+  // Keep screen awake whenever a challenge session countdown is actively running
+  const { isSupported: isWakeLockSupported, isWakeLocked } = useWakeLock(anyChallengeTimerRunning);
 
   // Bell chime & announcement when active session timer finishes
   useEffect(() => {
@@ -331,38 +412,38 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 sm:p-7 shadow-lg border border-red-900/40 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-l from-[#1E1E26] via-[#121217] to-[#08080A] text-[#F4EFE6] rounded-3xl p-6 sm:p-7 shadow-lg border border-[#D4AF37]/45 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-72 h-72 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full text-xs font-black text-amber-300 border border-white/15">
-              <Swords className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#08080A]/85 rounded-full text-xs font-black text-[#E8CE88] border border-[#D4AF37]/35">
+              <Swords className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>ساحة المنافسة الإيجابية • محفوظة في جهازك</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#F6E2A6]">
               تحدي الأصدقاء وساعات المذاكرة اليومية ⚔️
             </h1>
-            <p className="text-xs sm:text-sm text-white/85 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#E5DEC9] max-w-2xl leading-relaxed">
               سجّل ساعات مذاكرتك اليوم (أو دع مؤقت بومودورو يسجلها لك تلقائياً)، أنشئ تحدياً مع زميلك، وشارك كود التحدي لمتابعة التقدم وجهاً لوجه وحصد نقاط XP!
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5 bg-black/40 p-3 rounded-2xl border border-white/15 shrink-0">
-            <div className="text-center px-2.5 border-l border-white/15">
-              <span className="text-[10px] text-white/70 block">ساعات اليوم</span>
-              <span className="text-lg sm:text-xl font-black text-amber-300">
+          <div className="grid grid-cols-3 gap-2.5 bg-[#09090C]/90 p-3 rounded-2xl border border-[#D4AF37]/35 shrink-0">
+            <div className="text-center px-2.5 border-l border-[#D4AF37]/20">
+              <span className="text-[10px] text-[#B5AA92] block">ساعات اليوم</span>
+              <span className="text-lg sm:text-xl font-black text-[#F3DFA2] tabular-nums">
                 {studyLog.hours.toFixed(1)} س
               </span>
             </div>
-            <div className="text-center px-2.5 border-l border-white/15">
-              <span className="text-[10px] text-white/70 block">تحديات نشطة</span>
-              <span className="text-lg sm:text-xl font-black text-white">
+            <div className="text-center px-2.5 border-l border-[#D4AF37]/20">
+              <span className="text-[10px] text-[#B5AA92] block">تحديات نشطة</span>
+              <span className="text-lg sm:text-xl font-black text-[#F4EFE6] tabular-nums">
                 {activeChallengesCount}
               </span>
             </div>
             <div className="text-center px-2.5">
-              <span className="text-[10px] text-white/70 block">انتصاراتك</span>
-              <span className="text-lg sm:text-xl font-black text-emerald-400">
+              <span className="text-[10px] text-[#B5AA92] block">انتصاراتك</span>
+              <span className="text-lg sm:text-xl font-black text-emerald-400 tabular-nums">
                 {wonChallengesCount} 🏆
               </span>
             </div>
@@ -374,19 +455,32 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
       {activeRoomChallenge && activeTimer && (
         <section
           ref={roomRef}
-          className="bg-white dark:bg-[#121215] border-2 border-[#DC2626]/70 dark:border-red-700/60 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5 transition-colors"
+          className="bg-white dark:bg-[#19191F] border-2 border-[#D4AF37]/50 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5 transition-colors"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-[#D4AF37]/25">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2 text-xs font-extrabold">
-                <span className="inline-flex items-center gap-1.5 text-[#DC2626] dark:text-red-400">
-                  <Timer className="w-4 h-4" />
+                <span className="inline-flex items-center gap-1.5 text-[#9A7218] dark:text-[#E8CE88]">
+                  <Timer className="w-4 h-4 text-[#D4AF37]" />
                   <span>غرفة مؤقت الجلسة المشتركة</span>
                 </span>
                 <span aria-hidden="true" className="text-zinc-400">·</span>
-                <span className="text-zinc-600 dark:text-zinc-400">
+                <span className="text-zinc-600 dark:text-[#B5AA92]">
                   ضد {activeRoomChallenge.friendName}
                 </span>
+                {activeTimer.hasStarted && !activeTimer.isFinished && (
+                  <>
+                    <span aria-hidden="true" className="text-zinc-400">·</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-400">
+                      <MonitorCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {isWakeLocked || isWakeLockSupported
+                          ? 'الشاشة لن تفصل أثناء الجلسة'
+                          : 'وضع التركيز المستمر نشط'}
+                      </span>
+                    </span>
+                  </>
+                )}
                 {challenges.length > 1 && (
                   <>
                     <span aria-hidden="true" className="text-zinc-400">·</span>
@@ -394,7 +488,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                       aria-label="اختيار تحدي الجلسة"
                       value={activeRoomChallenge.id}
                       onChange={(e) => setActiveRoomId(e.target.value)}
-                      className="bg-zinc-100 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-[11px] font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-[#DC2626] cursor-pointer"
+                      className="bg-zinc-100 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-lg px-2 py-0.5 text-[11px] font-bold text-zinc-900 dark:text-[#E8CE88] focus:outline-none focus:border-[#D4AF37] cursor-pointer"
                     >
                       {challenges.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -405,15 +499,15 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   </>
                 )}
               </div>
-              <h2 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-white">
+              <h2 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-[#F4EFE6]">
                 {activeRoomChallenge.title}
               </h2>
             </div>
 
             {/* Prominent Current Minute Indicator */}
-            <div className="flex items-center gap-3 bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 shrink-0">
+            <div className="flex items-center gap-3 bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/35 rounded-2xl px-4 py-3 shrink-0">
               <div className="text-right">
-                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 block">
+                <span className="text-[11px] font-bold text-zinc-500 dark:text-[#B5AA92] block">
                   توقيت الجلسة الحالي لكما
                 </span>
                 {activeTimer.hasStarted ? (
@@ -422,22 +516,22 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                       اكتملت الدقيقة {activeTimer.durationMinutes} من {activeTimer.durationMinutes} ✓
                     </span>
                   ) : (
-                    <span className="text-base sm:text-lg font-black text-[#DC2626] dark:text-red-400 tabular-nums">
+                    <span className="text-base sm:text-lg font-black text-[#9A7218] dark:text-[#F3DFA2] tabular-nums">
                       الدقيقة {activeTimer.currentMinute} من أصل {activeTimer.durationMinutes} دقيقة
                     </span>
                   )
                 ) : (
-                  <span className="text-sm sm:text-base font-black text-zinc-800 dark:text-zinc-200 tabular-nums">
+                  <span className="text-sm sm:text-base font-black text-zinc-800 dark:text-[#E8CE88] tabular-nums">
                     جاهزة للبدء ({activeTimer.durationMinutes} دقيقة)
                   </span>
                 )}
               </div>
-              <div className="h-9 w-px bg-zinc-200 dark:bg-zinc-800" />
+              <div className="h-9 w-px bg-zinc-200 dark:bg-[#D4AF37]/25" />
               <div className="text-center font-mono tabular-nums" dir="ltr">
-                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 block">
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-[#B5AA92] block">
                   المتبقي
                 </span>
-                <span className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-white">
+                <span className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-[#F6E2A6]">
                   {formatMinutesSeconds(activeTimer.remainingSeconds)}
                 </span>
               </div>
@@ -446,27 +540,27 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
 
           {/* Live Elapsed/Remaining Bar & Session Controls */}
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-400 tabular-nums">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-zinc-600 dark:text-[#B5AA92] tabular-nums">
               <span>
                 الوقت المنقضي:{' '}
-                <strong className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                <strong className="font-mono text-zinc-950 dark:text-[#F4EFE6]" dir="ltr">
                   {formatMinutesSeconds(activeTimer.elapsedSeconds)}
                 </strong>
               </span>
               <span>
-                نسبة الجلسة: <strong className="text-[#DC2626] dark:text-red-400">{activeTimer.progressPct}%</strong>
+                نسبة الجلسة: <strong className="text-[#9A7218] dark:text-[#F3DFA2]">{activeTimer.progressPct}%</strong>
               </span>
               <span>
-                المدة الكلية: <strong className="text-zinc-950 dark:text-white">{activeTimer.durationMinutes} دقيقة</strong>
+                المدة الكلية: <strong className="text-zinc-950 dark:text-[#F4EFE6]">{activeTimer.durationMinutes} دقيقة</strong>
               </span>
             </div>
 
-            <div className="w-full h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-zinc-200 dark:bg-[#09090C] rounded-full overflow-hidden border border-transparent dark:border-[#D4AF37]/20">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   activeTimer.isFinished
                     ? 'bg-emerald-600'
-                    : 'bg-gradient-to-l from-[#DC2626] via-red-500 to-amber-400'
+                    : 'bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722]'
                 }`}
                 style={{ width: `${activeTimer.progressPct}%` }}
               />
@@ -475,7 +569,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               {/* Duration quick selector (only editable when not running or resetting) */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 ml-1">
+                <span className="text-[11px] font-bold text-zinc-500 dark:text-[#B5AA92] ml-1">
                   مدة الجلسة:
                 </span>
                 {[25, 45, 50, 60, 90, 120].map((mins) => (
@@ -490,8 +584,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     }
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition-colors cursor-pointer tabular-nums disabled:opacity-50 disabled:cursor-not-allowed ${
                       activeTimer.durationMinutes === mins
-                        ? 'bg-[#DC2626] text-white border-[#DC2626]'
-                        : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]'
+                        ? 'btn-luxury-gold'
+                        : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-700 dark:text-[#B5AA92] border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]'
                     }`}
                   >
                     {mins} د
@@ -505,7 +599,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleEnterChallengeSession(activeRoomChallenge)}
-                    className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-4 py-2 btn-luxury-gold rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>بدء مؤقت الجلسة الآن</span>
@@ -534,7 +628,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                         }));
                         onStartOrUpdateSession(activeRoomChallenge.id, { reset: true });
                       }}
-                      className="px-3 py-2 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      className="px-3 py-2 bg-zinc-100 dark:bg-[#09090C] hover:bg-zinc-200 dark:hover:bg-[#101014] border border-zinc-300 dark:border-[#D4AF37]/30 text-zinc-700 dark:text-[#E8CE88] rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>إعادة ضبط</span>
@@ -545,7 +639,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleCopyChallenge(activeRoomChallenge)}
-                  className="px-3.5 py-2 bg-white dark:bg-[#09090B] hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-[#DC2626] dark:text-red-300 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3.5 py-2 bg-white dark:bg-[#09090C] hover:bg-amber-50 dark:hover:bg-[#101014] border border-amber-200 dark:border-[#D4AF37]/35 text-[#9A7218] dark:text-[#E8CE88] rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   {copiedChallengeId === activeRoomChallenge.id ? (
                     <>
@@ -572,30 +666,30 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
       )}
 
       {/* Daily Study Hours Tracker + Share Card */}
-      <div className="bg-white dark:bg-[#121215] border-2 border-red-200/80 dark:border-red-900/50 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
+      <div className="bg-white dark:bg-[#19191F] border-2 border-amber-200/80 dark:border-[#D4AF37]/35 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors duration-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Clock className="w-5 h-5 text-amber-300" />
+            <div className="w-11 h-11 rounded-2xl bg-[#09090C] border border-[#D4AF37]/45 text-[#E8CE88] flex items-center justify-center shrink-0 shadow-xs">
+              <Clock className="w-5 h-5 text-[#F3DFA2]" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white">
+              <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-[#F4EFE6]">
                 سجل ساعات مذاكرتك اليوم ({studyLog.date})
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
                 كل ساعة تضيفها تُحدّث تقدمك تلقائياً داخل جميع تحدياتك النشطة
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
+            <label className="text-[11px] font-bold text-zinc-600 dark:text-[#B5AA92]">
               هدف اليوم:
             </label>
             <select
               value={studyLog.dailyGoalHours}
               onChange={(e) => onUpdateDailyGoal(Number(e.target.value))}
-              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-2.5 py-1 text-xs font-black text-[#DC2626] dark:text-red-300 focus:outline-none focus:border-[#DC2626]"
+              className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-2.5 py-1 text-xs font-black text-[#9A7218] dark:text-[#E8CE88] focus:outline-none focus:border-[#D4AF37]"
             >
               {[4, 5, 6, 7, 8, 9, 10, 12].map((h) => (
                 <option key={h} value={h}>
@@ -607,13 +701,13 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         </div>
 
         {/* Big Hours Meter + Quick Step Buttons */}
-        <div className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+        <div className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl sm:text-4xl font-black text-[#DC2626] dark:text-red-400 font-mono" dir="ltr">
+              <span className="text-3xl sm:text-4xl font-black text-[#9A7218] dark:text-[#F3DFA2] font-mono tabular-nums" dir="ltr">
                 {studyLog.hours.toFixed(1)}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-zinc-600 dark:text-zinc-400">
+              <span className="text-xs sm:text-sm font-bold text-zinc-600 dark:text-[#B5AA92]">
                 من {studyLog.dailyGoalHours} ساعات ({dailyPct}%) • {studyLog.sessionsCount} جلسة بومودورو
               </span>
             </div>
@@ -623,7 +717,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 type="button"
                 onClick={() => onAdjustTodayHours(-0.5)}
                 disabled={studyLog.hours <= 0}
-                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs font-black text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/30 text-xs font-black text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] disabled:opacity-40 flex items-center gap-1 cursor-pointer"
               >
                 <Minus className="w-3 h-3" />
                 <span>0.5 س</span>
@@ -633,7 +727,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   key={inc}
                   type="button"
                   onClick={() => onAdjustTodayHours(inc)}
-                  className="px-3 py-1.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-black flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl btn-luxury-gold text-xs font-black flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   <span>{inc} س</span>
@@ -642,9 +736,9 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
             </div>
           </div>
 
-          <div className="w-full h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-zinc-200 dark:bg-[#19191F] rounded-full overflow-hidden border border-transparent dark:border-[#D4AF37]/20">
             <div
-              className="h-full bg-gradient-to-l from-[#DC2626] via-red-500 to-amber-400 transition-all duration-300 rounded-full"
+              className="h-full bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722] transition-all duration-300 rounded-full"
               style={{ width: `${dailyPct}%` }}
             />
           </div>
@@ -660,11 +754,11 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 value={customHoursInput}
                 onChange={(e) => setCustomHoursInput(e.target.value)}
                 placeholder="تعديل دقيق (مثال: 5.5)"
-                className="w-40 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                className="w-40 bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
               />
               <button
                 type="submit"
-                className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 hover:bg-black text-white rounded-xl text-xs font-black cursor-pointer"
+                className="px-3 py-1.5 bg-zinc-900 dark:bg-[#23232C] hover:bg-black text-white dark:text-[#E8CE88] border border-transparent dark:border-[#D4AF37]/30 rounded-xl text-xs font-black cursor-pointer"
               >
                 تثبيت الرقم
               </button>
@@ -675,7 +769,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
               <button
                 type="button"
                 onClick={handleCopyDailyReport}
-                className="px-3.5 py-2 bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs font-black text-[#DC2626] dark:text-red-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2 bg-white dark:bg-[#19191F] hover:bg-amber-50 dark:hover:bg-[#101014] border border-amber-200 dark:border-[#D4AF37]/35 rounded-xl text-xs font-black text-[#9A7218] dark:text-[#E8CE88] flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedDailyReport ? (
                   <>
@@ -709,17 +803,17 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         {/* Card A: Create New Challenge */}
         <form
           onSubmit={handleCreateSubmit}
-          className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200"
+          className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200"
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-[#B58722] dark:text-[#E8CE88] flex items-center justify-center">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white">
+              <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-[#F4EFE6]">
                 إنشاء تحدي جديد مع زميل
               </h3>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                 تولّد لك المنصة كود تحدي فوري ترسله لزميلك
               </p>
             </div>
@@ -727,7 +821,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
 
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1">
                 اسم الصديق / الزميل المتحدي:
               </label>
               <input
@@ -735,19 +829,19 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 value={friendName}
                 onChange={(e) => setFriendName(e.target.value)}
                 placeholder="مثال: يوسف طارق أو سارة محمود"
-                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1">
                 عنوان التحدي (اختر أو اكتب بنفسك):
               </label>
               <input
                 type="text"
                 value={challengeTitle}
                 onChange={(e) => setChallengeTitle(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
               />
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {CHALLENGE_PRESETS.map((preset) => (
@@ -757,8 +851,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     onClick={() => setChallengeTitle(preset)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                       challengeTitle === preset
-                        ? 'bg-red-50 dark:bg-red-950/60 border-[#DC2626] text-[#DC2626] dark:text-red-300'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                        ? 'bg-amber-50 dark:bg-[#09090C] border-[#D4AF37] text-[#9A7218] dark:text-[#F3DFA2]'
+                        : 'bg-zinc-50 dark:bg-[#0E0E12] border-zinc-200 dark:border-[#D4AF37]/20 text-zinc-600 dark:text-[#B5AA92]'
                     }`}
                   >
                     {preset}
@@ -769,13 +863,13 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1">
                   هدف التحدي (ساعات):
                 </label>
                 <select
                   value={targetHours}
                   onChange={(e) => setTargetHours(Number(e.target.value))}
-                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                  className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                 >
                   {[2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
                     <option key={h} value={h}>
@@ -785,13 +879,13 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1">
                   مدة الجلسة الواحدة:
                 </label>
                 <select
                   value={sessionDurationMinutes}
                   onChange={(e) => setSessionDurationMinutes(Number(e.target.value))}
-                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626] tabular-nums"
+                  className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3 py-2 text-xs font-black text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37] tabular-nums"
                 >
                   {[25, 45, 50, 60, 90, 120].map((m) => (
                     <option key={m} value={m}>
@@ -801,7 +895,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1">
+                <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1">
                   ساعات زميلك المبدئية:
                 </label>
                 <input
@@ -811,17 +905,17 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   step="0.5"
                   value={friendInitialHours}
                   onChange={(e) => setFriendInitialHours(Math.max(0, Number(e.target.value) || 0))}
-                  className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                  className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3 py-2 text-xs font-bold text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer pt-1">
+            <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-[#E5DEC9] cursor-pointer pt-1">
               <input
                 type="checkbox"
                 checked={startSessionNow}
                 onChange={(e) => setStartSessionNow(e.target.checked)}
-                className="w-4 h-4 accent-[#DC2626] rounded cursor-pointer"
+                className="w-4 h-4 accent-[#D4AF37] rounded cursor-pointer"
               />
               <span>بدء مؤقت الجلسة الآن فور الإنشاء ليظهر لزميلك في أي دقيقة أنتما</span>
             </label>
@@ -835,9 +929,9 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-gradient-to-r from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D] text-white rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+            className="w-full py-2.5 btn-luxury-gold rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-all"
           >
-            <Swords className="w-4 h-4 text-amber-300" />
+            <Swords className="w-4 h-4" />
             <span>بدء التحدي وتوليد كود المشاركة</span>
           </button>
         </form>
@@ -845,25 +939,25 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         {/* Card B: Import / Sync Friend Challenge Code */}
         <form
           onSubmit={handleImportSubmit}
-          className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4 transition-colors duration-200"
+          className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4 transition-colors duration-200"
         >
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-[#B58722] dark:text-[#E8CE88] flex items-center justify-center">
                 <Download className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white">
+                <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-[#F4EFE6]">
                   قبول تحدي أو تحديث ساعات صديق بكود
                 </h3>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                   الصق رسالة التحدي أو الكود الذي يبدأ بـ <span className="font-mono">NAHJ-CH:</span> ليُحدّث التقدم فوراً
                 </p>
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-zinc-300 block mb-1.5">
+              <label className="text-[11px] font-extrabold text-zinc-700 dark:text-[#E8CE88] block mb-1.5">
                 كود التحدي المُرسل من زميلك:
               </label>
               <textarea
@@ -874,7 +968,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   if (importStatus) setImportStatus(null);
                 }}
                 placeholder="الصق هنا رسالة التحدي كاملة أو الكود (NAHJ-CH:...)..."
-                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-300 dark:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626] resize-none"
+                className="w-full bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-3.5 py-2.5 text-xs font-mono text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37] resize-none"
                 dir="auto"
               />
             </div>
@@ -890,7 +984,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 {importStatus.ok ? (
                   <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626]" />
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
                 )}
                 <span>{importStatus.text}</span>
               </div>
@@ -900,7 +994,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
           <button
             type="submit"
             disabled={!importCodeInput.trim()}
-            className="w-full py-2.5 bg-zinc-900 dark:bg-amber-600 hover:bg-black dark:hover:bg-amber-500 disabled:opacity-40 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-all"
+            className="w-full py-2.5 btn-luxury-gold disabled:opacity-40 rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-all"
           >
             <Users className="w-4 h-4" />
             <span>استيراد التحدي وتحديث الساعات الآن</span>
@@ -908,17 +1002,253 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         </form>
       </div>
 
+      {/* 7-Day Comparative Progress Mini-Chart (You vs Friends) */}
+      {challenges.length > 0 && (() => {
+        const selectedOverviewChallenge =
+          chartTargetId === 'all'
+            ? null
+            : challenges.find((c) => c.id === chartTargetId) || null;
+        const overviewSeries = selectedOverviewChallenge
+          ? buildChallenge7DaySeries(
+              selectedOverviewChallenge,
+              streakHistory,
+              studyLog.hours
+            )
+          : buildAggregate7DaySeries(challenges, streakHistory, studyLog.hours);
+        const myWeeklyTotal = Number(
+          overviewSeries.reduce((acc, pt) => acc + pt.myHours, 0).toFixed(1)
+        );
+        const friendWeeklyTotal = Number(
+          overviewSeries.reduce((acc, pt) => acc + pt.friendHours, 0).toFixed(1)
+        );
+        const weeklyDiff = Number((myWeeklyTotal - friendWeeklyTotal).toFixed(1));
+        const opponentLabel = selectedOverviewChallenge
+          ? selectedOverviewChallenge.friendName
+          : challenges.length > 1
+          ? 'متوسط الأصدقاء'
+          : challenges[0].friendName;
+        const firstName = studentName.split(' ')[0] || 'أنت';
+
+        return (
+          <section className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-[#B58722] dark:text-[#E8CE88] flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-black text-zinc-950 dark:text-[#E8CE88]">
+                    مقارنة الأداء الأسبوعي: أنت ضد {opponentLabel}
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
+                    تطور ساعات المذاكرة خلال آخر 7 أيام حتى اللحظة
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {challenges.length > 1 && (
+                  <select
+                    aria-label="اختيار منافس للرسم البياني"
+                    value={chartTargetId}
+                    onChange={(e) => setChartTargetId(e.target.value)}
+                    className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-900 dark:text-[#E8CE88] focus:outline-none focus:border-[#D4AF37] cursor-pointer"
+                  >
+                    <option value="all">كل التحديات (المتوسط)</option>
+                    {challenges.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        ضد {c.friendName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <div className="flex items-center bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setChartStyle('area')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 cursor-pointer transition-colors ${
+                      chartStyle === 'area'
+                        ? 'btn-luxury-gold'
+                        : 'text-zinc-600 dark:text-[#B5AA92]'
+                    }`}
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    <span>منحنى</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartStyle('bar')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 cursor-pointer transition-colors ${
+                      chartStyle === 'bar'
+                        ? 'btn-luxury-gold'
+                        : 'text-zinc-600 dark:text-[#B5AA92]'
+                    }`}
+                  >
+                    <BarChart3 className="w-3 h-3" />
+                    <span>أعمدة</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Compact Weekly Summary Strip + Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl text-xs">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="inline-flex items-center gap-1.5 font-extrabold text-zinc-900 dark:text-[#F4EFE6] tabular-nums">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                  <span>أنت ({firstName}):</span>
+                  <strong className="text-[#9A7218] dark:text-[#F3DFA2] font-mono" dir="ltr">
+                    {myWeeklyTotal}h
+                  </strong>
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-extrabold text-zinc-900 dark:text-[#F4EFE6] tabular-nums">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                  <span>{opponentLabel}:</span>
+                  <strong className="text-slate-600 dark:text-slate-300 font-mono" dir="ltr">
+                    {friendWeeklyTotal}h
+                  </strong>
+                </span>
+              </div>
+
+              <span
+                className={`text-[11px] font-black tabular-nums ${
+                  weeklyDiff >= 0
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : 'text-[#9A7218] dark:text-[#E8CE88]'
+                }`}
+              >
+                {weeklyDiff >= 0
+                  ? `متفوق أسبوعياً بـ +${weeklyDiff} ساعة`
+                  : `متأخر أسبوعياً بـ ${Math.abs(weeklyDiff)} ساعة`}
+              </span>
+            </div>
+
+            {/* Recharts Interactive Mini-Chart */}
+            <div dir="ltr" className="w-full h-44 pt-1">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartStyle === 'area' ? (
+                  <AreaChart
+                    data={overviewSeries}
+                    margin={{ top: 8, right: 10, left: -24, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="nahjMyArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.03} />
+                      </linearGradient>
+                      <linearGradient id="nahjFriendArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.32} />
+                        <stop offset="95%" stopColor="#94A3B8" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="rgba(212, 175, 55, 0.14)"
+                    />
+                    <XAxis
+                      dataKey="shortLabel"
+                      tick={{ fontSize: 10, fill: '#B5AA92', fontWeight: 700 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#B5AA92' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      content={
+                        <MiniComparisonTooltip
+                          myLabel={`أنت (${firstName})`}
+                          friendLabel={opponentLabel}
+                        />
+                      }
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="friendHours"
+                      stroke="#94A3B8"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#nahjFriendArea)"
+                      activeDot={{ r: 4, fill: '#94A3B8' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="myHours"
+                      stroke="#E8CE88"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#nahjMyArea)"
+                      activeDot={{ r: 5, fill: '#F3DFA2' }}
+                    />
+                  </AreaChart>
+                ) : (
+                  <BarChart
+                    data={overviewSeries}
+                    margin={{ top: 8, right: 10, left: -24, bottom: 0 }}
+                    barGap={3}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="rgba(212, 175, 55, 0.14)"
+                    />
+                    <XAxis
+                      dataKey="shortLabel"
+                      tick={{ fontSize: 10, fill: '#B5AA92', fontWeight: 700 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#B5AA92' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(212, 175, 55, 0.08)' }}
+                      content={
+                        <MiniComparisonTooltip
+                          myLabel={`أنت (${firstName})`}
+                          friendLabel={opponentLabel}
+                        />
+                      }
+                    />
+                    <Bar
+                      dataKey="myHours"
+                      fill="#D4AF37"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={14}
+                    />
+                    <Bar
+                      dataKey="friendHours"
+                      fill="#94A3B8"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={14}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Challenges List Header & Filter */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#C59B27] dark:text-amber-400" />
-            <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white">
+            <Trophy className="w-5 h-5 text-[#C59B27] dark:text-[#D4AF37]" />
+            <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-[#E8CE88]">
               سجل التحديات والمنافسات ({filteredChallenges.length})
             </h2>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white dark:bg-[#121215] p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-[#19191F] p-1 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/30">
             {[
               { id: 'all', label: 'الكل' },
               { id: 'active', label: 'النشطة' },
@@ -930,8 +1260,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                 onClick={() => setStatusFilter(tab.id as any)}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   statusFilter === tab.id
-                    ? 'bg-[#DC2626] text-white'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                    ? 'btn-luxury-gold'
+                    : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F3DFA2]'
                 }`}
               >
                 {tab.label}
@@ -941,12 +1271,12 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
         </div>
 
         {filteredChallenges.length === 0 ? (
-          <div className="bg-white dark:bg-[#121215] border border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl p-8 text-center space-y-2">
-            <Sparkles className="w-8 h-8 text-[#DC2626] mx-auto" />
-            <h3 className="text-sm font-black text-zinc-950 dark:text-white">
+          <div className="bg-white dark:bg-[#19191F] border border-dashed border-zinc-300 dark:border-[#D4AF37]/35 rounded-3xl p-8 text-center space-y-2">
+            <Sparkles className="w-8 h-8 text-[#D4AF37] mx-auto" />
+            <h3 className="text-sm font-black text-zinc-950 dark:text-[#E8CE88]">
               لا توجد تحديات في هذا التصنيف حالياً
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
               أنشئ تحدياً جديداً بالأعلى أو استقبل كود تحدي من صديقك لتبدأ المنافسة!
             </p>
           </div>
@@ -976,31 +1306,31 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
               return (
                 <div
                   key={challenge.id}
-                  className={`bg-white dark:bg-[#121215] border-2 rounded-3xl p-5 shadow-xs space-y-4 transition-all ${
+                  className={`bg-white dark:bg-[#19191F] border-2 rounded-3xl p-5 shadow-xs space-y-4 transition-all ${
                     challenge.rewardClaimed
                       ? 'border-emerald-300 dark:border-emerald-800/70'
                       : diff >= 0
-                      ? 'border-red-200 dark:border-red-900/50'
-                      : 'border-amber-300 dark:border-amber-800/60'
+                      ? 'border-amber-200 dark:border-[#D4AF37]/45'
+                      : 'border-zinc-300 dark:border-slate-500/50'
                   }`}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 border border-red-200 dark:border-red-800/60 flex items-center gap-1">
-                          <Target className="w-3 h-3" />
+                        <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#09090C] text-[#9A7218] dark:text-[#E8CE88] border border-amber-200 dark:border-[#D4AF37]/35 flex items-center gap-1">
+                          <Target className="w-3 h-3 text-[#D4AF37]" />
                           <span>الهدف: {challenge.targetHours} ساعات</span>
                         </span>
-                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-50 dark:bg-[#09090C] text-amber-800 dark:text-[#F3DFA2] border border-amber-200 dark:border-[#D4AF37]/35 tabular-nums">
                           +{challenge.rewardXp} XP
                         </span>
                       </div>
-                      <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-white mt-2">
+                      <h3 className="text-sm sm:text-base font-black text-zinc-950 dark:text-[#F4EFE6] mt-2">
                         {challenge.title}
                       </h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        المنافس: <strong className="text-zinc-900 dark:text-zinc-200">{challenge.friendName}</strong>
+                      <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
+                        المنافس: <strong className="text-zinc-900 dark:text-[#E8CE88]">{challenge.friendName}</strong>
                       </p>
                     </div>
 
@@ -1019,7 +1349,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                       className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer shrink-0 flex items-center gap-1 ${
                         confirmDeleteId === challenge.id
                           ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-400 hover:text-red-600 border-zinc-200 dark:border-zinc-800'
+                          : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-400 hover:text-red-500 border-zinc-200 dark:border-[#D4AF37]/25'
                       }`}
                       title="حذف التحدي"
                     >
@@ -1034,8 +1364,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                       diff > 0
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
                         : diff === 0
-                        ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800'
-                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50'
+                        ? 'bg-zinc-100 dark:bg-[#09090C] text-zinc-800 dark:text-[#E8CE88] border border-zinc-200 dark:border-[#D4AF37]/25'
+                        : 'bg-amber-50 dark:bg-[#0E0E12] text-amber-900 dark:text-[#E8CE88] border border-amber-200 dark:border-[#D4AF37]/40'
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
@@ -1054,20 +1384,20 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                   </div>
 
                   {/* Head-to-Head Progress Bars */}
-                  <div className="space-y-3 bg-zinc-50 dark:bg-[#09090B] p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                  <div className="space-y-3 bg-zinc-50 dark:bg-[#09090C] p-3.5 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25">
                     {/* My Bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-extrabold">
-                        <span className="text-[#DC2626] dark:text-red-400">
+                        <span className="text-[#9A7218] dark:text-[#F3DFA2]">
                           أنت ({studentName.split(' ')[0]})
                         </span>
-                        <span className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                        <span className="font-mono text-zinc-950 dark:text-[#F4EFE6] tabular-nums" dir="ltr">
                           {challenge.myHours.toFixed(1)} / {challenge.targetHours} h ({myPct}%)
                         </span>
                       </div>
-                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-[#19191F] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-l from-[#DC2626] to-red-500 rounded-full transition-all duration-300"
+                          className="h-full bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722] rounded-full transition-all duration-300"
                           style={{ width: `${myPct}%` }}
                         />
                       </div>
@@ -1076,24 +1406,24 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     {/* Friend Bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-extrabold">
-                        <span className="text-amber-700 dark:text-amber-300">
+                        <span className="text-slate-600 dark:text-slate-300">
                           {challenge.friendName}
                         </span>
-                        <span className="font-mono text-zinc-950 dark:text-white" dir="ltr">
+                        <span className="font-mono text-zinc-950 dark:text-[#F4EFE6] tabular-nums" dir="ltr">
                           {challenge.friendHours.toFixed(1)} / {challenge.targetHours} h ({friendPct}%)
                         </span>
                       </div>
-                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="w-full h-2.5 bg-zinc-200 dark:bg-[#19191F] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-l from-amber-500 to-amber-400 rounded-full transition-all duration-300"
+                          className="h-full bg-gradient-to-l from-slate-400 to-slate-500 rounded-full transition-all duration-300"
                           style={{ width: `${friendPct}%` }}
                         />
                       </div>
                     </div>
 
                     {/* Manual Friend Progress Sync Controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-[#D4AF37]/20">
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-[#B5AA92]">
                         تحديث ساعات {challenge.friendName}:
                       </span>
                       <div className="flex items-center gap-1">
@@ -1101,21 +1431,21 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                           type="button"
                           onClick={() => onUpdateFriendHours(challenge.id, -0.5)}
                           disabled={challenge.friendHours <= 0}
-                          className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[10px] font-black text-zinc-700 dark:text-zinc-300 disabled:opacity-40 cursor-pointer"
+                          className="px-2 py-1 rounded-lg bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/25 text-[10px] font-black text-zinc-700 dark:text-[#E8CE88] disabled:opacity-40 cursor-pointer"
                         >
                           -0.5 س
                         </button>
                         <button
                           type="button"
                           onClick={() => onUpdateFriendHours(challenge.id, 0.5)}
-                          className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black cursor-pointer"
+                          className="px-2 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black cursor-pointer"
                         >
                           +0.5 س
                         </button>
                         <button
                           type="button"
                           onClick={() => onUpdateFriendHours(challenge.id, 1)}
-                          className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black cursor-pointer"
+                          className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black cursor-pointer"
                         >
                           +1 س
                         </button>
@@ -1123,25 +1453,105 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     </div>
                   </div>
 
+                  {/* Per-Challenge 7-Day Mini Comparison Chart */}
+                  {(() => {
+                    const cardSeries = buildChallenge7DaySeries(
+                      challenge,
+                      streakHistory,
+                      challenge.status === 'active' ? studyLog.hours : undefined
+                    );
+                    const my7d = Number(
+                      cardSeries.reduce((s, d) => s + d.myHours, 0).toFixed(1)
+                    );
+                    const friend7d = Number(
+                      cardSeries.reduce((s, d) => s + d.friendHours, 0).toFixed(1)
+                    );
+
+                    return (
+                      <div className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-3 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-extrabold">
+                          <span className="flex items-center gap-1 text-zinc-700 dark:text-[#E8CE88]">
+                            <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            <span>تقدمكما آخر 7 أيام</span>
+                          </span>
+                          <div className="flex items-center gap-3 tabular-nums">
+                            <span className="flex items-center gap-1 text-[#9A7218] dark:text-[#F3DFA2]">
+                              <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
+                              <span>أنت: {my7d}س</span>
+                            </span>
+                            <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                              <span className="w-2 h-2 rounded-full bg-slate-400" />
+                              <span>{challenge.friendName.split(' ')[0]}: {friend7d}س</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div dir="ltr" className="w-full h-24">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={cardSeries}
+                              margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
+                              barGap={2}
+                            >
+                              <CartesianGrid
+                                strokeDasharray="2 2"
+                                vertical={false}
+                                stroke="rgba(212, 175, 55, 0.12)"
+                              />
+                              <XAxis
+                                dataKey="shortLabel"
+                                tick={{ fontSize: 9, fill: '#B5AA92', fontWeight: 700 }}
+                                axisLine={false}
+                                tickLine={false}
+                                interval={0}
+                              />
+                              <Tooltip
+                                cursor={{ fill: 'rgba(212, 175, 55, 0.08)' }}
+                                content={
+                                  <MiniComparisonTooltip
+                                    myLabel="أنت"
+                                    friendLabel={challenge.friendName}
+                                  />
+                                }
+                              />
+                              <Bar
+                                dataKey="myHours"
+                                fill="#D4AF37"
+                                radius={[3, 3, 0, 0]}
+                                maxBarSize={9}
+                              />
+                              <Bar
+                                dataKey="friendHours"
+                                fill="#94A3B8"
+                                radius={[3, 3, 0, 0]}
+                                maxBarSize={9}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Session Timer Bar on Card */}
-                  <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                  <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-bold">
-                      <Timer className="w-4 h-4 text-[#DC2626] shrink-0" />
+                      <Timer className="w-4 h-4 text-[#D4AF37] shrink-0" />
                       {cardTimer.hasStarted ? (
                         cardTimer.isFinished ? (
                           <span className="text-emerald-700 dark:text-emerald-400 tabular-nums">
                             اكتملت الجلسة ({cardTimer.durationMinutes} من {cardTimer.durationMinutes} دقيقة) ✓
                           </span>
                         ) : (
-                          <span className="text-zinc-900 dark:text-white tabular-nums">
-                            في <strong className="text-[#DC2626] dark:text-red-400">الدقيقة {cardTimer.currentMinute}</strong> من {cardTimer.durationMinutes} د · متبقي{' '}
+                          <span className="text-zinc-900 dark:text-[#F4EFE6] tabular-nums">
+                            في <strong className="text-[#9A7218] dark:text-[#F3DFA2]">الدقيقة {cardTimer.currentMinute}</strong> من {cardTimer.durationMinutes} د · متبقي{' '}
                             <span className="font-mono" dir="ltr">
                               {formatMinutesSeconds(cardTimer.remainingSeconds)}
                             </span>
                           </span>
                         )
                       ) : (
-                        <span className="text-zinc-600 dark:text-zinc-400 tabular-nums">
+                        <span className="text-zinc-600 dark:text-[#B5AA92] tabular-nums">
                           جلسة {cardTimer.durationMinutes} دقيقة — جاهزة للبدء
                         </span>
                       )}
@@ -1152,8 +1562,8 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                       onClick={() => handleEnterChallengeSession(challenge)}
                       className={`px-3 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1 cursor-pointer transition-colors ${
                         cardTimer.hasStarted && !cardTimer.isFinished
-                          ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C]'
-                          : 'bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-black'
+                          ? 'btn-luxury-gold'
+                          : 'bg-zinc-900 dark:bg-[#23232C] text-white dark:text-[#E8CE88] border border-transparent dark:border-[#D4AF37]/30 hover:bg-black'
                       }`}
                     >
                       <Play className="w-3 h-3 fill-current" />
@@ -1181,7 +1591,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopyChallenge(challenge)}
-                      className="grow py-2 px-3 bg-zinc-100 dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-black text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="grow py-2 px-3 bg-zinc-100 dark:bg-[#09090C] hover:bg-amber-50 dark:hover:bg-[#101014] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-xl text-xs font-black text-zinc-800 dark:text-[#E8CE88] flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {copiedChallengeId === challenge.id ? (
                         <>
@@ -1190,7 +1600,7 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5 text-[#DC2626]" />
+                          <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
                           <span>نسخ كود التحدي للمشاركة</span>
                         </>
                       )}

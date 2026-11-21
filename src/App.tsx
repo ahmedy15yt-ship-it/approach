@@ -72,6 +72,7 @@ import {
   getLocalDateKey,
   loadStreakHistory,
 } from './utils/streakHistory';
+import { upsertChallengeTodayHistory } from './utils/challengeCharts';
 import {
   getActiveAccountSession,
   setActiveAccountSession,
@@ -86,20 +87,20 @@ import {
 export default function App() {
   const [telegramSupportUrl, setTelegramSupportUrl] = useState('https://t.me/Y_lI11');
 
-  // Dark Mode State
+  // Dark Luxury Mode State (Defaults to Dark Luxury "الفخامة المظلمة")
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('nahj_theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedV2 = localStorage.getItem('nahj_theme_v2');
+    if (savedV2) return savedV2 === 'dark';
+    return true;
   });
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('nahj_theme', 'dark');
+      localStorage.setItem('nahj_theme_v2', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('nahj_theme', 'light');
+      localStorage.setItem('nahj_theme_v2', 'light');
     }
   }, [isDarkMode]);
 
@@ -625,6 +626,7 @@ function AuthenticatedApp({
     }
 
     if (deltaHours !== 0) {
+      const todayKey = getLocalDateKey();
       setFriendChallenges((prev) =>
         prev.map((ch) => {
           if (ch.status !== 'active') return ch;
@@ -635,6 +637,12 @@ function AuthenticatedApp({
           return {
             ...ch,
             myHours: updatedHours,
+            dailyHistory: upsertChallengeTodayHistory(
+              ch.dailyHistory,
+              updatedHours,
+              ch.friendHours,
+              todayKey
+            ),
             shareCode: encodeChallengeShareCode({
               v: 1,
               id: ch.id,
@@ -691,13 +699,20 @@ function AuthenticatedApp({
       sessionStartedAt: startedAt,
       createdAt: now,
     });
+    const friendInitial = Math.max(0, Number(input.friendInitialHours) || 0);
     const created: FriendChallenge = {
       id,
       title: input.title,
       friendName: input.friendName,
       targetHours: input.targetHours,
       myHours: myInitial,
-      friendHours: Math.max(0, Number(input.friendInitialHours) || 0),
+      friendHours: friendInitial,
+      dailyHistory: upsertChallengeTodayHistory(
+        undefined,
+        myInitial,
+        friendInitial,
+        getLocalDateKey()
+      ),
       status: 'active',
       rewardXp: 80,
       rewardClaimed: false,
@@ -745,12 +760,19 @@ function AuthenticatedApp({
       const nextDuration =
         decoded.sessionDurationMinutes || existing.sessionDurationMinutes || 50;
       const nextStartedAt = decoded.sessionStartedAt ?? existing.sessionStartedAt ?? null;
+      const todayKey = getLocalDateKey();
       setFriendChallenges((prev) =>
         prev.map((c) =>
           c.id === existing.id
             ? {
                 ...c,
                 friendHours: decoded.challengerHours,
+                dailyHistory: upsertChallengeTodayHistory(
+                  c.dailyHistory,
+                  c.myHours,
+                  decoded.challengerHours,
+                  todayKey
+                ),
                 sessionDurationMinutes: nextDuration,
                 sessionStartedAt: nextStartedAt,
                 shareCode: encodeChallengeShareCode({
@@ -787,6 +809,12 @@ function AuthenticatedApp({
       targetHours: decoded.targetHours,
       myHours: myHoursNow,
       friendHours: decoded.challengerHours,
+      dailyHistory: upsertChallengeTodayHistory(
+        undefined,
+        myHoursNow,
+        decoded.challengerHours,
+        getLocalDateKey()
+      ),
       status: 'active',
       rewardXp: 80,
       rewardClaimed: false,
@@ -923,6 +951,7 @@ function AuthenticatedApp({
   };
 
   const handleUpdateFriendHours = (challengeId: string, deltaHours: number) => {
+    const todayKey = getLocalDateKey();
     setFriendChallenges((prev) =>
       prev.map((ch) => {
         if (ch.id !== challengeId) return ch;
@@ -933,6 +962,12 @@ function AuthenticatedApp({
         return {
           ...ch,
           friendHours: nextFriendHours,
+          dailyHistory: upsertChallengeTodayHistory(
+            ch.dailyHistory,
+            ch.myHours,
+            nextFriendHours,
+            todayKey
+          ),
           updatedAt: new Date().toISOString(),
         };
       })
@@ -968,7 +1003,7 @@ function AuthenticatedApp({
   const [tutorSubject, setTutorSubject] = useState<string>('الأحياء');
   const [tutorPrompt, setTutorPrompt] = useState<string>('');
 
-  // Automatic 13-hour task rotation check every 30 seconds
+  // Automatic daily 4:00 AM Egypt Time task rotation check every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const latestCycle = getCurrentTaskCycleIndex();
@@ -977,7 +1012,7 @@ function AuthenticatedApp({
         setTaskCycleIndex(latestCycle);
         setDailyTasks(rotatedTasks);
         if (voiceAlertsEnabled) {
-          announceTask('تجددت مهامك الستة لدورة الـ 13 ساعة الجديدة!');
+          announceTask('تجددت مهامك الستة تلقائياً للساعة الرابعة صباحاً بتوقيت مصر!');
         }
       }
     }, 30000);
@@ -1161,7 +1196,7 @@ function AuthenticatedApp({
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#09090B] text-[#09090B] dark:text-[#F4F4F5] flex flex-col font-['Cairo',sans-serif] transition-colors duration-200">
+    <div className="min-h-screen bg-[#F6F3EC] dark:bg-[#0D0D10] text-[#141417] dark:text-[#F4EFE6] flex flex-col font-['Cairo',sans-serif] transition-colors duration-200">
       {/* Top Navigation */}
       <Navbar
         profile={profile}
@@ -1178,11 +1213,11 @@ function AuthenticatedApp({
         onLogout={handleFlushAndLogout}
       />
 
-      {/* Main Layout: Sidebar on Desktop + Content */}
+      {/* Main Layout: Comfortable Dark Gray Sidebar on Desktop + Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full grow flex gap-6">
-        {/* Desktop Sidebar (Obsidian & Crimson aesthetic) */}
+        {/* Desktop Sidebar (Comfortable Dark Gray Panel with Champagne Frames & Metallic Gold CTA) */}
         <aside className="hidden lg:block w-64 shrink-0 space-y-2">
-          <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-3 shadow-xs sticky top-24 space-y-1 transition-colors duration-200">
+          <div className="bg-white dark:bg-[#19191F] border border-amber-200/70 dark:border-[#D4AF37]/28 rounded-3xl p-3 shadow-sm sticky top-24 space-y-1 transition-colors duration-200">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isCurrent = activeTab === item.id;
@@ -1192,8 +1227,8 @@ function AuthenticatedApp({
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
                     isCurrent
-                      ? 'bg-gradient-to-l from-[#DC2626] to-[#991B1B] text-white shadow-sm shadow-red-600/20'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-red-50/70 dark:hover:bg-zinc-900 hover:text-[#DC2626] dark:hover:text-red-400'
+                      ? 'btn-luxury-gold text-[#09090B] font-black'
+                      : 'text-zinc-700 dark:text-[#E8CE88]/85 hover:bg-amber-50/70 dark:hover:bg-[#101014] hover:text-[#9A7218] dark:hover:text-[#F6E2A6] border border-transparent dark:hover:border-[#D4AF37]/25'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -1203,9 +1238,11 @@ function AuthenticatedApp({
 
                   {item.highlight && (
                     <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                      isCurrent ? 'bg-black text-white' : 'bg-[#DC2626] text-white'
+                      isCurrent
+                        ? 'bg-[#09090B] text-[#F6E2A6]'
+                        : 'bg-[#09090B] text-[#E8CE88] border border-[#D4AF37]/40'
                     }`}>
-                      مجاني
+                      خبير
                     </span>
                   )}
                 </button>
@@ -1336,6 +1373,7 @@ function AuthenticatedApp({
               studentName={profile.name}
               studyLog={todayStudyLog}
               challenges={friendChallenges}
+              streakHistory={streakHistory}
               onAdjustTodayHours={(delta) => syncMyHoursAcrossChallenges(delta, 0)}
               onSetTodayHours={handleSetExactStudyHours}
               onUpdateDailyGoal={(goal) =>
@@ -1403,7 +1441,7 @@ function AuthenticatedApp({
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-md border-t border-zinc-200 dark:border-red-900/40 py-1.5 px-3 flex items-center justify-around transition-colors duration-200">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#F6F3EC]/95 dark:bg-[#0A0A0D]/95 backdrop-blur-md border-t border-amber-200/70 dark:border-[#D4AF37]/30 py-1.5 px-3 flex items-center justify-around transition-colors duration-200">
         {NAV_ITEMS.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isCurrent = activeTab === item.id;
@@ -1413,8 +1451,8 @@ function AuthenticatedApp({
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${
                 isCurrent
-                  ? 'text-[#DC2626] dark:text-red-400 font-black'
-                  : 'text-zinc-500 dark:text-zinc-400 font-medium'
+                  ? 'text-[#B28622] dark:text-[#F6E2A6] font-black'
+                  : 'text-zinc-600 dark:text-zinc-400 font-medium'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -1426,7 +1464,7 @@ function AuthenticatedApp({
         {/* More Menu Modal Trigger for remaining items on mobile */}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-zinc-500 dark:text-zinc-400 font-medium"
+          className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-zinc-600 dark:text-zinc-400 font-medium"
         >
           <Menu className="w-5 h-5" />
           <span className="text-[10px]">المزيد</span>
@@ -1435,13 +1473,13 @@ function AuthenticatedApp({
 
       {/* Mobile More Sheet Modal */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end">
-          <div className="bg-white dark:bg-[#121215] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-zinc-200 dark:border-red-900/40">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-              <span className="font-extrabold text-sm text-zinc-950 dark:text-white">باقي أقسام نَهج</span>
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-end">
+          <div className="bg-white dark:bg-[#19191F] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-amber-200/70 dark:border-[#D4AF37]/35">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-[#D4AF37]/20">
+              <span className="font-extrabold text-sm text-zinc-950 dark:text-[#E8CE88]">باقي أقسام نَهج</span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="p-1 rounded-full text-zinc-500 dark:text-[#E8CE88] hover:bg-zinc-100 dark:hover:bg-[#101014]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1460,8 +1498,8 @@ function AuthenticatedApp({
                     }}
                     className={`p-3 rounded-2xl border text-right transition-all flex items-center gap-3 ${
                       isCurrent
-                        ? 'bg-[#DC2626] text-white border-[#DC2626]'
-                        : 'bg-zinc-50 dark:bg-[#09090B] text-zinc-950 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800'
+                        ? 'btn-luxury-gold text-[#09090B] font-black'
+                        : 'bg-zinc-50 dark:bg-[#0D0D10] text-zinc-950 dark:text-[#E8CE88] border-zinc-200 dark:border-[#D4AF37]/25'
                     }`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />

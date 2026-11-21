@@ -26,8 +26,8 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
     }
 
-    const activeAi = getServerGeminiClient();
-    const modeDepth: TutorDeepMode = deepMode === 'deep' ? 'deep' : 'fast';
+    const activeAi = getServerGeminiClient(req);
+    const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
     const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
     const formattedContents = buildTutorFormattedContents({
       message,
@@ -42,37 +42,48 @@ export default async function handler(req: any, res: any) {
     let apiWarning: string | undefined;
 
     if (activeAi) {
-      try {
-        const geminiModel = modeDepth === 'deep' ? 'gemini-4-hydrogen' : 'gemini-3.1-flash-lite';
-        const thinkingLevel =
-          modeDepth === 'deep' ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL;
-        const result = await runServerWithRetry(
-          async () => {
-            const response = await activeAi.models.generateContent({
-              model: geminiModel,
-              contents: formattedContents,
-              config: {
-                abortSignal: AbortSignal.timeout(modeDepth === 'deep' ? 8500 : 5500),
-                systemInstruction: systemPrompt,
-                thinkingConfig: { thinkingLevel },
-              },
-            });
-            return response.text || '';
-          },
-          0,
-          modeDepth === 'deep' ? 9000 : 6000
-        );
+      const candidateModels =
+        modeDepth === 'deep'
+          ? [
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 9000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+            ]
+          : [
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+            ];
 
-        if (result && result.trim()) {
-          reply = result.trim();
-          responseSource = 'gemini';
-          providerLabel = geminiModel;
+      for (const candidate of candidateModels) {
+        try {
+          const result = await runServerWithRetry(
+            async () => {
+              const response = await activeAi.models.generateContent({
+                model: candidate.model,
+                contents: formattedContents,
+                config: {
+                  abortSignal: AbortSignal.timeout(candidate.timeoutMs),
+                  systemInstruction: systemPrompt,
+                  thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+                },
+              });
+              return response.text || '';
+            },
+            0,
+            candidate.timeoutMs + 500
+          );
+
+          if (result && result.trim()) {
+            reply = result.trim();
+            responseSource = 'gemini';
+            providerLabel = candidate.model;
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+          const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
+          apiWarning = classified.userWarning;
+          console.warn(`Vercel Gemini tutor (${candidate.model}) failover triggered:`, err?.message || err);
         }
-      } catch (err: any) {
-        const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-        const classified = classifyServerGeminiError(isAbort ? new Error('TIMEOUT') : err);
-        apiWarning = classified.userWarning;
-        console.warn('Vercel Gemini tutor failover triggered:', err?.message || err);
       }
     }
 

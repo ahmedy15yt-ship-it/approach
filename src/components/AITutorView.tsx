@@ -53,7 +53,7 @@ type TutorMode = 'explain' | 'quiz' | 'problem' | 'plan';
 function renderFormattedMessage(text: string) {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
-  let currentBlockType: 'target' | 'explain' | 'trick' | 'interactive' | null = null;
+  let currentBlockType: 'target' | 'explain' | 'example' | 'trick' | 'interactive' | null = null;
   let currentBlockLines: string[] = [];
 
   const flushBlock = (key: number) => {
@@ -63,13 +63,13 @@ function renderFormattedMessage(text: string) {
       elements.push(
         <div
           key={`block-${key}`}
-          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-700 shadow-xs"
+          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-zinc-100 dark:bg-[#0E0E12] border border-zinc-300 dark:border-[#D4AF37]/30 shadow-xs"
         >
-          <div className="flex items-center gap-2 mb-1.5 text-zinc-950 dark:text-zinc-100 font-black text-xs sm:text-sm">
-            <Target className="w-4 h-4 text-[#DC2626] dark:text-red-400 shrink-0" />
-            <span>تفكيك السؤال وفهم المطلوب بدقة</span>
+          <div className="flex items-center gap-2 mb-1.5 text-zinc-950 dark:text-[#E8CE88] font-black text-xs sm:text-sm">
+            <Target className="w-4 h-4 text-[#B58722] dark:text-[#F3DFA2] shrink-0" />
+            <span>تفكيك السؤال والجوهر العلمي العميق</span>
           </div>
-          <div className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed space-y-1">
+          <div className="text-xs sm:text-sm text-zinc-800 dark:text-[#F4EFE6] leading-relaxed space-y-1">
             {currentBlockLines.map((l, i) => (
               <p key={i}>{parseInlineBold(l)}</p>
             ))}
@@ -80,13 +80,30 @@ function renderFormattedMessage(text: string) {
       elements.push(
         <div
           key={`block-${key}`}
-          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-red-50/70 dark:bg-red-950/30 border-2 border-red-200 dark:border-red-900/50 shadow-xs"
+          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-amber-50/70 dark:bg-[#19191F] border border-amber-300/80 dark:border-[#D4AF37]/35 shadow-xs"
         >
-          <div className="flex items-center gap-2 mb-1.5 text-red-900 dark:text-red-300 font-black text-xs sm:text-sm">
-            <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>الشرح والخطوات النموذجية</span>
+          <div className="flex items-center gap-2 mb-1.5 text-amber-950 dark:text-[#F3DFA2] font-black text-xs sm:text-sm">
+            <Lightbulb className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            <span>الشرح العميق والخطوات البرهانية</span>
           </div>
-          <div className="text-xs sm:text-sm text-zinc-950 dark:text-zinc-100 leading-relaxed space-y-1.5">
+          <div className="text-xs sm:text-sm text-zinc-950 dark:text-[#F4EFE6] leading-relaxed space-y-1.5">
+            {currentBlockLines.map((l, i) => (
+              <p key={i}>{parseInlineBold(l)}</p>
+            ))}
+          </div>
+        </div>
+      );
+    } else if (currentBlockType === 'example') {
+      elements.push(
+        <div
+          key={`block-${key}`}
+          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-[#101014] border border-amber-300 dark:border-[#D4AF37]/45 shadow-xs"
+        >
+          <div className="flex items-center gap-2 mb-1.5 text-amber-900 dark:text-[#E8CE88] font-black text-xs sm:text-sm">
+            <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            <span>مثال واقعي وتطبيق حياتي ملموس</span>
+          </div>
+          <div className="text-xs sm:text-sm text-zinc-900 dark:text-[#F4EFE6] leading-relaxed space-y-1.5">
             {currentBlockLines.map((l, i) => (
               <p key={i}>{parseInlineBold(l)}</p>
             ))}
@@ -97,13 +114,13 @@ function renderFormattedMessage(text: string) {
       elements.push(
         <div
           key={`block-${key}`}
-          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/60 shadow-xs"
+          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-amber-50/90 dark:bg-[#14120C] border border-amber-300 dark:border-[#D4AF37]/50 shadow-xs"
         >
-          <div className="flex items-center gap-2 mb-1.5 text-amber-950 dark:text-amber-300 font-black text-xs sm:text-sm">
-            <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="flex items-center gap-2 mb-1.5 text-amber-950 dark:text-[#F6E2A6] font-black text-xs sm:text-sm">
+            <Zap className="w-4 h-4 text-[#D4AF37] shrink-0" />
             <span>تركة الامتحان ومصيدة الطلاب</span>
           </div>
-          <div className="text-xs sm:text-sm text-amber-950 dark:text-amber-100 leading-relaxed space-y-1">
+          <div className="text-xs sm:text-sm text-amber-950 dark:text-[#E8CE88] leading-relaxed space-y-1">
             {currentBlockLines.map((l, i) => (
               <p key={i}>{parseInlineBold(l)}</p>
             ))}
@@ -114,7 +131,7 @@ function renderFormattedMessage(text: string) {
       elements.push(
         <div
           key={`block-${key}`}
-          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700/60 shadow-xs"
+          className="my-3 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/35 border border-emerald-300 dark:border-emerald-700/60 shadow-xs"
         >
           <div className="flex items-center gap-2 mb-1.5 text-emerald-950 dark:text-emerald-300 font-black text-xs sm:text-sm">
             <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -146,9 +163,14 @@ function renderFormattedMessage(text: string) {
       currentBlockType = 'target';
       return;
     }
-    if (trimmed.includes('💡') || trimmed.includes('الشرح وخطوات الحل') || trimmed.includes('الشرح المفصل')) {
+    if (trimmed.includes('💡') || trimmed.includes('الشرح العميق') || trimmed.includes('الشرح وخطوات الحل') || trimmed.includes('الشرح المفصل')) {
       flushBlock(idx);
       currentBlockType = 'explain';
+      return;
+    }
+    if (trimmed.includes('🌍') || trimmed.includes('مثال واقعي') || trimmed.includes('تطبيق حياتي')) {
+      flushBlock(idx);
+      currentBlockType = 'example';
       return;
     }
     if (trimmed.includes('⚡') || trimmed.includes('تركة الامتحان') || trimmed.includes('مصيدة')) {
@@ -173,9 +195,9 @@ function renderFormattedMessage(text: string) {
       elements.push(
         <h4
           key={idx}
-          className="font-black text-sm sm:text-base text-zinc-950 dark:text-white mt-3 mb-1.5 pb-1 border-b border-red-200 dark:border-red-900/40 flex items-center gap-1.5"
+          className="font-black text-sm sm:text-base text-zinc-950 dark:text-[#F6E2A6] mt-3 mb-1.5 pb-1 border-b border-amber-200/70 dark:border-[#D4AF37]/30 flex items-center gap-1.5"
         >
-          <span className="w-2 h-2 rounded-full bg-[#DC2626] dark:bg-red-400" />
+          <span className="w-2 h-2 rounded-full bg-[#9A7218] dark:bg-[#D4AF37]" />
           <span>{headerText}</span>
         </h4>
       );
@@ -187,8 +209,8 @@ function renderFormattedMessage(text: string) {
       const itemText = trimmed.replace(/^[-*•]\s+/, '');
       elements.push(
         <div key={idx} className="flex items-start gap-2 my-1 mr-2 leading-relaxed">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#C59B27] dark:bg-amber-400 mt-2 shrink-0" />
-          <span className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-200">{parseInlineBold(itemText)}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#C59B27] dark:bg-[#D4AF37] mt-2 shrink-0" />
+          <span className="text-xs sm:text-sm text-zinc-800 dark:text-[#F4EFE6]">{parseInlineBold(itemText)}</span>
         </div>
       );
       return;
@@ -199,10 +221,10 @@ function renderFormattedMessage(text: string) {
     if (numMatch) {
       elements.push(
         <div key={idx} className="flex items-start gap-2 my-1.5 mr-1 leading-relaxed">
-          <span className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+          <span className="w-5 h-5 rounded-md bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-[#9A7218] dark:text-[#E8CE88] font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
             {numMatch[1]}
           </span>
-          <span className="text-xs sm:text-sm text-zinc-800 dark:text-zinc-200">{parseInlineBold(numMatch[2])}</span>
+          <span className="text-xs sm:text-sm text-zinc-800 dark:text-[#F4EFE6]">{parseInlineBold(numMatch[2])}</span>
         </div>
       );
       return;
@@ -246,7 +268,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
     {
       id: 'welcome-1',
       sender: 'tutor',
-      text: `أهلاً بيك يا دكتورنا وبطل تالتة ثانوي! 👋 معك «أستاذ نَهج» في أي وقت.\n\n🎯 **تفكيك السؤال وفهم المطلوب:**\nأنا هنا لأفكك لك أي سؤال صعب، مسألة معقدة، أو فكرة ربط بين الأبواب خطوة بخطوة بالعامية المصرية الممتعة وأسلوب الثانوية العامة الحديث.\n\n💡 **الشرح وخطوات الحل النموذجية:**\nسأعطيك خلاصة الفهم، القوانين المباشرة، وطريقة الحل التي توفر وقتك داخل الامتحان.\n\n⚡ **تركة الامتحان ومصيدة الطلاب:**\nسأنبهك دائماً على الأخطاء الشائعة اللي بيقع فيها 90% من الطلاب وتفرق بين الـ 95% والـ 100%.\n\n❓ **سؤال تفاعلي فوري:**\nفي نهاية كل شرح، سأطرح عليك سؤالاً تفاعلياً تختبر به نفسك فوراً!\n\nاختر أسلوب المذاكرة من الأعلى واكتب سؤالك 🌟`,
+      text: `أهلاً بيك يا بطل تالتة ثانوي! 👋 معك «أستاذ نَهج — المعلم الخبير» في أي وقت.\n\n🎯 **تفكيك السؤال والجوهر العلمي:**\nأنا هنا لأفكك لك أي مسألة أو مفهوم معقد وأوضح لك لماذا يركز واضع امتحان الثانوية العامة على هذه النقطة.\n\n💡 **الشرح العميق والخطوات البرهانية:**\nسأشرح لك السبب العلمي والآلية التفصيلية خطوة بخطوة بوضوح تام.\n\n🌍 **مثال واقعي وتطبيق حياتي ملموس:**\nأربط لك كل قانون أو ظاهرة بمثال حي من واقع حياتنا والمستشفيات والأجهزة لتفهمه ولا تنساه أبداً.\n\n⚡ **تركة الامتحان ومصيدة الطلاب:**\nأنبهك على الأخطاء الخفية التي تفرق بين الطالب العادي وطالب الدرجة النهائية.\n\n❓ **سؤال تفاعلي فوري:**\nأختبرك بسؤال عملي في نهاية كل إجابة لتثبيت الفهم!\n\nاختر أسلوب المذاكرة والمادة واكتب سؤالك الآن 🌟`,
       timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -254,7 +276,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
   const [inputMessage, setInputMessage] = useState(initialPrompt || '');
   const [selectedSubject, setSelectedSubject] = useState(initialSubject || 'الأحياء');
   const [tutorMode, setTutorMode] = useState<TutorMode>('explain');
-  const [deepMode, setDeepMode] = useState<'fast' | 'deep'>('fast');
+  const [deepMode, setDeepMode] = useState<'fast' | 'deep'>('deep');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -667,24 +689,24 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
   ];
 
   return (
-    <div className="font-['Cairo',sans-serif] flex flex-col h-[calc(100vh-105px)] min-h-[720px] max-h-[920px] bg-white dark:bg-[#121215] border-2 border-red-200 dark:border-red-900/50 rounded-3xl shadow-sm overflow-hidden transition-colors duration-200">
+    <div className="font-['Cairo',sans-serif] flex flex-col h-[calc(100vh-105px)] min-h-[720px] max-h-[920px] bg-white dark:bg-[#19191F] border border-amber-200/80 dark:border-[#D4AF37]/30 rounded-3xl shadow-sm overflow-hidden transition-colors duration-200">
       {/* 1) Top Header Bar: Tutor Identity + Mode + Controls */}
-      <div className="bg-zinc-50 dark:bg-[#09090B] border-b border-red-200/70 dark:border-red-900/40 px-4 sm:px-6 py-3 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-zinc-50 dark:bg-[#0A0A0D] border-b border-amber-200/70 dark:border-[#D4AF37]/25 px-4 sm:px-6 py-3 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shadow-md ring-2 ring-[#DC2626]/20 dark:ring-red-500/40 shrink-0">
-            <Bot className="w-6 h-6 text-amber-300" />
+          <div className="w-11 h-11 rounded-2xl btn-luxury-gold text-[#09090B] flex items-center justify-center shadow-md shrink-0">
+            <Bot className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-extrabold text-base sm:text-lg text-zinc-950 dark:text-white">
-                أستاذ نَهج — المعلم الأكاديمي الذكي المتطور
+              <h2 className="font-extrabold text-base sm:text-lg text-zinc-950 dark:text-[#E8CE88]">
+                أستاذ نَهج — المعلم الخبير بالذكاء الاصطناعي
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-black border border-emerald-200 dark:border-emerald-800">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-[#141418] text-emerald-800 dark:text-[#F3DFA2] text-[10px] font-black border border-emerald-200 dark:border-[#D4AF37]/35">
                 {geminiConfigured === false ? 'وضع المحرك البديل ⚡' : 'Gemini AI متصل ⚡'}
               </span>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              تفكيك السؤال 🎯 • الشرح والخطوات 💡 • تركة الامتحان ⚡ • سؤال تفاعلي فوري ❓
+            <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
+              شرح خبير معمّق 🎯 • أمثلة واقعية حية 🌍 • تركات الامتحان ⚡ • سؤال تفاعلي ❓
             </p>
           </div>
         </div>
@@ -703,8 +725,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
             }}
             className={`px-2.5 py-1.5 border rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
               voiceAutoReply
-                ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
-                : 'bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200'
+                ? 'btn-luxury-gold text-[#09090B]'
+                : 'bg-white dark:bg-[#19191F] hover:bg-amber-50 dark:hover:bg-[#101014] border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-700 dark:text-[#E8CE88]'
             }`}
             title="نطق ردود أستاذ نَهج تلقائياً في الدردشة الصوتية"
           >
@@ -714,7 +736,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
 
           <button
             onClick={() => setFontSize(fontSize === 'large' ? 'normal' : 'large')}
-            className="px-2.5 py-1.5 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 bg-white dark:bg-[#19191F] hover:bg-zinc-100 dark:hover:bg-[#101014] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-xs font-bold text-zinc-700 dark:text-[#E8CE88] flex items-center gap-1 transition-colors cursor-pointer"
             title="تغيير حجم خط الشرح"
           >
             {fontSize === 'large' ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
@@ -726,7 +748,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
             className={`px-2.5 py-2 border rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold ${
               confirmClear
                 ? 'bg-red-600 text-white border-red-600'
-                : 'bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400'
+                : 'bg-white dark:bg-[#19191F] hover:bg-rose-50 dark:hover:bg-rose-950/40 border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-400 dark:text-[#B5AA92] hover:text-rose-600 dark:hover:text-rose-400'
             }`}
             title="مسح سجل المحادثة"
           >
@@ -737,9 +759,9 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       </div>
 
       {/* 2) Tutor Mode & Depth Selector Banner */}
-      <div className="bg-red-50/70 dark:bg-red-950/30 border-b border-red-200/70 dark:border-red-900/30 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+      <div className="bg-amber-50/70 dark:bg-[#121216] border-b border-amber-200/70 dark:border-[#D4AF37]/20 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-black text-[#DC2626] dark:text-red-300 shrink-0 ml-1">
+          <span className="text-[11px] font-black text-[#9A7218] dark:text-[#E8CE88] shrink-0 ml-1">
             أسلوب الرد:
           </span>
           {TUTOR_MODES.map((mode) => {
@@ -750,8 +772,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                 onClick={() => setTutorMode(mode.id)}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
                   isSelected
-                    ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
-                    : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-800 hover:border-[#DC2626]'
+                    ? 'btn-luxury-gold text-[#09090B] font-black'
+                    : 'bg-white dark:bg-[#19191F] text-zinc-600 dark:text-[#E8CE88]/85 border-zinc-300 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]'
                 }`}
               >
                 <span>{mode.label}</span>
@@ -760,36 +782,36 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
           })}
         </div>
 
-        {/* Fast + Deep vs Ultra-Deep Analysis Switch */}
-        <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-red-200 dark:border-red-900/40 shrink-0">
-          <button
-            type="button"
-            onClick={() => setDeepMode('fast')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
-              deepMode === 'fast'
-                ? 'bg-[#DC2626] text-white shadow-2xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-            }`}
-          >
-            ⚡ سريع وعميق
-          </button>
+        {/* Deep Expert Mode vs Fast Mode Switch */}
+        <div className="flex items-center gap-1 bg-white dark:bg-[#09090C] p-1 rounded-xl border border-amber-200 dark:border-[#D4AF37]/30 shrink-0">
           <button
             type="button"
             onClick={() => setDeepMode('deep')}
             className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
               deepMode === 'deep'
-                ? 'bg-zinc-900 dark:bg-amber-600 text-white shadow-2xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                ? 'btn-luxury-gold text-[#09090B]'
+                : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#E8CE88]'
             }`}
           >
-            🔬 شرح فائق العمق
+            🔬 معلم خبير بأمثلة واقعية
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeepMode('fast')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+              deepMode === 'fast'
+                ? 'btn-luxury-gold text-[#09090B]'
+                : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#E8CE88]'
+            }`}
+          >
+            ⚡ موجز وسريع
           </button>
         </div>
       </div>
 
       {/* 3) Subjects Filter Bar */}
-      <div className="bg-zinc-100 dark:bg-[#09090B]/90 border-b border-zinc-200 dark:border-red-900/30 px-4 sm:px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        <span className="text-[11px] font-black text-zinc-600 dark:text-zinc-400 shrink-0 ml-1">المادة:</span>
+      <div className="bg-zinc-100 dark:bg-[#0B0B0E] border-b border-zinc-200 dark:border-[#D4AF37]/20 px-4 sm:px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <span className="text-[11px] font-black text-zinc-600 dark:text-[#B5AA92] shrink-0 ml-1">المادة:</span>
         {SUBJECTS.map((s) => {
           const isSelected = selectedSubject === s.name;
           return (
@@ -798,8 +820,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
               onClick={() => setSelectedSubject(s.name)}
               className={`px-3 py-1 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#DC2626] text-white shadow-xs ring-2 ring-[#DC2626]/20'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40'
+                  ? 'btn-luxury-gold text-[#09090B]'
+                  : 'bg-white dark:bg-[#19191F] text-zinc-600 dark:text-[#E8CE88]/85 border border-zinc-200 dark:border-[#D4AF37]/20 hover:border-[#D4AF37]/50'
               }`}
             >
               <span>{s.icon}</span>
@@ -810,7 +832,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       </div>
 
       {/* 4) Main Chat Messages Canvas (Expansive & Multi-turn) */}
-      <div className="grow overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-[#FAFAFA] dark:bg-[#09090B]">
+      <div className="grow overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-[#F6F3EC] dark:bg-[#0D0D10]">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           const isSpeaking = speakingMessageId === msg.id;
@@ -826,26 +848,26 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
               <div
                 className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 text-xs font-bold shadow-xs ${
                   isUser
-                    ? 'bg-zinc-900 dark:bg-amber-600 text-white'
-                    : 'bg-[#DC2626] text-white ring-2 ring-[#DC2626]/20'
+                    ? 'bg-zinc-900 dark:bg-[#19191F] text-[#E8CE88] border border-[#D4AF37]/40'
+                    : 'btn-luxury-gold text-[#09090B]'
                 }`}
               >
-                {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5 text-amber-300" />}
+                {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
               </div>
 
               {/* Message Bubble Card */}
               <div
                 className={`grow max-w-[92%] sm:max-w-[85%] rounded-3xl p-4 sm:p-6 shadow-xs relative transition-all ${
                   isUser
-                    ? 'bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white rounded-tr-none'
-                    : 'bg-white dark:bg-[#121215] text-zinc-950 dark:text-white border-2 border-zinc-200 dark:border-red-900/40 rounded-tl-none'
+                    ? 'bg-gradient-to-br from-[#F3DFA2] via-[#D4AF37] to-[#B58722] text-[#09090B] font-bold rounded-tr-none'
+                    : 'bg-white dark:bg-[#19191F] text-zinc-950 dark:text-[#F4EFE6] border border-zinc-200 dark:border-[#D4AF37]/28 rounded-tl-none'
                 }`}
               >
                 {!isUser && (
-                  <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-zinc-100 dark:border-[#D4AF37]/20">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-[#DC2626] dark:text-red-400">أستاذ نَهج</span>
-                      <span className="text-[11px] text-[#8C7A52] dark:text-amber-300 font-bold">
+                      <span className="text-xs font-black text-[#9A7218] dark:text-[#E8CE88]">أستاذ نَهج</span>
+                      <span className="text-[11px] text-[#8C7A52] dark:text-[#B5AA92] font-bold">
                         • {msg.subject || selectedSubject}
                       </span>
                     </div>
@@ -856,8 +878,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                         onClick={() => handleToggleSpeak(msg.id, msg.text)}
                         className={`px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer border ${
                           isSpeaking
-                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300'
-                            : 'text-zinc-500 dark:text-zinc-400 hover:text-[#DC2626] border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            ? 'bg-amber-100 dark:bg-[#D4AF37]/20 text-amber-900 dark:text-[#F6E2A6] border-amber-300 dark:border-[#D4AF37]/50'
+                            : 'text-zinc-500 dark:text-[#B5AA92] hover:text-[#9A7218] dark:hover:text-[#E8CE88] border-transparent hover:bg-zinc-100 dark:hover:bg-[#09090C]'
                         }`}
                         title={isSpeaking ? 'إيقاف الصوت' : 'استماع للشرح صوتياً'}
                       >
@@ -877,13 +899,13 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                       {/* Copy Button */}
                       <button
                         onClick={() => handleCopyText(msg.id, msg.text)}
-                        className="p-1 text-[#8C7A52] dark:text-amber-400 hover:text-[#DC2626] hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                        className="p-1 text-[#8C7A52] dark:text-[#B5AA92] hover:text-[#9A7218] dark:hover:text-[#E8CE88] hover:bg-zinc-100 dark:hover:bg-[#19191F] rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
                         title="نسخ الشرح"
                       >
                         {copiedId === msg.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-[#DC2626] dark:text-red-400" />
-                            <span className="text-[#DC2626] dark:text-red-400">تم</span>
+                            <Check className="w-3.5 h-3.5 text-[#9A7218] dark:text-[#E8CE88]" />
+                            <span className="text-[#9A7218] dark:text-[#E8CE88]">تم</span>
                           </>
                         ) : (
                           <>
@@ -900,22 +922,22 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                 <div
                   className={`leading-relaxed ${
                     fontSize === 'large' ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
-                  } ${isUser ? 'text-white whitespace-pre-wrap font-medium' : ''}`}
+                  } ${isUser ? 'text-[#09090B] whitespace-pre-wrap font-bold' : ''}`}
                 >
                   {isUser ? msg.text : renderFormattedMessage(msg.text)}
                 </div>
 
                 {/* Optional Fallback / API Notice */}
                 {!isUser && msg.warning && (
-                  <div className="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] font-bold text-amber-900 dark:text-amber-200">
+                  <div className="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-[#14120C] border border-amber-200 dark:border-[#D4AF37]/40 text-[11px] font-bold text-amber-900 dark:text-[#E8CE88]">
                     ℹ️ {msg.warning}
                   </div>
                 )}
 
                 {/* Interactive Tutor Action Chips Under Model Responses */}
                 {!isUser && msg.id !== 'welcome-1' && !msg.isError && (
-                  <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500">
+                  <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-[#D4AF37]/20 flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-black text-zinc-400 dark:text-[#B5AA92]">
                       تفاعل مع الشرح:
                     </span>
                     <button
@@ -930,27 +952,27 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
 
                     <button
                       onClick={() =>
-                        handleSendMessage('وضحلي تركات إضافية وأفكار ربط مع دروس ثانية لنفس الموضوع.')
+                        handleSendMessage('وضحلي تركات إضافية وأمثلة واقعية تربط هذا الموضوع بدروس أخرى.')
                       }
-                      className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-900 dark:text-amber-300 text-[11px] font-bold rounded-lg border border-amber-200 dark:border-amber-800/60 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-amber-50 dark:bg-[#101014] hover:bg-amber-100 text-amber-900 dark:text-[#E8CE88] text-[11px] font-bold rounded-lg border border-amber-200 dark:border-[#D4AF37]/30 transition-colors cursor-pointer"
                     >
-                      ⚡ تركات وأفكار ربط
+                      ⚡ تركات وأمثلة ربط
                     </button>
 
                     <button
                       onClick={() =>
                         handleSendMessage('اديني مسألة ثانوية عامة أصعب بنظام الفهم على هذه الجزئية.')
                       }
-                      className="px-2.5 py-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-900 dark:text-red-300 text-[11px] font-bold rounded-lg border border-red-200 dark:border-red-800/60 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-amber-50 dark:bg-[#101014] hover:bg-amber-100 text-amber-950 dark:text-[#F3DFA2] text-[11px] font-bold rounded-lg border border-amber-200 dark:border-[#D4AF37]/30 transition-colors cursor-pointer"
                     >
                       📝 مسألة امتحان أصعب
                     </button>
 
                     <button
                       onClick={() =>
-                        handleSendMessage('لخصلي هذا الشرح في 3 نقاط ذهبية للحفظ والمراجعة السريعة.')
+                        handleSendMessage('لخصلي هذا الشرح مع المثال الواقعي في 3 نقاط ذهبية للمراجعة.')
                       }
-                      className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-900 dark:text-zinc-200 text-[11px] font-bold rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-zinc-100 dark:bg-[#0D0D10] hover:bg-zinc-200 text-zinc-900 dark:text-[#E8CE88] text-[11px] font-bold rounded-lg border border-zinc-300 dark:border-[#D4AF37]/25 transition-colors cursor-pointer"
                     >
                       💡 تلخيص في 3 نقاط
                     </button>
@@ -960,7 +982,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                 {/* Timestamp */}
                 <span
                   className={`text-[10px] font-mono block text-left mt-2.5 pt-1 ${
-                    isUser ? 'text-white/75' : 'text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800'
+                    isUser ? 'text-[#09090B]/70' : 'text-zinc-400 dark:text-[#B5AA92] border-t border-zinc-100 dark:border-[#D4AF37]/15'
                   }`}
                   dir="ltr"
                 >
@@ -974,16 +996,16 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
         {/* Fast Loading Spinner Indicator (only shown before first streamed token arrives) */}
         {isLoading && !streamingMessageId && (
           <div className="flex items-start gap-3.5 max-w-4xl mx-auto">
-            <div className="w-9 h-9 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Bot className="w-5 h-5 text-amber-300 animate-spin" />
+            <div className="w-9 h-9 rounded-2xl btn-luxury-gold text-[#09090B] flex items-center justify-center shrink-0 shadow-xs">
+              <Bot className="w-5 h-5 animate-spin" />
             </div>
-            <div className="bg-white dark:bg-[#121215] border-2 border-red-200 dark:border-red-900/50 rounded-3xl p-5 shadow-xs text-sm font-bold text-[#DC2626] dark:text-red-300 flex items-center gap-2.5">
-              <span className="inline-block animate-bounce text-amber-500">●</span>
-              <span className="inline-block animate-bounce delay-150 text-[#DC2626]">●</span>
-              <span className="inline-block animate-bounce delay-300 text-amber-500">●</span>
+            <div className="bg-white dark:bg-[#19191F] border border-amber-200 dark:border-[#D4AF37]/35 rounded-3xl p-5 shadow-xs text-sm font-bold text-[#9A7218] dark:text-[#E8CE88] flex items-center gap-2.5">
+              <span className="inline-block animate-bounce text-[#D4AF37]">●</span>
+              <span className="inline-block animate-bounce delay-150 text-[#F3DFA2]">●</span>
+              <span className="inline-block animate-bounce delay-300 text-[#D4AF37]">●</span>
               <span>
                 {deepMode === 'deep'
-                  ? 'أستاذ نَهج يحلّل الفكرة بعمق ويجهّز البث الفوري للشرح...'
+                  ? 'أستاذ نَهج يحضّر شرحاً معمقاً بأمثلة واقعية حية...'
                   : 'جاري الاتصال السريع بأستاذ نَهج وبث الشرح الآن...'}
               </span>
             </div>
@@ -1000,7 +1022,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
               <button
                 type="button"
                 onClick={handleRetryLast}
-                className="px-3.5 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 btn-luxury-gold text-[#09090B] rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>إعادة المحاولة</span>
@@ -1011,7 +1033,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                   setApiError(null);
                   setLastFailedPayload(null);
                 }}
-                className="px-3 py-1.5 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold cursor-pointer"
+                className="px-3 py-1.5 bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#E8CE88] border border-zinc-300 dark:border-[#D4AF37]/30 rounded-xl text-xs font-bold cursor-pointer"
               >
                 إغلاق
               </button>
@@ -1023,8 +1045,8 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       </div>
 
       {/* 5) Quick Question Suggestion Pills */}
-      <div className="bg-zinc-50 dark:bg-[#09090B] border-t border-red-200/60 dark:border-red-900/30 px-4 sm:px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 shrink-0">أسئلة مقترحة:</span>
+      <div className="bg-zinc-50 dark:bg-[#0B0B0E] border-t border-amber-200/60 dark:border-[#D4AF37]/20 px-4 sm:px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <span className="text-[10px] font-black text-zinc-500 dark:text-[#B5AA92] shrink-0">أسئلة مقترحة:</span>
         {QUICK_PROMPTS.map((qp, i) => (
           <button
             key={i}
@@ -1032,7 +1054,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
               setSelectedSubject(qp.subject);
               handleSendMessage(qp.prompt, qp.subject);
             }}
-            className="px-3 py-1 bg-white dark:bg-zinc-900 hover:bg-red-50 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[11px] font-bold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#DC2626] shrink-0 transition-all shadow-2xs cursor-pointer"
+            className="px-3 py-1 bg-white dark:bg-[#19191F] hover:bg-amber-50 dark:hover:bg-[#101014] text-zinc-800 dark:text-[#E8CE88] text-[11px] font-bold rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37] shrink-0 transition-all shadow-2xs cursor-pointer"
           >
             {qp.label}
           </button>
@@ -1041,15 +1063,15 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
 
       {/* 6) Active Voice Listening Bar OR Voice Browser Notice */}
       {isListening && (
-        <div className="bg-red-50 dark:bg-red-950/50 border-t-2 border-[#DC2626] px-4 sm:px-6 py-3 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="bg-amber-50 dark:bg-[#14120C] border-t-2 border-[#D4AF37] px-4 sm:px-6 py-3 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="w-3 h-3 rounded-full bg-[#DC2626] animate-ping shrink-0" />
-            <div className="text-xs font-bold text-red-950 dark:text-red-100">
-              <span className="block font-black text-[#DC2626] dark:text-red-300">
+            <span className="w-3 h-3 rounded-full bg-[#D4AF37] animate-ping shrink-0" />
+            <div className="text-xs font-bold text-zinc-950 dark:text-[#F4EFE6]">
+              <span className="block font-black text-[#9A7218] dark:text-[#F3DFA2]">
                 🎙️ الدردشة الصوتية نشطة — تحدث بسؤالك الآن بالعربية...
               </span>
               {liveTranscript && (
-                <span className="text-zinc-800 dark:text-zinc-200 block mt-0.5">
+                <span className="text-zinc-800 dark:text-[#E8CE88] block mt-0.5">
                   «{liveTranscript}»
                 </span>
               )}
@@ -1060,14 +1082,14 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
             <button
               type="button"
               onClick={handleToggleVoiceListening}
-              className="px-3 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-black cursor-pointer"
+              className="px-3 py-1.5 btn-luxury-gold text-[#09090B] rounded-xl text-xs font-black cursor-pointer"
             >
               إرسال ما قلته ✓
             </button>
             <button
               type="button"
               onClick={handleCancelVoiceListening}
-              className="px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold cursor-pointer"
+              className="px-3 py-1.5 bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/30 text-zinc-700 dark:text-[#E8CE88] rounded-xl text-xs font-bold cursor-pointer"
             >
               إلغاء
             </button>
@@ -1076,7 +1098,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
       )}
 
       {voiceNotice && !isListening && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800/60 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+        <div className="bg-amber-50 dark:bg-[#14120C] border-t border-amber-200 dark:border-[#D4AF37]/30 px-4 sm:px-6 py-2 shrink-0 flex items-center justify-between gap-2 text-xs font-bold text-amber-900 dark:text-[#E8CE88]">
           <span>🎙️ {voiceNotice}</span>
           <button
             type="button"
@@ -1094,39 +1116,39 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
           e.preventDefault();
           handleSendMessage();
         }}
-        className="bg-white dark:bg-[#121215] border-t-2 border-red-200/70 dark:border-red-900/40 p-3 sm:p-4 shrink-0 flex items-end gap-2 transition-colors duration-200"
+        className="bg-white dark:bg-[#19191F] border-t border-amber-200/70 dark:border-[#D4AF37]/25 p-3 sm:p-4 shrink-0 flex items-end gap-2 transition-colors duration-200"
       >
         <button
           type="button"
           onClick={handleToggleVoiceListening}
           disabled={isLoading}
           title={isListening ? 'إيقاف الميكروفون وإرسال' : 'ابدأ الدردشة الصوتية بالميكروفون'}
-          className={`h-11 px-3.5 rounded-2xl border-2 font-black text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer disabled:opacity-40 ${
+          className={`h-11 px-3.5 rounded-2xl border font-black text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer disabled:opacity-40 ${
             isListening
-              ? 'bg-[#DC2626] text-white border-[#DC2626] animate-pulse shadow-md'
-              : 'bg-zinc-100 dark:bg-zinc-900 text-[#DC2626] dark:text-red-400 border-zinc-300 dark:border-zinc-700 hover:border-[#DC2626]'
+              ? 'btn-luxury-gold text-[#09090B] animate-pulse shadow-md'
+              : 'bg-zinc-100 dark:bg-[#0A0A0D] text-[#9A7218] dark:text-[#E8CE88] border-zinc-300 dark:border-[#D4AF37]/30 hover:border-[#D4AF37]'
           }`}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           <span className="hidden md:inline">{isListening ? 'إيقاف' : 'صوتي'}</span>
         </button>
 
-        <div className="grow relative bg-zinc-50 dark:bg-[#09090B] border-2 border-zinc-300 dark:border-zinc-700 focus-within:border-[#DC2626] dark:focus-within:border-red-500 focus-within:bg-white dark:focus-within:bg-[#09090B] rounded-2xl transition-all p-2 flex items-center">
+        <div className="grow relative bg-zinc-50 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/30 focus-within:border-[#D4AF37] focus-within:bg-white dark:focus-within:bg-[#09090C] rounded-2xl transition-all p-2 flex items-center">
           <textarea
             ref={textareaRef}
             rows={1}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`اسأل أستاذ نَهج في ${selectedSubject} كتابةً أو اضغط 🎙️ للدردشة الصوتية...`}
-            className="w-full text-xs sm:text-sm bg-transparent focus:outline-none text-zinc-950 dark:text-white font-medium resize-none max-h-36 px-2 py-1 leading-relaxed placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+            placeholder={`اسأل أستاذ نَهج في ${selectedSubject} لشرح معمّق بأمثلة واقعية...`}
+            className="w-full text-xs sm:text-sm bg-transparent focus:outline-none text-zinc-950 dark:text-[#F4EFE6] font-medium resize-none max-h-36 px-2 py-1 leading-relaxed placeholder:text-zinc-400 dark:placeholder:text-[#B5AA92]/60"
           />
         </div>
 
         <button
           type="submit"
           disabled={!inputMessage.trim() || isLoading}
-          className="h-11 px-4 sm:px-6 bg-[#DC2626] hover:bg-[#B91C1C] disabled:opacity-40 text-white rounded-2xl text-xs sm:text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          className="h-11 px-4 sm:px-6 btn-luxury-gold disabled:opacity-40 text-[#09090B] rounded-2xl text-xs sm:text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">إرسال</span>

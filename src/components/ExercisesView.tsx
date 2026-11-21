@@ -148,31 +148,31 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#121215] border border-red-200/70 dark:border-red-900/40 rounded-2xl p-5 shadow-xs transition-colors">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300 rounded-full text-xs font-bold mb-1.5 border border-red-200/60 dark:border-red-900/50">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-2xl p-5 shadow-xs transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-[#09090C] text-[#9A7218] dark:text-[#E8CE88] rounded-full text-xs font-bold mb-1.5 border border-amber-200 dark:border-[#D4AF37]/35">
           <Dumbbell className="w-3.5 h-3.5" />
           <span>تمارين مكتبية ومنزلية بالفيديو والشرح التوضيحي</span>
         </div>
-        <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">
+        <h2 className="text-xl font-extrabold text-zinc-900 dark:text-[#F6E2A6]">
           دم بيوصل للمخ + حماية فقرات الظهر وتفصيل حسب وزنك
         </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
           فيديوهات يوتيوب توضيحية مع شرح كتابي خطوة بخطوة، ونظام تمارين ملائم لوزنك وطولك لحماية مفاصلك وتنشيط ذهنك.
         </p>
       </div>
 
       {/* Weight & Height Personalization Card */}
-      <div className="bg-white dark:bg-[#121215] border-2 border-red-200/70 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-[#D4AF37]/20">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-[#09090C] border border-amber-300 dark:border-[#D4AF37]/35 text-[#9A7218] dark:text-[#F3DFA2] flex items-center justify-center font-bold">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">
+              <h3 className="font-extrabold text-sm text-zinc-900 dark:text-[#F6E2A6]">
                 تحديد الوزن والطول لملاءمة التمارين والنظام الغذائي
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
                 التمارين والنظام الغذائي يتغيران تلقائياً بحسب بياناتك للحفاظ على طاقتك وسلامة ركبتك
               </p>
             </div>
@@ -180,7 +180,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
 
           {/* BMI Badge */}
           <div className="flex items-center gap-2 self-start sm:self-center">
-            <span className={`px-3 py-1 rounded-full text-xs font-black border ${categoryColor}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-black border tabular-nums ${categoryColor}`}>
               مؤشر الكتلة: {bmi} ({weightCategory})
             </span>
           </div>
@@ -189,13 +189,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         {/* Input sliders for Weight and Height */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
           {/* Weight */}
-          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090C] p-4 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-[#B5AA92] flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-[#D4AF37]" />
                 <span>وزنك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
+              <span className="font-black font-mono text-base tabular-nums text-[#9A7218] dark:text-[#F6E2A6]" dir="ltr">
                 {weight} كجم
               </span>
             </div>
@@ -205,9 +205,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="130"
               value={weight}
               onChange={(e) => handleSaveMetrics(Number(e.target.value), height)}
-              className="w-full accent-[#DC2626] cursor-pointer"
+              className="w-full accent-[#D4AF37] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-zinc-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-[#B5AA92]/70 font-mono tabular-nums" dir="ltr">
               <span>40 kg</span>
               <span>85 kg</span>
               <span>130 kg</span>
@@ -215,13 +215,13 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
           </div>
 
           {/* Height */}
-          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090C] p-4 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Ruler className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-[#B5AA92] flex items-center gap-1.5">
+                <Ruler className="w-4 h-4 text-[#D4AF37]" />
                 <span>طولك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
+              <span className="font-black font-mono text-base tabular-nums text-[#9A7218] dark:text-[#F6E2A6]" dir="ltr">
                 {height} سم
               </span>
             </div>
@@ -231,9 +231,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               max="205"
               value={height}
               onChange={(e) => handleSaveMetrics(weight, Number(e.target.value))}
-              className="w-full accent-[#DC2626] cursor-pointer"
+              className="w-full accent-[#D4AF37] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-zinc-400 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-[#B5AA92]/70 font-mono tabular-nums" dir="ltr">
               <span>140 cm</span>
               <span>172 cm</span>
               <span>205 cm</span>
@@ -242,10 +242,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
         </div>
 
         {/* Personalized Coach Guidance Message based on Weight */}
-        <div className="bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 text-xs text-zinc-800 dark:text-zinc-200 flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="bg-amber-50/70 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 rounded-2xl p-4 text-xs text-zinc-800 dark:text-[#F4EFE6] flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <strong className="block font-bold text-sm text-[#DC2626] dark:text-red-400 mb-0.5">
+            <strong className="block font-bold text-sm text-[#9A7218] dark:text-[#F6E2A6] mb-0.5">
               توجيه الكابتن الرياضي المخصص لوزنك ({weight} كجم):
             </strong>
             {bmi >= 25 ? (
@@ -266,30 +266,30 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       </div>
 
       {/* Active Exercise Stage: Video Tutorial + Written Guidance + Timer */}
-      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 sm:p-8 shadow-lg">
+      <div className="bg-gradient-to-l from-[#1E1E26] via-[#121217] to-[#08080A] text-[#F4EFE6] rounded-3xl p-6 sm:p-8 shadow-lg border border-[#D4AF37]/45">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* Left/Main Column: Instructions & YouTube Video Preview */}
           <div className="lg:col-span-7 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-white/20 text-[#EAB308]">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#08080A] border border-[#D4AF37]/40 text-[#F6E2A6]">
                 {selectedExercise.category}
               </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-black/30 text-white/90">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#08080A] border border-[#D4AF37]/25 text-[#B5AA92]">
                 الملائمة: {selectedExercise.suitableForWeight}
               </span>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-white">
+            <h3 className="text-xl sm:text-2xl font-black text-[#F6E2A6]">
               {selectedExercise.name}
             </h3>
 
-            <p className="text-xs text-white/85 leading-relaxed font-medium">
+            <p className="text-xs text-[#B5AA92] leading-relaxed font-medium">
               {selectedExercise.benefit}
             </p>
 
             {/* Video Player Mode Switcher */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1 bg-black/35 p-1 rounded-xl border border-white/15">
+              <div className="inline-flex items-center gap-1 bg-[#08080A] p-1 rounded-xl border border-[#D4AF37]/25">
                 <button
                   type="button"
                   onClick={() => {
@@ -298,11 +298,11 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
                     playerMode === 'youtube'
-                      ? 'bg-white text-zinc-950 shadow-xs'
-                      : 'text-white/80 hover:text-white'
+                      ? 'btn-luxury-gold shadow-xs'
+                      : 'text-[#B5AA92] hover:text-[#F3DFA2]'
                   }`}
                 >
-                  <Video className="w-3.5 h-3.5 text-[#DC2626]" />
+                  <Video className="w-3.5 h-3.5" />
                   <span>فيديو يوتيوب المباشر</span>
                 </button>
                 <button
@@ -310,8 +310,8 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                   onClick={() => setPlayerMode('guided')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
                     playerMode === 'guided'
-                      ? 'bg-amber-400 text-zinc-950 shadow-xs'
-                      : 'text-white/80 hover:text-white'
+                      ? 'btn-luxury-gold shadow-xs'
+                      : 'text-[#B5AA92] hover:text-[#F3DFA2]'
                   }`}
                 >
                   <Activity className="w-3.5 h-3.5" />
@@ -323,7 +323,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                 href={`https://www.youtube.com/watch?v=${selectedExercise.youtubeId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-amber-300 flex items-center gap-1 underline text-[11px] text-white/85"
+                className="hover:text-[#F6E2A6] flex items-center gap-1 underline text-[11px] text-[#E8CE88]"
               >
                 <span>فتح على يوتيوب</span>
                 <ExternalLink className="w-3 h-3" />
@@ -331,7 +331,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
             </div>
 
             {/* Embedded YouTube Player OR Interactive Motion Guide */}
-            <div className="rounded-2xl overflow-hidden border-2 border-white/25 shadow-md bg-black/70 aspect-video relative">
+            <div className="rounded-2xl overflow-hidden border-2 border-[#D4AF37]/35 shadow-md bg-[#08080A] aspect-video relative">
               {playerMode === 'youtube' ? (
                 isVideoStarted ? (
                   <iframe
@@ -354,38 +354,38 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                       alt={selectedExercise.name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     />
-                    <span className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center gap-2">
-                      <span className="w-16 h-16 rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                    <span className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                      <span className="btn-luxury-gold w-16 h-16 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
                         <Play className="w-7 h-7 fill-current translate-x-[-1px]" />
                       </span>
-                      <span className="text-xs font-black bg-black/70 px-3 py-1 rounded-full text-white">
+                      <span className="text-xs font-black bg-[#08080A]/90 border border-[#D4AF37]/40 px-3 py-1 rounded-full text-[#F6E2A6]">
                         اضغط لتشغيل فيديو التمرين
                       </span>
                     </span>
                   </button>
                 )
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#09090B] via-[#1A090B] to-[#09090B] p-5 flex flex-col justify-between text-right">
+                <div className="w-full h-full bg-gradient-to-br from-[#08080A] via-[#141419] to-[#08080A] p-5 flex flex-col justify-between text-right">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-[#DC2626] text-white text-[11px] font-black flex items-center gap-1.5">
-                      <Activity className={`w-3.5 h-3.5 ${isRunning ? 'animate-pulse' : ''}`} />
+                    <span className="px-2.5 py-1 rounded-full bg-[#19191F] border border-[#D4AF37]/40 text-[#F3DFA2] text-[11px] font-black flex items-center gap-1.5">
+                      <Activity className={`w-3.5 h-3.5 text-[#D4AF37] ${isRunning ? 'animate-pulse' : ''}`} />
                       <span>الخطوة {activeStepIndex + 1} من {selectedExercise.instructions.length}</span>
                     </span>
-                    <span className="font-mono text-sm font-black text-amber-300" dir="ltr">
+                    <span className="font-mono text-sm font-black tabular-nums text-[#F6E2A6]" dir="ltr">
                       {formatTimer(secondsLeft)}
                     </span>
                   </div>
 
                   <div className="my-auto py-3 space-y-3 text-center">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl border-2 border-amber-400/60 bg-red-950/60 flex items-center justify-center ${isRunning ? 'animate-bounce' : ''}`}>
-                      <Dumbbell className="w-8 h-8 text-amber-300" />
+                    <div className={`w-16 h-16 mx-auto rounded-2xl border-2 border-[#D4AF37]/60 bg-[#19191F] flex items-center justify-center ${isRunning ? 'animate-bounce' : ''}`}>
+                      <Dumbbell className="w-8 h-8 text-[#F6E2A6]" />
                     </div>
-                    <p className="text-sm sm:text-base font-black text-white leading-relaxed max-w-lg mx-auto">
+                    <p className="text-sm sm:text-base font-black text-[#F4EFE6] leading-relaxed max-w-lg mx-auto">
                       {selectedExercise.instructions[activeStepIndex] || selectedExercise.instructions[0]}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D4AF37]/20">
                     <div className="flex items-center gap-1.5">
                       {selectedExercise.instructions.map((_, idx) => (
                         <button
@@ -393,7 +393,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                           type="button"
                           onClick={() => setActiveStepIndex(idx)}
                           className={`h-2 rounded-full transition-all cursor-pointer ${
-                            idx === activeStepIndex ? 'w-7 bg-amber-400' : 'w-2 bg-white/30 hover:bg-white/60'
+                            idx === activeStepIndex ? 'w-7 bg-[#D4AF37]' : 'w-2 bg-white/25 hover:bg-[#D4AF37]/60'
                           }`}
                           title={`الخطوة ${idx + 1}`}
                         />
@@ -402,7 +402,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                     <button
                       type="button"
                       onClick={toggleTimer}
-                      className="px-3.5 py-1.5 rounded-xl bg-white text-zinc-950 text-xs font-black flex items-center gap-1 cursor-pointer"
+                      className="btn-luxury-gold px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 cursor-pointer"
                     >
                       {isRunning ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                       <span>{isRunning ? 'إيقاف' : 'تشغيل التوجيه'}</span>
@@ -412,9 +412,9 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-white/75">
+            <div className="flex items-center justify-between text-xs text-[#B5AA92]">
               <span className="flex items-center gap-1.5">
-                <Video className="w-4 h-4 text-amber-300" />
+                <Video className="w-4 h-4 text-[#D4AF37]" />
                 <span>
                   {playerMode === 'youtube'
                     ? 'اضغط تشغيل داخل المشغل أو جرّب «المدرب التفاعلي» في أي وقت'
@@ -424,42 +424,42 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
             </div>
 
             {/* Step-by-Step Written Guide */}
-            <div className="bg-black/25 rounded-2xl p-4 backdrop-blur-xs space-y-2 border border-white/10">
-              <span className="text-xs font-bold text-amber-300 block">
+            <div className="bg-[#08080A] rounded-2xl p-4 space-y-2 border border-[#D4AF37]/25">
+              <span className="text-xs font-bold text-[#F3DFA2] block">
                 الشرح الكتابي وخطوات الأداء الصحيح ({selectedExercise.repsOrHold}):
               </span>
               <ul className="space-y-2">
                 {selectedExercise.instructions.map((ins, i) => (
-                  <li key={i} className="text-xs text-white/95 flex items-start gap-2.5 leading-relaxed">
-                    <span className="w-5 h-5 rounded-full bg-amber-400 text-black font-black flex items-center justify-center shrink-0 text-[10px]">
+                  <li key={i} className="text-xs text-[#F4EFE6] flex items-start gap-2.5 leading-relaxed">
+                    <span className="btn-luxury-gold w-5 h-5 rounded-full font-black flex items-center justify-center shrink-0 text-[10px]">
                       {i + 1}
                     </span>
                     <span>{ins}</span>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 pt-2 border-t border-white/10 text-[11px] text-white/80">
-                🎯 <strong>العضلات المستهدفة:</strong> {selectedExercise.targetMuscles}
+              <div className="mt-2 pt-2 border-t border-[#D4AF37]/20 text-[11px] text-[#B5AA92]">
+                🎯 <strong className="text-[#E8CE88]">العضلات المستهدفة:</strong> {selectedExercise.targetMuscles}
               </div>
             </div>
           </div>
 
           {/* Right Column: Timer Clock */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 bg-black/30 rounded-3xl backdrop-blur-md border border-white/15 text-center">
-            <span className="text-xs text-amber-300 font-bold mb-2">
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 bg-[#08080A] rounded-3xl border border-[#D4AF37]/35 text-center">
+            <span className="text-xs text-[#E8CE88] font-bold mb-2">
               مؤقت الجلسة التفاعلي
             </span>
-            <span className="font-mono text-6xl sm:text-7xl font-black mb-4 tracking-wider text-white" dir="ltr">
+            <span className="font-mono text-6xl sm:text-7xl font-black mb-4 tracking-wider tabular-nums text-[#F6E2A6]" dir="ltr">
               {formatTimer(secondsLeft)}
             </span>
-            <span className="text-xs text-white/75 mb-6">
+            <span className="text-xs text-[#B5AA92] mb-6">
               {isRunning ? '● التمرين قيد التشغيل — ركز في أنفاسك' : 'متوقف مؤقتاً'}
             </span>
 
             <div className="flex items-center gap-3 w-full justify-center">
               <button
                 onClick={resetTimer}
-                className="p-3.5 bg-white/15 hover:bg-white/25 rounded-2xl text-white transition-colors cursor-pointer"
+                className="p-3.5 bg-[#19191F] hover:bg-[#23232C] border border-[#D4AF37]/30 rounded-2xl text-[#E8CE88] transition-colors cursor-pointer"
                 title="إعادة ضبط المؤقت"
               >
                 <RotateCcw className="w-5 h-5" />
@@ -467,9 +467,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
 
               <button
                 onClick={toggleTimer}
-                className={`grow py-3.5 px-6 rounded-2xl font-black text-sm text-zinc-950 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                  isRunning ? 'bg-amber-400 hover:bg-amber-300' : 'bg-white hover:bg-white/90'
-                }`}
+                className="btn-luxury-gold grow py-3.5 px-6 rounded-2xl font-black text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isRunning ? (
                   <>
@@ -491,10 +489,10 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       {/* Routine Cards Selection matching user's weight */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">
+          <h3 className="font-extrabold text-sm text-zinc-900 dark:text-[#F6E2A6]">
             قائمة التمارين المتوافقة مع وزنك ({weight} كجم) والهدف الحالي:
           </h3>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
+          <span className="text-xs text-zinc-500 dark:text-[#B5AA92]">اختر أي تمرين لمشاهدة الفيديو والخطوات</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -506,33 +504,33 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                 onClick={() => selectExercise(ex)}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                   isCurrent
-                    ? 'bg-white dark:bg-[#121215] border-[#DC2626] shadow-md ring-2 ring-[#DC2626]/20'
-                    : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-[#DC2626]/40'
+                    ? 'bg-white dark:bg-[#19191F] border-[#D4AF37] shadow-md ring-2 ring-[#D4AF37]/25'
+                    : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]/60'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#DC2626]/10 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300">
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-100 dark:bg-[#19191F] border border-amber-200 dark:border-[#D4AF37]/30 text-[#9A7218] dark:text-[#E8CE88]">
                       {ex.category}
                     </span>
-                    <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400" dir="ltr">
+                    <span className="text-xs font-mono font-bold tabular-nums text-[#9A7218] dark:text-[#F3DFA2]" dir="ltr">
                       {ex.durationSeconds} ثانية
                     </span>
                   </div>
-                  <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white mb-1">{ex.name}</h4>
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                  <h4 className="font-extrabold text-xs text-zinc-900 dark:text-[#F6E2A6] mb-1">{ex.name}</h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-[#B5AA92] leading-relaxed line-clamp-2">
                     {ex.benefit}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                  <span className="text-[10px] text-red-600 dark:text-red-400 font-bold flex items-center gap-1">
+                <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-[#D4AF37]/15 flex items-center justify-between">
+                  <span className="text-[10px] text-[#9A7218] dark:text-[#E8CE88] font-bold flex items-center gap-1">
                     <Video className="w-3 h-3" />
                     <span>فيديو يوتيوب</span>
                   </span>
                   <span
                     className={`text-[11px] font-bold ${
-                      isCurrent ? 'text-[#DC2626] dark:text-red-400' : 'text-zinc-400'
+                      isCurrent ? 'text-[#9A7218] dark:text-[#F6E2A6]' : 'text-zinc-400 dark:text-[#B5AA92]/70'
                     }`}
                   >
                     {isCurrent ? '● المختار حالياً' : 'اختيار ←'}

@@ -1,6 +1,59 @@
 import { DailyTask, LeaderboardUser } from '../types';
 
-export const TASK_CYCLE_MS = 13 * 60 * 60 * 1000; // تتجدد وتتغير المهام الستة كل 13 ساعة
+export const TASK_CYCLE_MS = 24 * 60 * 60 * 1000; // تتجدد المهام الستة يومياً الساعة 4:00 صباحاً بتوقيت مصر
+
+const FOUR_AM_MS = 4 * 60 * 60 * 1000;
+
+interface EgyptTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+function getEgyptTimeParts(nowMs: number = Date.now()): EgyptTimeParts {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Africa/Cairo',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(new Date(nowMs));
+    const lookup: Record<string, number> = {};
+    for (const p of parts) {
+      if (p.type !== 'literal') {
+        lookup[p.type] = Number(p.value);
+      }
+    }
+    const rawHour = Number.isFinite(lookup.hour) ? lookup.hour : 0;
+    return {
+      year: lookup.year || new Date(nowMs).getUTCFullYear(),
+      month: lookup.month || new Date(nowMs).getUTCMonth() + 1,
+      day: lookup.day || new Date(nowMs).getUTCDate(),
+      hour: rawHour === 24 ? 0 : rawHour,
+      minute: Number.isFinite(lookup.minute) ? lookup.minute : 0,
+      second: Number.isFinite(lookup.second) ? lookup.second : 0,
+    };
+  } catch {
+    // Fallback to Egypt UTC+2 if Intl timezone database is unavailable
+    const d = new Date(nowMs + 2 * 60 * 60 * 1000);
+    return {
+      year: d.getUTCFullYear(),
+      month: d.getUTCMonth() + 1,
+      day: d.getUTCDate(),
+      hour: d.getUTCHours(),
+      minute: d.getUTCMinutes(),
+      second: d.getUTCSeconds(),
+    };
+  }
+}
 
 export const TASK_CYCLE_POOLS: DailyTask[][] = [
   // الدورة الأولى
@@ -236,7 +289,12 @@ export const TASK_CYCLE_POOLS: DailyTask[][] = [
 export const INITIAL_DAILY_TASKS: DailyTask[] = TASK_CYCLE_POOLS[0];
 
 export function getCurrentTaskCycleIndex(nowMs: number = Date.now()): number {
-  return Math.floor(nowMs / TASK_CYCLE_MS);
+  const egypt = getEgyptTimeParts(nowMs);
+  const utcDayIndex = Math.floor(
+    Date.UTC(egypt.year, egypt.month - 1, egypt.day) / TASK_CYCLE_MS
+  );
+  // Before 4:00 AM Egypt time, stay on yesterday's 4:00 AM cycle
+  return egypt.hour < 4 ? utcDayIndex - 1 : utcDayIndex;
 }
 
 export function getTasksForCycle(cycleIndex: number): DailyTask[] {
@@ -250,7 +308,14 @@ export function getTasksForCycle(cycleIndex: number): DailyTask[] {
 }
 
 export function getTaskCycleRemainingMs(nowMs: number = Date.now()): number {
-  return TASK_CYCLE_MS - (nowMs % TASK_CYCLE_MS);
+  const egypt = getEgyptTimeParts(nowMs);
+  const msSinceMidnight =
+    ((egypt.hour * 60 + egypt.minute) * 60 + egypt.second) * 1000 +
+    (nowMs % 1000);
+  if (msSinceMidnight < FOUR_AM_MS) {
+    return FOUR_AM_MS - msSinceMidnight;
+  }
+  return TASK_CYCLE_MS - msSinceMidnight + FOUR_AM_MS;
 }
 
 export const INITIAL_LEADERBOARD: LeaderboardUser[] = [

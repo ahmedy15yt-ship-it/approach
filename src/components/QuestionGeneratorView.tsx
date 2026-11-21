@@ -29,6 +29,7 @@ import {
   Shuffle,
   Share2,
   RefreshCw,
+  MonitorCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -46,6 +47,7 @@ import {
   buildQuizChallengeShareMessage,
   formatMinutesSeconds,
 } from '../utils/challengeCodes';
+import { useWakeLock } from '../utils/useWakeLock';
 
 interface QuestionGeneratorViewProps {
   curriculum: Subject[];
@@ -230,6 +232,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
       // ignore
     }
   };
+
+  const isDuelTimerRunning = Boolean(
+    activeDuelRoom && !duelSubmitted && sectionTab === 'duel'
+  );
+  useWakeLock(isDuelTimerRunning);
 
   // Stopwatch ticker while taking an active unsubmitted duel
   useEffect(() => {
@@ -808,32 +815,32 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Page Header + Solo vs Duel Mode Tabs */}
-      <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/35 rounded-3xl p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#DC2626] dark:text-red-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#9A7218] dark:text-[#E8CE88]">
               <FileQuestion className="w-4 h-4 shrink-0" />
               <span>مُنشئ المحتوى التعليمي التفاعلي</span>
               <span aria-hidden="true">·</span>
               <span>أسئلة متجددة في كل محاولة + تحدي أصدقاء بكود</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-white leading-snug">
+            <h1 className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-[#F6E2A6] leading-snug">
               مُنشئ الأسئلة التفاعلية وتحدي الأصدقاء
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-[#B5AA92] max-w-3xl leading-relaxed">
               حدّد المادة والفصل والدرس للحصول على أسئلة سريعة ومختلفة في كل مرة مع الإجابات الصحيحة، أو أنشئ غرفة تحدي بكود وأرسله لصديقك للتنافس على نفس الأسئلة.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <div className="inline-flex p-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            <div className="inline-flex p-1 bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setSectionTab('solo')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-black transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   sectionTab === 'solo'
-                    ? 'bg-[#DC2626] text-white shadow-2xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                    ? 'btn-luxury-gold shadow-2xs'
+                    : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F4EFE6]'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -844,8 +851,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                 onClick={() => setSectionTab('duel')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-black transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   sectionTab === 'duel'
-                    ? 'bg-[#DC2626] text-white shadow-2xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                    ? 'btn-luxury-gold shadow-2xs'
+                    : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F4EFE6]'
                 }`}
               >
                 <Swords className="w-3.5 h-3.5" />
@@ -863,24 +870,24 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
           <aside className="xl:col-span-4 space-y-5">
             <form
               onSubmit={handleGenerateQuestions}
-              className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 shadow-xs space-y-4"
+              className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-[#D4AF37]/20 pb-3">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#DC2626]" />
-                  <h2 className="text-sm font-black text-zinc-950 dark:text-white">
+                  <SlidersHorizontal className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88]" />
+                  <h2 className="text-sm font-black text-zinc-950 dark:text-[#F4EFE6]">
                     إعداد الدرس والأسئلة
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-[#09090C] rounded-lg border border-zinc-200 dark:border-[#D4AF37]/25">
                   <button
                     type="button"
                     onClick={() => setInputMode('curriculum')}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                       inputMode === 'curriculum'
-                        ? 'bg-white dark:bg-zinc-800 text-[#DC2626] dark:text-red-400 shadow-2xs'
-                        : 'text-zinc-500 dark:text-zinc-400'
+                        ? 'bg-white dark:bg-[#19191F] text-[#9A7218] dark:text-[#E8CE88] shadow-2xs border border-transparent dark:border-[#D4AF37]/30'
+                        : 'text-zinc-500 dark:text-[#B5AA92]'
                     }`}
                   >
                     من المنهج
@@ -890,8 +897,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     onClick={() => setInputMode('custom')}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                       inputMode === 'custom'
-                        ? 'bg-white dark:bg-zinc-800 text-[#DC2626] dark:text-red-400 shadow-2xs'
-                        : 'text-zinc-500 dark:text-zinc-400'
+                        ? 'bg-white dark:bg-[#19191F] text-[#9A7218] dark:text-[#E8CE88] shadow-2xs border border-transparent dark:border-[#D4AF37]/30'
+                        : 'text-zinc-500 dark:text-[#B5AA92]'
                     }`}
                   >
                     إدخال حر
@@ -902,13 +909,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
               {inputMode === 'curriculum' ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                       1. المادة الدراسية
                     </label>
                     <select
                       value={selectedSubjectId}
                       onChange={(e) => setSelectedSubjectId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                     >
                       {curriculum.map((subj) => (
                         <option key={subj.id} value={subj.id}>
@@ -919,13 +926,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                       2. الباب / الفصل
                     </label>
                     <select
                       value={selectedChapter?.id || ''}
                       onChange={(e) => setSelectedChapterId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                     >
                       {selectedSubject?.chapters.map((ch) => (
                         <option key={ch.id} value={ch.id}>
@@ -936,13 +943,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                       3. الدرس المطلوب
                     </label>
                     <select
                       value={selectedLesson?.id || ''}
                       onChange={(e) => setSelectedLessonId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                     >
                       {selectedChapter?.lessons.map((les) => (
                         <option key={les.id} value={les.id}>
@@ -955,7 +962,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1">
                       1. المادة الدراسية
                     </label>
                     <input
@@ -963,12 +970,12 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       value={customSubject}
                       onChange={(e) => setCustomSubject(e.target.value)}
                       placeholder="مثال: الكيمياء، الفيزياء، الرياضيات، التاريخ..."
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1">
                       2. الفصل / الوحدة
                     </label>
                     <input
@@ -976,11 +983,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       value={customChapter}
                       onChange={(e) => setCustomChapter(e.target.value)}
                       placeholder="مثال: الفصل الثاني - التأثير المغناطيسي للتيار"
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1">
                       3. الدرس المحدد
                     </label>
                     <input
@@ -988,7 +995,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       value={customLesson}
                       onChange={(e) => setCustomLesson(e.target.value)}
                       placeholder="مثال: القوة المغناطيسية وعزم الازدواج"
-                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                      className="w-full px-3.5 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                       required
                     />
                   </div>
@@ -997,7 +1004,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
 
               {/* Question Type Selector */}
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                   نوع الأسئلة التفاعلية
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1013,8 +1020,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       onClick={() => setQuestionType(opt.id)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap ${
                         questionType === opt.id
-                          ? 'bg-red-50 dark:bg-red-950/50 border-[#DC2626] text-[#DC2626] dark:text-red-300'
-                          : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400'
+                          ? 'bg-amber-50 dark:bg-[#D4AF37]/15 border-[#D4AF37] text-[#9A7218] dark:text-[#F6E2A6]'
+                          : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/20 text-zinc-700 dark:text-[#B5AA92] hover:border-[#D4AF37]/50'
                       }`}
                     >
                       {opt.label}
@@ -1026,13 +1033,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
               {/* Difficulty & Count */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                     مستوى الصعوبة
                   </label>
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as QuestionDifficultyFilter)}
-                    className="w-full px-3 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                    className="w-full px-3 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                   >
                     <option value="balanced">متدرج شامل</option>
                     <option value="basic">تأسيسي (فهم أولي)</option>
@@ -1042,13 +1049,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                     عدد الأسئلة
                   </label>
                   <select
                     value={questionCount}
                     onChange={(e) => setQuestionCount(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626] tabular-nums"
+                    className="w-full px-3 py-2.5 text-xs font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37] tabular-nums"
                   >
                     {[4, 6, 8, 10, 12].map((num) => (
                       <option key={num} value={num}>
@@ -1060,7 +1067,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-[#E8CE88] mb-1.5">
                   توجيهات إضافية (اختياري)
                 </label>
                 <input
@@ -1068,7 +1075,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   value={focusNotes}
                   onChange={(e) => setFocusNotes(e.target.value)}
                   placeholder="مثال: ركز على المسائل البيانية والتحويلات أو المقارنات..."
-                  className="w-full px-3.5 py-2 text-xs font-medium bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                  className="w-full px-3.5 py-2 text-xs font-medium bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F4EFE6] focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
 
@@ -1082,7 +1089,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
               <button
                 type="submit"
                 disabled={isGenerating}
-                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-l from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D] disabled:opacity-60 text-white font-black text-sm shadow-sm shadow-red-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl btn-luxury-gold disabled:opacity-60 font-black text-sm shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {isGenerating ? (
                   <>
@@ -1100,10 +1107,10 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
 
             {/* Previously Generated Sets History */}
             {savedSets.length > 0 && (
-              <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-4 shadow-xs space-y-3">
+              <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-4 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-white">
-                    <History className="w-4 h-4 text-[#DC2626]" />
+                  <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-[#F4EFE6]">
+                    <History className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88]" />
                     <span>الاختبارات المولّدة مؤخراً ({savedSets.length})</span>
                   </div>
                 </div>
@@ -1116,8 +1123,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                         key={setItem.id}
                         className={`p-3 rounded-2xl border transition-colors flex items-start justify-between gap-2 ${
                           isCurrent
-                            ? 'bg-red-50/80 dark:bg-red-950/30 border-[#DC2626]/60'
-                            : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                            ? 'bg-amber-50/80 dark:bg-[#D4AF37]/15 border-[#D4AF37]/70'
+                            : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/20 hover:border-[#D4AF37]/45'
                         }`}
                       >
                         <button
@@ -1128,10 +1135,10 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                           }}
                           className="text-right grow min-w-0 cursor-pointer"
                         >
-                          <div className="text-xs font-black text-zinc-950 dark:text-white truncate">
+                          <div className="text-xs font-black text-zinc-950 dark:text-[#F4EFE6] truncate">
                             {setItem.lesson}
                           </div>
-                          <div className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <div className="text-[11px] font-semibold text-zinc-500 dark:text-[#B5AA92] mt-0.5 flex items-center gap-1.5 flex-wrap">
                             <span>{setItem.subject}</span>
                             <span aria-hidden="true">·</span>
                             <span className="tabular-nums">{setItem.questions.length} أسئلة</span>
@@ -1150,7 +1157,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                           type="button"
                           onClick={() => handleDeleteSavedSet(setItem.id)}
                           title="حذف هذه المجموعة"
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-100/60 dark:hover:bg-red-950/60 transition-colors cursor-pointer shrink-0"
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-100/60 dark:hover:bg-red-950/60 transition-colors cursor-pointer shrink-0"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1165,44 +1172,44 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
           {/* Interactive Stage (Left in RTL) */}
           <section className="xl:col-span-8 space-y-5">
             {!activeSet ? (
-              <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-8 sm:p-12 text-center space-y-5 shadow-xs">
-                <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 text-[#DC2626] mx-auto flex items-center justify-center">
+              <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-8 sm:p-12 text-center space-y-5 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/40 text-[#9A7218] dark:text-[#E8CE88] mx-auto flex items-center justify-center">
                   <BookOpen className="w-8 h-8" />
                 </div>
                 <div className="space-y-2 max-w-lg mx-auto">
-                  <h3 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-white">
+                  <h3 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-[#F6E2A6]">
                     جاهز لتصميم اختبارك التفاعلي المتجدد
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-zinc-600 dark:text-[#B5AA92] leading-relaxed">
                     اختر <strong>المادة والفصل والدرس</strong> واضغط <strong>«توليد أسئلة جديدة الآن»</strong>. في كل مرة تطلب اختباراً جديداً ستظهر لك أسئلة وصياغات مختلفة تماماً عن المرات السابقة.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-right pt-2">
-                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 space-y-1">
-                    <Shuffle className="w-4 h-4 text-[#DC2626]" />
-                    <div className="text-xs font-black text-zinc-950 dark:text-white">
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 space-y-1">
+                    <Shuffle className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88]" />
+                    <div className="text-xs font-black text-zinc-950 dark:text-[#F4EFE6]">
                       مختلفة في كل محاولة
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                       يستبعد الأسئلة السابقة تلقائياً ويغيّر زاوية الطرح والترتيب.
                     </p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 space-y-1">
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 space-y-1">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <div className="text-xs font-black text-zinc-950 dark:text-white">
+                    <div className="text-xs font-black text-zinc-950 dark:text-[#F4EFE6]">
                       تصحيح وإجابات نموذجية
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                       كشف فوري للإجابة الصحيحة مع التفسير العلمي.
                     </p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 space-y-1">
-                    <Swords className="w-4 h-4 text-amber-500" />
-                    <div className="text-xs font-black text-zinc-950 dark:text-white">
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 space-y-1">
+                    <Swords className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88]" />
+                    <div className="text-xs font-black text-zinc-950 dark:text-[#F4EFE6]">
                       تحدي أصدقاء بكود
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                       حوّل أي اختبار لغرفة تحدي وشارك الكود مع زملائك.
                     </p>
                   </div>
@@ -1211,11 +1218,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
             ) : (
               <>
                 {/* Active Quiz Header & Scoreboard */}
-                <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 shadow-xs space-y-4">
+                <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                        <span className="text-[#DC2626] dark:text-red-400 font-black">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500 dark:text-[#B5AA92]">
+                        <span className="text-[#9A7218] dark:text-[#E8CE88] font-black">
                           {activeSet.subject}
                         </span>
                         <span aria-hidden="true">/</span>
@@ -1229,19 +1236,19 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                             : 'محرك التوليد التعليمي السريع'}
                         </span>
                       </div>
-                      <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white">
+                      <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-[#F6E2A6]">
                         {activeSet.lesson}
                       </h2>
                     </div>
 
-                    <div className="inline-flex p-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shrink-0">
+                    <div className="inline-flex p-1 bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl shrink-0">
                       <button
                         type="button"
                         onClick={() => setViewMode('interactive')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                           viewMode === 'interactive'
-                            ? 'bg-[#DC2626] text-white shadow-2xs'
-                            : 'text-zinc-600 dark:text-zinc-400'
+                            ? 'btn-luxury-gold shadow-2xs'
+                            : 'text-zinc-600 dark:text-[#B5AA92]'
                         }`}
                       >
                         التدريب التفاعلي
@@ -1251,8 +1258,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                         onClick={() => setViewMode('answer_key')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                           viewMode === 'answer_key'
-                            ? 'bg-[#DC2626] text-white shadow-2xs'
-                            : 'text-zinc-600 dark:text-zinc-400'
+                            ? 'btn-luxury-gold shadow-2xs'
+                            : 'text-zinc-600 dark:text-[#B5AA92]'
                         }`}
                       >
                         الأسئلة والإجابات
@@ -1266,7 +1273,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       type="button"
                       disabled={isGenerating}
                       onClick={() => handleGenerateQuestions()}
-                      className="px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-[#DC2626]/50 text-[#DC2626] dark:text-red-300 hover:bg-red-100/80 dark:hover:bg-red-950/80 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-60"
+                      className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-[#09090C] border border-[#D4AF37]/50 text-[#9A7218] dark:text-[#E8CE88] hover:bg-amber-100/80 dark:hover:bg-[#D4AF37]/15 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-60"
                     >
                       <Shuffle className="w-3.5 h-3.5" />
                       <span>اختبار جديد بأسئلة مختلفة</span>
@@ -1283,7 +1290,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                           questions: activeSet.questions,
                         })
                       }
-                      className="px-3 py-1.5 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 text-xs font-black flex items-center gap-1.5 transition-opacity cursor-pointer whitespace-nowrap disabled:opacity-60"
+                      className="px-3 py-1.5 rounded-xl btn-luxury-gold text-xs font-black flex items-center gap-1.5 transition-opacity cursor-pointer whitespace-nowrap disabled:opacity-60"
                     >
                       <Swords className="w-3.5 h-3.5" />
                       <span>تحدي صديق بهذه الأسئلة بكود</span>
@@ -1292,7 +1299,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setRevealAllAnswers((prev) => !prev)}
-                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:border-[#DC2626] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-800 dark:text-[#E8CE88] hover:border-[#D4AF37] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       {revealAllAnswers ? (
                         <>
@@ -1310,7 +1317,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     <button
                       type="button"
                       onClick={handleCopyAllQuestions}
-                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:border-[#DC2626] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-800 dark:text-[#E8CE88] hover:border-[#D4AF37] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       {copiedId === 'all' ? (
                         <>
@@ -1328,7 +1335,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     <button
                       type="button"
                       onClick={resetInteractionState}
-                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:border-[#DC2626] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-800 dark:text-[#E8CE88] hover:border-[#D4AF37] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>إعادة المحاولة</span>
@@ -1352,18 +1359,18 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   )}
 
                   {/* Progress Bar & Live Metrics */}
-                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
+                  <div className="pt-2 border-t border-zinc-100 dark:border-[#D4AF37]/20 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
-                      <div className="flex items-center gap-3 text-zinc-700 dark:text-zinc-300 tabular-nums">
+                      <div className="flex items-center gap-3 text-zinc-700 dark:text-[#B5AA92] tabular-nums">
                         <span>
-                          تم حل: <strong>{quizStats.answered}</strong> / {quizStats.total}
+                          تم حل: <strong className="dark:text-[#F4EFE6]">{quizStats.answered}</strong> / {quizStats.total}
                         </span>
                         <span aria-hidden="true">·</span>
                         <span className="text-emerald-700 dark:text-emerald-400">
                           صحيح: <strong>{quizStats.correct}</strong>
                         </span>
                         <span aria-hidden="true">·</span>
-                        <span className="text-[#DC2626] dark:text-red-400">
+                        <span className="text-[#9A7218] dark:text-[#E8CE88]">
                           الدقة: <strong>{quizStats.accuracy}%</strong>
                         </span>
                       </div>
@@ -1376,9 +1383,9 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       )}
                     </div>
 
-                    <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+                    <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-[#09090C] overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-l from-[#DC2626] to-[#991B1B] transition-all duration-300"
+                        className="h-full bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722] transition-all duration-300"
                         style={{
                           width: `${
                             quizStats.total > 0
@@ -1419,11 +1426,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     return (
                       <article
                         key={q.id}
-                        className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors"
+                        className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-4 transition-colors"
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
-                          <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                            <span className="text-[#DC2626] dark:text-red-400 font-black tabular-nums">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 dark:border-[#D4AF37]/20 pb-3">
+                          <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 dark:text-[#B5AA92]">
+                            <span className="text-[#9A7218] dark:text-[#E8CE88] font-black tabular-nums">
                               السؤال {index + 1}
                             </span>
                             <span aria-hidden="true">·</span>
@@ -1440,7 +1447,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                               </span>
                             )}
                             {isWrong && (
-                              <span className="inline-flex items-center gap-1 text-xs font-black text-[#DC2626] dark:text-red-400">
+                              <span className="inline-flex items-center gap-1 text-xs font-black text-red-600 dark:text-red-400">
                                 <XCircle className="w-4 h-4" />
                                 <span>راجع الإجابة الصحيحة</span>
                               </span>
@@ -1448,7 +1455,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                           </div>
                         </div>
 
-                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 dark:text-white leading-relaxed">
+                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 dark:text-[#F6E2A6] leading-relaxed">
                           {q.question}
                         </h3>
 
@@ -1466,13 +1473,13 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                     }))
                                   }
                                   placeholder="اكتب إجابتك هنا ثم اضغط «تحقق وقارن بالإجابة الصحيحة»..."
-                                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-medium bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-medium bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl text-zinc-950 dark:text-[#F4EFE6] placeholder:text-zinc-400 dark:placeholder:text-[#7E7664] focus:outline-none focus:border-[#D4AF37]"
                                 />
                                 <div className="flex flex-wrap items-center gap-2">
                                   <button
                                     type="button"
                                     onClick={() => handleCheckShortAnswer(q.id)}
-                                    className="px-3.5 py-1.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-xl btn-luxury-gold text-xs font-black flex items-center gap-1.5 cursor-pointer"
                                   >
                                     <PenLine className="w-3.5 h-3.5" />
                                     <span>تحقق واعرض الإجابة النموذجية</span>
@@ -1491,7 +1498,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleCheckShortAnswer(q.id, false)}
-                                        className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                        className="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-[#09090C] border border-transparent dark:border-[#D4AF37]/25 hover:bg-zinc-300 dark:hover:border-[#D4AF37]/50 text-zinc-900 dark:text-[#B5AA92] text-xs font-bold flex items-center gap-1 cursor-pointer"
                                       >
                                         <Layers className="w-3.5 h-3.5" />
                                         <span>تحتاج مراجعة</span>
@@ -1509,7 +1516,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                               const isOptionCorrect = optIdx === q.correctAnswerIndex;
 
                               let optionStyles =
-                                'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-[#DC2626]/70';
+                                'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-900 dark:text-[#F4EFE6] hover:border-[#D4AF37]/75';
 
                               if (isRevealed) {
                                 if (isOptionCorrect) {
@@ -1517,11 +1524,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                     'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-200';
                                 } else if (isSelected && !isOptionCorrect) {
                                   optionStyles =
-                                    'bg-red-50 dark:bg-red-950/50 border-[#DC2626] text-red-900 dark:text-red-200';
+                                    'bg-red-50 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-200';
                                 }
                               } else if (isSelected) {
                                 optionStyles =
-                                  'bg-red-50 dark:bg-red-950/40 border-[#DC2626] text-[#DC2626] dark:text-red-200';
+                                  'bg-amber-50 dark:bg-[#D4AF37]/15 border-[#D4AF37] text-[#9A7218] dark:text-[#F6E2A6]';
                               }
 
                               return (
@@ -1532,7 +1539,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                   className={`p-3 rounded-2xl border text-right transition-all flex items-center justify-between gap-2.5 cursor-pointer ${optionStyles}`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="w-6 h-6 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[11px] font-black flex items-center justify-center shrink-0">
+                                    <span className="w-6 h-6 rounded-lg bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/30 text-[11px] font-black text-zinc-900 dark:text-[#E8CE88] flex items-center justify-center shrink-0">
                                       {q.type === 'true_false'
                                         ? optIdx === 0
                                           ? '✓'
@@ -1548,7 +1555,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                   )}
                                   {isRevealed && isSelected && !isOptionCorrect && (
-                                    <XCircle className="w-4 h-4 text-[#DC2626] dark:text-red-400 shrink-0" />
+                                    <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
                                   )}
                                 </button>
                               );
@@ -1564,7 +1571,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                 onClick={() =>
                                   setVisibleHints((prev) => ({ ...prev, [q.id]: !prev[q.id] }))
                                 }
-                                className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-amber-800 dark:text-[#E8CE88] text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                               >
                                 <HelpCircle className="w-3.5 h-3.5" />
                                 <span>{visibleHints[q.id] ? 'إخفاء التلميح' : 'تلميح'}</span>
@@ -1577,7 +1584,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                 onClick={() =>
                                   setRevealedQuestions((prev) => ({ ...prev, [q.id]: true }))
                                 }
-                                className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-[11px] font-bold flex items-center gap-1 hover:border-[#DC2626] cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-700 dark:text-[#F4EFE6] text-[11px] font-bold flex items-center gap-1 hover:border-[#D4AF37] cursor-pointer"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>إظهار الإجابة الصحيحة</span>
@@ -1594,7 +1601,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                   `اشرح لي بعمق هذا السؤال من درس "${activeSet.lesson}" (${activeSet.chapter}):\n${q.question}\nالإجابة الصحيحة هي: ${q.correctAnswerText}`
                                 )
                               }
-                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#DC2626] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-1 cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#9A7218] dark:text-[#E8CE88] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 flex items-center gap-1 cursor-pointer transition-colors"
                             >
                               <Bot className="w-3.5 h-3.5" />
                               <span>اسأل أستاذ نَهج لشرح أعمق</span>
@@ -1603,8 +1610,8 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                         </div>
 
                         {visibleHints[q.id] && q.hint && (
-                          <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-xs font-semibold text-amber-950 dark:text-amber-200 flex items-start gap-2">
-                            <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/35 text-xs font-semibold text-amber-950 dark:text-[#E8CE88] flex items-start gap-2">
+                            <HelpCircle className="w-4 h-4 text-amber-600 dark:text-[#D4AF37] shrink-0 mt-0.5" />
                             <span>{q.hint}</span>
                           </div>
                         )}
@@ -1621,7 +1628,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                               </div>
                             </div>
                             <div className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                              <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                              <Lightbulb className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
                               <p>{q.explanation}</p>
                             </div>
                           </div>
@@ -1642,14 +1649,14 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
             {/* Join Friend Challenge by Code */}
             <form
               onSubmit={handleJoinDuelByCode}
-              className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 shadow-xs space-y-3"
+              className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-3"
             >
-              <div className="flex items-center gap-2 text-sm font-black text-zinc-950 dark:text-white">
-                <KeyRound className="w-4 h-4 text-[#DC2626]" />
+              <div className="flex items-center gap-2 text-sm font-black text-zinc-950 dark:text-[#F6E2A6]">
+                <KeyRound className="w-4 h-4 text-[#9A7218] dark:text-[#D4AF37]" />
                 <h2>دخول تحدي بكود من صديقك</h2>
               </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                أدخل كود الغرفة القصير (مثل <span className="font-mono font-bold">NHJ-Q482</span>) أو كود الدعوة الكامل لتحصل فوراً على نفس الأسئلة وتنافس صديقك في النتيجة والسرعة.
+              <p className="text-xs text-zinc-600 dark:text-[#B5AA92] leading-relaxed">
+                أدخل كود الغرفة القصير (مثل <span className="font-mono font-bold text-[#9A7218] dark:text-[#E8CE88]">NHJ-Q482</span>) أو كود الدعوة الكامل لتحصل فوراً على نفس الأسئلة وتنافس صديقك في النتيجة والسرعة.
               </p>
 
               <input
@@ -1657,14 +1664,14 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                 value={joinCodeInput}
                 onChange={(e) => setJoinCodeInput(e.target.value)}
                 placeholder="الصق كود الغرفة أو NAHJ-QZ..."
-                className="w-full px-3.5 py-2.5 text-xs font-mono font-bold bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                className="w-full px-3.5 py-2.5 text-xs font-mono font-bold bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-xl text-zinc-950 dark:text-[#F6E2A6] placeholder:text-zinc-400 dark:placeholder:text-[#7E7664] focus:outline-none focus:border-[#D4AF37]"
                 dir="ltr"
               />
 
               <button
                 type="submit"
                 disabled={isJoiningDuel}
-                className="w-full py-2.5 px-4 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-opacity disabled:opacity-60"
+                className="w-full py-2.5 px-4 rounded-xl bg-zinc-950 dark:bg-[#09090C] border border-transparent dark:border-[#D4AF37]/40 text-white dark:text-[#F3DFA2] hover:opacity-90 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-opacity disabled:opacity-60"
               >
                 {isJoiningDuel ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1676,21 +1683,21 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
             </form>
 
             {/* Quick Create New Duel */}
-            <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-sm font-black text-zinc-950 dark:text-white">
-                <Sparkles className="w-4 h-4 text-[#DC2626]" />
+            <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 text-sm font-black text-zinc-950 dark:text-[#F6E2A6]">
+                <Sparkles className="w-4 h-4 text-[#9A7218] dark:text-[#D4AF37]" />
                 <h2>إنشاء غرفة تحدي أسئلة جديدة</h2>
               </div>
 
-              <div className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1 bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3">
+              <div className="text-xs text-zinc-600 dark:text-[#B5AA92] space-y-1 bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-3">
                 <div>
-                  <span className="font-bold">المادة:</span> {resolvedSubject || 'غير محددة'}
+                  <span className="font-bold text-zinc-900 dark:text-[#E8CE88]">المادة:</span> {resolvedSubject || 'غير محددة'}
                 </div>
                 <div className="truncate">
-                  <span className="font-bold">الدرس:</span> {resolvedLesson || 'غير محدد'}
+                  <span className="font-bold text-zinc-900 dark:text-[#E8CE88]">الدرس:</span> {resolvedLesson || 'غير محدد'}
                 </div>
                 <div className="tabular-nums">
-                  <span className="font-bold">عدد أسئلة التحدي:</span> {Math.min(10, questionCount)} أسئلة
+                  <span className="font-bold text-zinc-900 dark:text-[#E8CE88]">عدد أسئلة التحدي:</span> {Math.min(10, questionCount)} أسئلة
                 </div>
               </div>
 
@@ -1698,7 +1705,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSectionTab('solo')}
-                  className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] cursor-pointer whitespace-nowrap"
+                  className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-transparent dark:bg-[#09090C] text-xs font-bold text-zinc-700 dark:text-[#F4EFE6] hover:border-[#D4AF37] cursor-pointer whitespace-nowrap"
                 >
                   تغيير الدرس
                 </button>
@@ -1706,7 +1713,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   type="button"
                   disabled={isCreatingDuel}
                   onClick={handleGenerateAndCreateDuel}
-                  className="grow py-2.5 px-4 rounded-xl bg-gradient-to-l from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D] text-white font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="grow py-2.5 px-4 rounded-xl btn-luxury-gold font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {isCreatingDuel ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1727,9 +1734,9 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
 
             {/* Recent Duel Rooms History */}
             {duelRoomsHistory.length > 0 && (
-              <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-4 shadow-xs space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-white">
-                  <History className="w-4 h-4 text-[#DC2626]" />
+              <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-4 shadow-xs space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-[#F6E2A6]">
+                  <History className="w-4 h-4 text-[#9A7218] dark:text-[#D4AF37]" />
                   <span>غرف التحدي الأخيرة ({duelRoomsHistory.length})</span>
                 </div>
                 <div className="space-y-2 max-h-56 overflow-y-auto">
@@ -1748,19 +1755,19 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                       }}
                       className={`w-full text-right p-3 rounded-2xl border transition-colors cursor-pointer ${
                         activeDuelRoom?.code === room.code
-                          ? 'bg-red-50/80 dark:bg-red-950/30 border-[#DC2626]/60'
-                          : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                          ? 'bg-amber-50/80 dark:bg-[#D4AF37]/15 border-[#D4AF37]/70'
+                          : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/20 hover:border-[#D4AF37]/60'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-black text-zinc-950 dark:text-white truncate">
+                        <span className="text-xs font-black text-zinc-950 dark:text-[#F4EFE6] truncate">
                           {room.lesson}
                         </span>
-                        <span className="text-[11px] font-mono font-black text-[#DC2626] dark:text-red-400 shrink-0">
+                        <span className="text-[11px] font-mono font-black text-[#9A7218] dark:text-[#F3DFA2] shrink-0">
                           {room.code}
                         </span>
                       </div>
-                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+                      <div className="text-[11px] text-zinc-500 dark:text-[#B5AA92] mt-0.5 tabular-nums">
                         {room.subject} · {room.participants.length} متسابقين
                       </div>
                     </button>
@@ -1773,15 +1780,15 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
           {/* Active Duel Arena */}
           <section className="xl:col-span-8 space-y-5">
             {!activeDuelRoom ? (
-              <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-xs">
-                <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 text-[#DC2626] mx-auto flex items-center justify-center">
+              <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/40 text-[#9A7218] dark:text-[#E8CE88] mx-auto flex items-center justify-center">
                   <Swords className="w-8 h-8" />
                 </div>
                 <div className="space-y-2 max-w-lg mx-auto">
-                  <h3 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-white">
+                  <h3 className="text-lg sm:text-xl font-black text-zinc-950 dark:text-[#F6E2A6]">
                     نافس أصدقاءك على نفس الأسئلة بكود موحد
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-zinc-600 dark:text-[#B5AA92] leading-relaxed">
                     أنشئ غرفة تحدي أسئلة الآن لتحصل على <strong>كود مشاركة فوري</strong>، أو أدخل كوداً أرسله لك زميلك لتخوضا نفس الاختبار ويظهر ترتيبكما حسب الدقة والسرعة.
                   </p>
                 </div>
@@ -1789,32 +1796,41 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
             ) : (
               <>
                 {/* Room Code Banner & Leaderboard */}
-                <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-3xl p-5 shadow-xs space-y-4">
+                <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#DC2626] dark:text-red-400">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#9A7218] dark:text-[#E8CE88]">
                         <span>غرفة التحدي: {activeDuelRoom.code}</span>
                         <span aria-hidden="true">·</span>
                         <span>{activeDuelRoom.subject}</span>
                       </div>
-                      <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-white mt-0.5">
+                      <h2 className="text-base sm:text-lg font-black text-zinc-950 dark:text-[#F6E2A6] mt-0.5">
                         {activeDuelRoom.lesson}
                       </h2>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono font-black text-zinc-950 dark:text-white flex items-center gap-1.5 tabular-nums">
-                        <Timer className="w-3.5 h-3.5 text-[#DC2626]" />
+                      <div className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 text-xs font-mono font-black text-zinc-950 dark:text-[#F3DFA2] flex items-center gap-1.5 tabular-nums">
+                        <Timer className="w-3.5 h-3.5 text-[#9A7218] dark:text-[#D4AF37]" />
                         <span>{formatMinutesSeconds(duelElapsedSeconds)}</span>
+                        {!duelSubmitted && (
+                          <span
+                            title="الشاشة لن تفصل أثناء التحدي"
+                            className="inline-flex items-center gap-1 text-[10px] font-['Cairo',sans-serif] font-bold text-emerald-600 dark:text-emerald-400 border-r border-zinc-300 dark:border-[#D4AF37]/25 pr-1.5 mr-0.5"
+                          >
+                            <MonitorCheck className="w-3 h-3" />
+                            <span>الشاشة نشطة</span>
+                          </span>
+                        )}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleCopyText(activeDuelRoom.code, 'short')}
-                        className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:border-[#DC2626] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-800 dark:text-[#F4EFE6] hover:border-[#D4AF37] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                       >
                         {duelCopiedKey === 'short' ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -1829,7 +1845,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                             'invite'
                           )
                         }
-                        className="px-3 py-1.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1.5 rounded-xl btn-luxury-gold text-xs font-black flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                       >
                         {duelCopiedKey === 'invite' ? (
                           <Check className="w-3.5 h-3.5" />
@@ -1842,10 +1858,10 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                   </div>
 
                   {/* Live Leaderboard */}
-                  <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2.5">
+                  <div className="pt-3 border-t border-zinc-100 dark:border-[#D4AF37]/20 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-white">
-                        <Trophy className="w-4 h-4 text-amber-500" />
+                      <div className="flex items-center gap-2 text-xs font-black text-zinc-900 dark:text-[#F6E2A6]">
+                        <Trophy className="w-4 h-4 text-[#D4AF37]" />
                         <span>ترتيب المتنافسين ({activeDuelRoom.participants.length})</span>
                       </div>
                       <button
@@ -1861,7 +1877,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                             // ignore
                           }
                         }}
-                        className="text-[11px] font-bold text-zinc-500 hover:text-[#DC2626] flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] font-bold text-zinc-500 dark:text-[#B5AA92] hover:text-[#9A7218] dark:hover:text-[#E8CE88] flex items-center gap-1 cursor-pointer"
                       >
                         <RefreshCw className="w-3 h-3" />
                         <span>تحديث</span>
@@ -1869,7 +1885,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     </div>
 
                     {activeDuelRoom.participants.length === 0 ? (
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
                         لم يسلم أحد نتيجته بعد — ابدأ حل الأسئلة الآن وسجّل أول نتيجة في الصدارة!
                       </p>
                     ) : (
@@ -1879,19 +1895,19 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                             key={`${p.name}-${idx}`}
                             className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 text-xs ${
                               p.name === studentName
-                                ? 'bg-red-50/70 dark:bg-red-950/30 border-[#DC2626]/50 font-black'
-                                : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 font-bold'
+                                ? 'bg-amber-50/70 dark:bg-[#D4AF37]/15 border-[#D4AF37]/60 font-black'
+                                : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/20 font-bold'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="w-6 h-6 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center font-black tabular-nums shrink-0">
+                              <span className="w-6 h-6 rounded-lg bg-zinc-200 dark:bg-[#19191F] border border-transparent dark:border-[#D4AF37]/25 text-zinc-900 dark:text-[#E8CE88] flex items-center justify-center font-black tabular-nums shrink-0">
                                 {idx + 1}
                               </span>
-                              <span className="truncate text-zinc-950 dark:text-white">
+                              <span className="truncate text-zinc-950 dark:text-[#F4EFE6]">
                                 {p.name}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 tabular-nums shrink-0 text-zinc-700 dark:text-zinc-300">
+                            <div className="flex items-center gap-3 tabular-nums shrink-0 text-zinc-700 dark:text-[#B5AA92]">
                               <span className="text-emerald-700 dark:text-emerald-400 font-black">
                                 {p.scoreCorrect} / {p.totalQuestions}
                               </span>
@@ -1914,16 +1930,16 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                     return (
                       <article
                         key={q.id}
-                        className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 shadow-xs space-y-3"
+                        className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-3xl p-5 shadow-xs space-y-3"
                       >
-                        <div className="flex items-center justify-between text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                          <span className="text-[#DC2626] dark:text-red-400 font-black tabular-nums">
+                        <div className="flex items-center justify-between text-xs font-bold text-zinc-500 dark:text-[#B5AA92]">
+                          <span className="text-[#9A7218] dark:text-[#E8CE88] font-black tabular-nums">
                             سؤال التحدي {index + 1} / {activeDuelRoom.questions.length}
                           </span>
                           <span>المستوى: {q.difficulty}</span>
                         </div>
 
-                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 dark:text-white leading-relaxed">
+                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 dark:text-[#F6E2A6] leading-relaxed">
                           {q.question}
                         </h3>
 
@@ -1934,7 +1950,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                               const isOptionCorrect = optIdx === q.correctAnswerIndex;
 
                               let styles =
-                                'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-[#DC2626]/70';
+                                'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-900 dark:text-[#F4EFE6] hover:border-[#D4AF37]/75';
 
                               if (duelSubmitted) {
                                 if (isOptionCorrect) {
@@ -1942,11 +1958,11 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                     'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-200';
                                 } else if (isSelected && !isOptionCorrect) {
                                   styles =
-                                    'bg-red-50 dark:bg-red-950/50 border-[#DC2626] text-red-900 dark:text-red-200';
+                                    'bg-red-50 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-200';
                                 }
                               } else if (isSelected) {
                                 styles =
-                                  'bg-red-50 dark:bg-red-950/40 border-[#DC2626] text-[#DC2626] dark:text-red-200';
+                                  'bg-amber-50 dark:bg-[#D4AF37]/15 border-[#D4AF37] text-[#9A7218] dark:text-[#F6E2A6]';
                               }
 
                               return (
@@ -1960,7 +1976,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                   className={`p-3 rounded-2xl border text-right transition-all flex items-center justify-between gap-2 cursor-pointer disabled:cursor-default ${styles}`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <span className="w-6 h-6 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[11px] font-black flex items-center justify-center shrink-0">
+                                    <span className="w-6 h-6 rounded-lg bg-white dark:bg-[#19191F] border border-zinc-300 dark:border-[#D4AF37]/30 text-[11px] font-black text-zinc-900 dark:text-[#E8CE88] flex items-center justify-center shrink-0">
                                       {q.type === 'true_false'
                                         ? optIdx === 0
                                           ? '✓'
@@ -1970,10 +1986,10 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                                     <span className="text-xs sm:text-sm font-bold">{opt}</span>
                                   </div>
                                   {duelSubmitted && isOptionCorrect && (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                   )}
                                   {duelSubmitted && isSelected && !isOptionCorrect && (
-                                    <XCircle className="w-4 h-4 text-[#DC2626] shrink-0" />
+                                    <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
                                   )}
                                 </button>
                               );
@@ -1988,7 +2004,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                               setDuelShortAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
                             }
                             placeholder="اكتب إجابتك قبل تسليم التحدي..."
-                            className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-medium bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-950 dark:text-white focus:outline-none focus:border-[#DC2626]"
+                            className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-medium bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl text-zinc-950 dark:text-[#F4EFE6] placeholder:text-zinc-400 dark:placeholder:text-[#7E7664] focus:outline-none focus:border-[#D4AF37]"
                           />
                         )}
 
@@ -2012,7 +2028,7 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                         type="button"
                         disabled={isSubmittingDuel}
                         onClick={handleSubmitDuelResult}
-                        className="px-6 py-3 rounded-2xl bg-gradient-to-l from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D] text-white font-black text-sm shadow-sm shadow-red-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                        className="px-6 py-3 rounded-2xl btn-luxury-gold font-black text-sm flex items-center gap-2 cursor-pointer disabled:opacity-60"
                       >
                         {isSubmittingDuel ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

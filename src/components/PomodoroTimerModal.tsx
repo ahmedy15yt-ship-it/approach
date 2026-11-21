@@ -13,6 +13,7 @@ import {
   BookOpen,
   Bell,
   BellRing,
+  MonitorCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -21,6 +22,7 @@ import {
   requestNotificationPermission,
   notifyPomodoroCompleted,
 } from '../services/notificationService';
+import { useWakeLock } from '../utils/useWakeLock';
 
 interface PomodoroTimerModalProps {
   sessionTitle: string;
@@ -49,6 +51,9 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
   // Ref to store exact target timestamp to guarantee zero drift even when tab is sleeping/minimized
   const endTimeRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>(document.title);
+
+  // Prevent screen sleep while Pomodoro countdown is running
+  const { isSupported: isWakeLockSupported, isWakeLocked } = useWakeLock(isActive);
 
   // Play audio chime synthesized via Web Audio API
   const playChime = () => {
@@ -190,11 +195,11 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
   // -------------------------------------------------------------------------
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 lg:bottom-6 left-6 z-50 bg-[#09090B] text-white p-3.5 rounded-2xl shadow-2xl border-2 border-[#DC2626] flex items-center gap-3 backdrop-blur-md font-['Cairo',sans-serif] animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <div className="fixed bottom-20 lg:bottom-6 left-6 z-50 bg-[#08080A] text-[#F4EFE6] p-3.5 rounded-2xl shadow-2xl border border-[#D4AF37]/70 flex items-center gap-3 backdrop-blur-md font-['Cairo',sans-serif] animate-in fade-in slide-in-from-bottom-3 duration-300">
         <button
           onClick={toggleTimer}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-            isActive ? 'bg-white text-black' : 'bg-[#DC2626] text-white'
+            isActive ? 'bg-[#F4EFE6] text-[#09090B]' : 'btn-luxury-gold'
           }`}
           title={isActive ? 'إيقاف مؤقت' : 'استئناف'}
         >
@@ -203,29 +208,35 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
 
         <div className="text-right">
           <div className="flex items-center gap-1.5">
-            <span className="font-mono text-lg font-black tracking-wider text-red-400" dir="ltr">
+            <span className="font-mono text-lg font-black tracking-wider text-[#F3DFA2] tabular-nums" dir="ltr">
               {formatTime(remainingSeconds)}
             </span>
-            <span className="text-[10px] text-white/70">
+            <span className="text-[10px] text-[#B5AA92]">
               {mode === 'focus' ? '• تركيز' : '• راحة'}
             </span>
           </div>
-          <span className="text-[11px] font-bold text-white/90 truncate max-w-[130px] block leading-tight">
+          <span className="text-[11px] font-bold text-[#F4EFE6]/90 truncate max-w-[130px] block leading-tight">
             {sessionTitle || subjectName}
           </span>
+          {isActive && (
+            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 mt-0.5">
+              <MonitorCheck className="w-3 h-3 shrink-0" />
+              <span>الشاشة لن تفصل</span>
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-1 pr-1 border-r border-white/20">
+        <div className="flex items-center gap-1 pr-1 border-r border-[#D4AF37]/25">
           <button
             onClick={() => setIsMinimized(false)}
-            className="p-2 hover:bg-white/10 rounded-xl text-white/80 hover:text-white transition-colors cursor-pointer"
+            className="p-2 hover:bg-[#D4AF37]/15 rounded-xl text-[#E8CE88]/80 hover:text-[#F6E2A6] transition-colors cursor-pointer"
             title="تكبير المؤقت"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-xl transition-colors cursor-pointer"
+            className="p-2 hover:bg-red-500/20 text-[#B5AA92] hover:text-red-400 rounded-xl transition-colors cursor-pointer"
             title="إغلاق المؤقت"
           >
             <X className="w-4 h-4" />
@@ -239,20 +250,20 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
   // Render: Full Modal View
   // -------------------------------------------------------------------------
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#121215] border-2 border-zinc-200 dark:border-red-900/50 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative font-['Cairo',sans-serif] p-6 text-center animate-in zoom-in-95 duration-200 transition-colors">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/45 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative font-['Cairo',sans-serif] p-6 text-center animate-in zoom-in-95 duration-200 transition-colors">
         {/* Top Actions: Close & Minimize */}
         <div className="absolute top-4 left-4 flex items-center gap-1">
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-2 text-zinc-500 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#E8CE88] rounded-xl hover:bg-black/5 dark:hover:bg-[#D4AF37]/10 transition-colors cursor-pointer"
             title="تصغير المؤقت والاستمرار في تصفح التطبيق"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+            className="p-2 text-zinc-500 dark:text-[#B5AA92] hover:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
             title="إغلاق"
           >
             <X className="w-5 h-5" />
@@ -260,30 +271,41 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
         </div>
 
         {/* Ambient indicator */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 rounded-full text-xs font-bold mb-3 border border-red-200 dark:border-red-900/40">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-[#09090C] text-[#9A7218] dark:text-[#E8CE88] rounded-full text-xs font-bold mb-3 border border-amber-200 dark:border-[#D4AF37]/35">
           <BookOpen className="w-3.5 h-3.5" />
           <span>{subjectName || 'جلسة استذكار'}</span>
         </div>
 
-        <h3 className="text-base font-extrabold text-zinc-950 dark:text-white mb-1 leading-snug px-6">
+        <h3 className="text-base font-extrabold text-zinc-950 dark:text-[#F4EFE6] mb-1 leading-snug px-6">
           {sessionTitle || 'تركيز عميق بدون مقاطعة'}
         </h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+        <p className="text-xs text-zinc-500 dark:text-[#B5AA92] mb-3">
           {mode === 'focus'
-            ? 'يعمل المؤقت في الخلفية حتى لو أغلقت الشاشة أو انتقلت لتبويب آخر'
+            ? 'يعمل المؤقت في الخلفية وتبقى الشاشة مضاءة تلقائياً طوال الجلسة'
             : 'استراحة مستحقة: اشرب ماء وتمدد بهدوء'}
         </p>
 
+        {isActive && (
+          <div className="mb-4 inline-flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-400">
+            <MonitorCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>
+              {isWakeLocked || isWakeLockSupported
+                ? 'الشاشة لن تفصل أثناء تشغيل المؤقت ✓'
+                : 'وضع الحفاظ على التركيز نشط أثناء المؤقت ✓'}
+            </span>
+          </div>
+        )}
+
         {/* Notification Status Banner */}
         {isNotificationSupported() && !hasNotifPermission && (
-          <div className="mb-4 p-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-between text-xs text-zinc-800 dark:text-zinc-200 text-right">
+          <div className="mb-4 p-2.5 bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl flex items-center justify-between text-xs text-zinc-800 dark:text-[#F4EFE6] text-right">
             <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-[#DC2626] dark:text-red-400 shrink-0" />
+              <Bell className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88] shrink-0" />
               <span>فعل التنبيهات ليخبرك النظام فور انتهاء الجلسة</span>
             </div>
             <button
               onClick={handleEnableNotifications}
-              className="px-2.5 py-1 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-lg font-bold text-[11px] transition-colors shrink-0 mr-2 cursor-pointer"
+              className="px-2.5 py-1 btn-luxury-gold rounded-lg font-black text-[11px] transition-all shrink-0 mr-2 cursor-pointer"
             >
               تفعيل
             </button>
@@ -297,7 +319,7 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
               cx="104"
               cy="104"
               r="90"
-              className="stroke-zinc-200 dark:stroke-zinc-800"
+              className="stroke-zinc-200 dark:stroke-[#09090C]"
               strokeWidth="8"
               fill="transparent"
             />
@@ -305,7 +327,7 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
               cx="104"
               cy="104"
               r="90"
-              stroke={mode === 'focus' ? '#DC2626' : '#18181B'}
+              stroke={mode === 'focus' ? '#D4AF37' : '#94A3B8'}
               strokeWidth="9"
               fill="transparent"
               strokeDasharray={2 * Math.PI * 90}
@@ -316,11 +338,11 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
           </svg>
 
           <div className="absolute flex flex-col items-center">
-            <span className="font-mono text-4xl sm:text-5xl font-black text-zinc-950 dark:text-white tracking-wider" dir="ltr">
+            <span className="font-mono text-4xl sm:text-5xl font-black text-zinc-950 dark:text-[#F3DFA2] tracking-wider tabular-nums" dir="ltr">
               {formatTime(remainingSeconds)}
             </span>
-            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#DC2626] dark:bg-red-400 animate-ping' : 'bg-zinc-400'}`} />
+            <span className="text-xs font-bold text-zinc-500 dark:text-[#B5AA92] mt-1 flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#D4AF37] animate-ping' : 'bg-zinc-500'}`} />
               <span>{isActive ? 'الجلسة جارية بالخلفية' : 'متوقف مؤقتاً'}</span>
             </span>
           </div>
@@ -336,8 +358,8 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 mode === 'focus' && totalSeconds === safeInitialMins * 60
-                  ? 'bg-[#DC2626] text-white shadow-xs'
-                  : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800'
+                  ? 'btn-luxury-gold shadow-xs'
+                  : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-700 dark:text-[#E8CE88] border border-zinc-200 dark:border-[#D4AF37]/25'
               }`}
             >
               {safeInitialMins} دقيقة (مجدولة)
@@ -350,8 +372,8 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'focus' && totalSeconds === 25 * 60
-                ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800'
+                ? 'btn-luxury-gold shadow-xs'
+                : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-700 dark:text-[#E8CE88] border border-zinc-200 dark:border-[#D4AF37]/25'
             }`}
           >
             25 دقيقة (بومودورو)
@@ -363,8 +385,8 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'focus' && totalSeconds === 45 * 60
-                ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800'
+                ? 'btn-luxury-gold shadow-xs'
+                : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-700 dark:text-[#E8CE88] border border-zinc-200 dark:border-[#D4AF37]/25'
             }`}
           >
             45 دقيقة (جلسة عميقة)
@@ -376,8 +398,8 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               mode === 'break'
-                ? 'bg-zinc-950 dark:bg-zinc-800 text-white shadow-xs border border-red-500/40'
-                : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800'
+                ? 'bg-[#08080A] text-[#F6E2A6] shadow-xs border border-[#D4AF37]/60'
+                : 'bg-zinc-50 dark:bg-[#09090C] text-zinc-700 dark:text-[#E8CE88] border border-zinc-200 dark:border-[#D4AF37]/25'
             }`}
           >
             5 دقائق راحة
@@ -389,17 +411,17 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
           <button
             onClick={() => resetTimer(totalSeconds / 60)}
             title="إعادة ضبط"
-            className="p-3 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl border border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer"
+            className="p-3 bg-zinc-50 dark:bg-[#09090C] hover:bg-zinc-100 dark:hover:bg-[#141418] text-zinc-700 dark:text-[#E8CE88] rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 transition-all cursor-pointer"
           >
             <RotateCcw className="w-5 h-5" />
           </button>
 
           <button
             onClick={toggleTimer}
-            className={`px-8 py-3.5 rounded-2xl font-black text-sm text-white shadow-md transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-8 py-3.5 rounded-2xl font-black text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer ${
               isActive
-                ? 'bg-zinc-900 hover:bg-black border border-red-500/50'
-                : 'bg-gradient-to-l from-[#DC2626] to-[#991B1B] hover:from-[#B91C1C] hover:to-[#7F1D1D]'
+                ? 'bg-[#08080A] hover:bg-black text-[#F6E2A6] border border-[#D4AF37]/60'
+                : 'btn-luxury-gold'
             }`}
           >
             {isActive ? (
@@ -418,9 +440,9 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             title={soundEnabled ? 'كتم التنبيه' : 'تشغيل التنبيه'}
-            className="p-3 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl border border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer"
+            className="p-3 bg-zinc-50 dark:bg-[#09090C] hover:bg-zinc-100 dark:hover:bg-[#141418] text-zinc-700 dark:text-[#E8CE88] rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 transition-all cursor-pointer"
           >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-zinc-400" />}
+            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5 text-zinc-500" />}
           </button>
         </div>
 
@@ -428,15 +450,15 @@ export const PomodoroTimerModal: React.FC<PomodoroTimerModalProps> = ({
         <div className="space-y-2">
           <button
             onClick={handleFinishEarly}
-            className="w-full py-2.5 px-4 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 text-[#DC2626] dark:text-red-400 font-bold text-xs rounded-xl border border-red-200 dark:border-red-900/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-2.5 px-4 bg-amber-50 dark:bg-[#09090C] hover:bg-amber-100 dark:hover:bg-[#141418] text-[#9A7218] dark:text-[#E8CE88] font-bold text-xs rounded-xl border border-amber-200 dark:border-[#D4AF37]/35 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <CheckCircle className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+            <CheckCircle className="w-4 h-4 text-[#9A7218] dark:text-[#E8CE88]" />
             <span>إنهاء وحفظ الجلسة في إحصائيات المذاكرة (+XP)</span>
           </button>
 
           <button
             onClick={() => setIsMinimized(true)}
-            className="w-full py-2 px-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white font-semibold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
+            className="w-full py-2 px-3 text-zinc-500 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#E8CE88] font-semibold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
           >
             <Minimize2 className="w-3.5 h-3.5" />
             <span>تصغير المؤقت وتصفح المنهج والجدول أثناء عمله</span>

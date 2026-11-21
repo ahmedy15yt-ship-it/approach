@@ -259,38 +259,38 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Header Banner */}
-      <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-red-900/40 rounded-2xl p-5 shadow-xs transition-colors">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 rounded-full text-xs font-bold mb-1.5 border border-red-200/70 dark:border-red-900/40">
+      <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/30 rounded-2xl p-5 shadow-xs transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-[#09090C] text-[#9A7218] dark:text-[#E8CE88] rounded-full text-xs font-bold mb-1.5 border border-amber-200/70 dark:border-[#D4AF37]/35">
           <Utensils className="w-3.5 h-3.5" />
           <span>تغذية طالب تالتة ثانوي بالأكل المصري الاقتصادي</span>
         </div>
-        <h2 className="text-xl font-extrabold text-zinc-950 dark:text-white">
+        <h2 className="text-xl font-extrabold text-zinc-950 dark:text-[#F6E2A6]">
           نظام غذائي مصري مخصص حسب وزنك (رخيص ومتاح في كل بيت)
         </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+        <p className="text-xs text-zinc-500 dark:text-[#B5AA92] leading-relaxed">
           مش محتاج أكل غالي ولا مكملات مستوردة. الفول البلدي، البيض، الجبنة القريش، البليلة، والسمك البلطي فيهم كل ما يحتاجه مخك لسرعة الحفظ وحل أصعب المسائل بدون صداع أو هبوط.
         </p>
       </div>
 
       {/* Personal Weight & Height Profile Card */}
-      <div className="bg-white dark:bg-[#121215] border-2 border-red-200/80 dark:border-red-900/40 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-[#19191F] border-2 border-amber-200/80 dark:border-[#D4AF37]/35 rounded-3xl p-5 sm:p-6 shadow-xs space-y-5 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-[#D4AF37]/20">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-[#09090C] border border-amber-200/70 dark:border-[#D4AF37]/30 text-[#9A7218] dark:text-[#D4AF37] flex items-center justify-center font-bold">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-zinc-950 dark:text-white">
+              <h3 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6]">
                 تحديد الوزن والطول لحساب احتياجك الدقيق من الطعام والماء
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
                 يتم تفصيل الوجبات والسعرات وكمية البروتين والماء آلياً حسب بياناتك الشخصية
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-center">
-            <span className={`px-3 py-1 rounded-full text-xs font-black border ${categoryBadgeColor}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-black border tabular-nums ${categoryBadgeColor}`}>
               مؤشر الكتلة: {bmi} ({categoryLabel})
             </span>
           </div>
@@ -299,13 +299,13 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
         {/* Sliders Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* Weight Slider */}
-          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090C] p-4 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Scale className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-[#F4EFE6] flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-[#9A7218] dark:text-[#D4AF37]" />
                 <span>وزنك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
+              <span className="font-black font-mono text-base text-[#9A7218] dark:text-[#F6E2A6] tabular-nums" dir="ltr">
                 {weight} كجم
               </span>
             </div>
@@ -315,9 +315,9 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               max="130"
               value={weight}
               onChange={(e) => handleUpdateWeight(Number(e.target.value))}
-              className="w-full accent-[#DC2626] cursor-pointer"
+              className="w-full accent-[#D4AF37] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-[#B5AA92] font-mono tabular-nums" dir="ltr">
               <span>40 kg</span>
               <span>85 kg</span>
               <span>130 kg</span>
@@ -325,13 +325,13 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           </div>
 
           {/* Height Slider */}
-          <div className="bg-zinc-50 dark:bg-[#09090B] p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="bg-zinc-50 dark:bg-[#09090C] p-4 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Ruler className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+              <label className="text-xs font-bold text-zinc-700 dark:text-[#F4EFE6] flex items-center gap-1.5">
+                <Ruler className="w-4 h-4 text-[#9A7218] dark:text-[#D4AF37]" />
                 <span>طولك الحالي:</span>
               </label>
-              <span className="font-black font-mono text-base text-[#DC2626] dark:text-red-400" dir="ltr">
+              <span className="font-black font-mono text-base text-[#9A7218] dark:text-[#F6E2A6] tabular-nums" dir="ltr">
                 {height} سم
               </span>
             </div>
@@ -341,9 +341,9 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               max="205"
               value={height}
               onChange={(e) => handleUpdateHeight(Number(e.target.value))}
-              className="w-full accent-[#DC2626] cursor-pointer"
+              className="w-full accent-[#D4AF37] cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono" dir="ltr">
+            <div className="flex justify-between text-[10px] text-zinc-400 dark:text-[#B5AA92] font-mono tabular-nums" dir="ltr">
               <span>140 cm</span>
               <span>172 cm</span>
               <span>205 cm</span>
@@ -353,67 +353,67 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
         {/* Nutritional Blueprint for this Weight */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-          <div className="bg-red-50/70 dark:bg-red-950/35 border border-red-200 dark:border-red-900/50 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-red-800 dark:text-red-300 font-bold block mb-1">البروتين اليومي</span>
-            <span className="font-mono text-xl font-black text-[#DC2626] dark:text-red-400" dir="ltr">
+          <div className="bg-amber-50/70 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-[#9A7218] dark:text-[#E8CE88] font-bold block mb-1">البروتين اليومي</span>
+            <span className="font-mono text-xl font-black text-zinc-950 dark:text-[#F6E2A6] tabular-nums" dir="ltr">
               {recommendedProteinGrams} جم
             </span>
-            <span className="text-[10px] text-red-700 dark:text-red-300/80 block mt-0.5">لترميم خلايا المخ</span>
+            <span className="text-[10px] text-amber-800/80 dark:text-[#B5AA92] block mt-0.5">لترميم خلايا المخ</span>
           </div>
 
-          <div className="bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-zinc-800 dark:text-zinc-300 font-bold block mb-1">احتياج الماء الصافي</span>
-            <span className="font-mono text-xl font-black text-zinc-950 dark:text-white" dir="ltr">
+          <div className="bg-zinc-100/80 dark:bg-[#09090C] border border-zinc-300 dark:border-[#D4AF37]/25 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-zinc-800 dark:text-[#E8CE88] font-bold block mb-1">احتياج الماء الصافي</span>
+            <span className="font-mono text-xl font-black text-zinc-950 dark:text-[#F4EFE6] tabular-nums" dir="ltr">
               {recommendedWaterLiters} لتر
             </span>
-            <span className="text-[10px] text-zinc-600 dark:text-zinc-400 block mt-0.5">({dynamicTargetCups} أكواب يومياً)</span>
+            <span className="text-[10px] text-zinc-600 dark:text-[#B5AA92] block mt-0.5 tabular-nums">({dynamicTargetCups} أكواب يومياً)</span>
           </div>
 
-          <div className="bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-amber-800 dark:text-amber-300 font-bold block mb-1">السعرات المقترحة</span>
-            <span className="font-mono text-base font-black text-amber-900 dark:text-amber-300">
+          <div className="bg-amber-50/60 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-amber-800 dark:text-[#E8CE88] font-bold block mb-1">السعرات المقترحة</span>
+            <span className="font-mono text-base font-black text-amber-900 dark:text-[#F3DFA2] tabular-nums">
               {activePlan.dailyCaloriesTarget.split(' ')[0]}
             </span>
-            <span className="text-[10px] text-amber-700 dark:text-amber-300/80 block mt-0.5">طاقة ثابتة بلا خمول</span>
+            <span className="text-[10px] text-amber-700 dark:text-[#B5AA92] block mt-0.5">طاقة ثابتة بلا خمول</span>
           </div>
 
-          <div className="bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 text-center">
-            <span className="text-[11px] text-zinc-700 dark:text-zinc-300 font-bold block mb-1">التكلفة اليومية</span>
-            <span className="font-mono text-base font-black text-zinc-950 dark:text-white">
+          <div className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-3 text-center">
+            <span className="text-[11px] text-zinc-700 dark:text-[#E8CE88] font-bold block mb-1">التكلفة اليومية</span>
+            <span className="font-mono text-base font-black text-zinc-950 dark:text-[#F4EFE6] tabular-nums">
               25 - 40 جنيه
             </span>
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">أوفر 70% من الديليفري</span>
+            <span className="text-[10px] text-zinc-500 dark:text-[#B5AA92] block mt-0.5">أوفر 70% من الديليفري</span>
           </div>
         </div>
       </div>
 
       {/* Smart Meal Inspector (فحص أكل البيت بالصور والمواصفات وملاءمته للجسم) */}
-      <div className="bg-gradient-to-br from-red-50/60 via-white to-zinc-100/60 dark:from-[#121215] dark:via-[#18181B] dark:to-[#09090B] border-2 border-[#DC2626]/30 dark:border-red-900/50 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-red-100 dark:border-zinc-800">
+      <div className="bg-gradient-to-br from-amber-50/60 via-white to-zinc-100/60 dark:from-[#19191F] dark:via-[#141418] dark:to-[#09090C] border-2 border-[#D4AF37]/35 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-100 dark:border-[#D4AF37]/20">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center font-bold shadow-xs">
+            <div className="w-11 h-11 rounded-2xl btn-luxury-gold flex items-center justify-center font-bold shadow-xs">
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1 text-[11px] font-black text-[#DC2626] dark:text-red-400 mb-0.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <div className="inline-flex items-center gap-1 text-[11px] font-black text-[#9A7218] dark:text-[#E8CE88] mb-0.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
                 <span>فاحص الوجبات بالذكاء الاصطناعي (كاميرا + مواصفات)</span>
               </div>
-              <h3 className="font-black text-base text-zinc-950 dark:text-white">
+              <h3 className="font-black text-base text-zinc-950 dark:text-[#F6E2A6]">
                 هل وجبتك المنزلية مناسبة لوزنك وتركيزك اليوم؟
               </h3>
             </div>
           </div>
 
-          <div className="text-left bg-white dark:bg-zinc-900/90 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900/50">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">بيانات جسمك المعتمدة للفحص:</span>
-            <span className="text-xs font-black text-[#DC2626] dark:text-red-400">
+          <div className="text-left bg-white dark:bg-[#09090C] px-3 py-1.5 rounded-xl border border-amber-200 dark:border-[#D4AF37]/30">
+            <span className="text-[10px] text-zinc-500 dark:text-[#B5AA92] block">بيانات جسمك المعتمدة للفحص:</span>
+            <span className="text-xs font-black text-[#9A7218] dark:text-[#F3DFA2] tabular-nums">
               {weight} كجم • {height} سم • مؤشر {bmi}
             </span>
           </div>
         </div>
 
-        <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+        <p className="text-xs text-zinc-600 dark:text-[#B5AA92] leading-relaxed">
           لو طبخت أو عملت أكل لنفسك في البيت، التقط له صورة واكتب مواصفاته ومكوناته، وسيقوم الذكاء الاصطناعي بفحص الأكلة وحساب سعراتها وبروتينها، وإخبارك بدقة هل هي مناسبة لوزنك وهل تمنحك طاقة للمذاكرة أم تسبب لك الخمول والنعاس!
         </p>
 
@@ -430,7 +430,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
             />
 
             {mealImageBase64 ? (
-              <div className="relative rounded-2xl overflow-hidden border-2 border-[#DC2626] bg-black/5 aspect-4/3 flex items-center justify-center group">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-[#D4AF37] bg-black/5 aspect-4/3 flex items-center justify-center group">
                 <img
                   src={`data:${mealImageMime};base64,${mealImageBase64}`}
                   alt="الوجبة"
@@ -444,27 +444,27 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/75 backdrop-blur-xs text-white rounded-lg text-[10px] font-bold">
+                <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/75 backdrop-blur-xs text-[#F6E2A6] border border-[#D4AF37]/30 rounded-lg text-[10px] font-bold">
                   ✓ تم تحميل صورة الوجبة
                 </div>
               </div>
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-red-300 dark:border-red-900/60 hover:border-[#DC2626] dark:hover:border-red-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-all bg-white/80 dark:bg-zinc-900/50 aspect-4/3 group"
+                className="border-2 border-dashed border-amber-300 dark:border-[#D4AF37]/45 hover:border-[#D4AF37] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-all bg-white/80 dark:bg-[#09090C] aspect-4/3 group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-[#19191F] border border-amber-200/70 dark:border-[#D4AF37]/30 text-[#9A7218] dark:text-[#D4AF37] flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Camera className="w-6 h-6" />
                 </div>
                 <div className="space-y-0.5">
-                  <span className="text-xs font-black text-zinc-950 dark:text-white block">
+                  <span className="text-xs font-black text-zinc-950 dark:text-[#F6E2A6] block">
                     اضغط لالتقاط أو اختيار صورة الوجبة
                   </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">
+                  <span className="text-[10px] text-zinc-500 dark:text-[#B5AA92] block">
                     (PNG, JPG حتى 12 ميجابايت)
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-[#DC2626] dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2.5 py-1 rounded-full border border-red-200 dark:border-red-900/50 mt-1">
+                <span className="text-[10px] font-bold text-[#9A7218] dark:text-[#E8CE88] bg-amber-50 dark:bg-[#19191F] px-2.5 py-1 rounded-full border border-amber-200 dark:border-[#D4AF37]/30 mt-1">
                   📸 صور طبقك الآن
                 </span>
               </div>
@@ -474,7 +474,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           {/* Description Textarea & Action (7 cols) */}
           <div className="md:col-span-7 flex flex-col justify-between space-y-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block">
+              <label className="text-xs font-bold text-zinc-700 dark:text-[#F4EFE6] block">
                 مواصفات الأكلة ومكوناتها (اكتب ما صنعته بالتفصيل):
               </label>
               <textarea
@@ -482,13 +482,13 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 onChange={(e) => setMealDescription(e.target.value)}
                 rows={4}
                 placeholder="مثال: جهزت طبق مكون من ربع فرخة مسلوقة، و5 ملاعق أرز أبيض، وطبق سلطة خضراء برشة ليمون، ومعاهم كوب ماء..."
-                className="w-full text-xs p-3 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#DC2626] leading-relaxed resize-none"
+                className="w-full text-xs p-3 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/30 bg-white dark:bg-[#09090C] text-zinc-950 dark:text-[#F4EFE6] placeholder:text-zinc-400 dark:placeholder:text-[#B5AA92]/60 focus:outline-none focus:border-[#D4AF37] leading-relaxed resize-none"
               />
             </div>
 
             {/* Quick Suggestions Chips */}
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 block">
+              <span className="text-[10px] font-bold text-zinc-500 dark:text-[#B5AA92] block">
                 أمثلة شائعة يمكنك اختيارها بضغطة زر:
               </span>
               <div className="flex flex-wrap gap-1.5 text-[11px]">
@@ -502,7 +502,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setMealDescription(sample)}
-                    className="px-2.5 py-1 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] dark:hover:border-red-400 text-[10px] font-medium transition-colors cursor-pointer"
+                    className="px-2.5 py-1 rounded-xl bg-white dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] text-[10px] font-medium transition-colors cursor-pointer"
                   >
                     + {sample.slice(0, 32)}...
                   </button>
@@ -517,8 +517,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               onClick={handleInspectMeal}
               className={`w-full py-3 px-4 rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 isAnalyzingMeal || (!mealDescription.trim() && !mealImageBase64)
-                  ? 'bg-zinc-300 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                  : 'bg-[#DC2626] hover:bg-[#B91C1C] text-white active:scale-98'
+                  ? 'bg-zinc-300 dark:bg-[#09090C] text-zinc-500 dark:text-[#B5AA92]/50 border border-transparent dark:border-[#D4AF37]/15 cursor-not-allowed'
+                  : 'btn-luxury-gold active:scale-98'
               }`}
             >
               {isAnalyzingMeal ? (
@@ -528,7 +528,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <Sparkles className="w-4 h-4" />
                   <span>افحص ملاءمة الوجبة لجسمي الآن 🩺</span>
                 </>
               )}
@@ -546,7 +546,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
         {/* Analysis Results Display */}
         {mealAnalysisResult && (
-          <div className="mt-4 pt-4 border-t border-red-100 dark:border-zinc-800 space-y-4 animate-in fade-in duration-300">
+          <div className="mt-4 pt-4 border-t border-amber-100 dark:border-[#D4AF37]/20 space-y-4 animate-in fade-in duration-300">
             {/* Verdict Banner */}
             <div
               className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
@@ -585,17 +585,17 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               {/* Macro Estimates */}
               <div className="flex flex-wrap gap-2 text-xs font-mono font-bold self-end sm:self-center">
                 {mealAnalysisResult.caloriesEstimate && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 border border-current">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-[#09090C] border border-current tabular-nums">
                     🔥 {mealAnalysisResult.caloriesEstimate}
                   </span>
                 )}
                 {mealAnalysisResult.proteinGrams && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 border border-current">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-[#09090C] border border-current tabular-nums">
                     🥩 بروتين: {mealAnalysisResult.proteinGrams}
                   </span>
                 )}
                 {mealAnalysisResult.carbsGrams && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 border border-current">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-[#09090C] border border-current tabular-nums">
                     🌾 كارب: {mealAnalysisResult.carbsGrams}
                   </span>
                 )}
@@ -603,26 +603,26 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
             </div>
 
             {/* Scientific Analysis */}
-            <div className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+            <div className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-4 space-y-3">
               <div>
-                <span className="text-[11px] font-black text-[#DC2626] dark:text-red-400 block mb-1">
+                <span className="text-[11px] font-black text-[#9A7218] dark:text-[#E8CE88] block mb-1">
                   🔬 التقييم العلمي لأثر هذه الوجبة على جسمك واستيعابك:
                 </span>
-                <p className="text-xs text-zinc-700 dark:text-zinc-200 leading-relaxed font-medium">
+                <p className="text-xs text-zinc-700 dark:text-[#F4EFE6] leading-relaxed font-medium">
                   {mealAnalysisResult.analysis}
                 </p>
               </div>
 
               {/* Actionable recommendations */}
               {mealAnalysisResult.recommendations && mealAnalysisResult.recommendations.length > 0 && (
-                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                  <span className="text-[11px] font-bold text-zinc-900 dark:text-white block mb-1.5">
+                <div className="pt-2 border-t border-zinc-100 dark:border-[#D4AF37]/20">
+                  <span className="text-[11px] font-bold text-zinc-900 dark:text-[#F6E2A6] block mb-1.5">
                     💡 نصائح وتعديلات مقترحة لتحسين الوجبة:
                   </span>
-                  <ul className="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                  <ul className="space-y-1 text-xs text-zinc-600 dark:text-[#B5AA92]">
                     {mealAnalysisResult.recommendations.map((rec: string, i: number) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-[#DC2626] dark:text-red-400 font-bold">•</span>
+                        <span className="text-[#9A7218] dark:text-[#D4AF37] font-bold">•</span>
                         <span>{rec}</span>
                       </li>
                     ))}
@@ -632,9 +632,9 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
               {/* Thanaweya Tip */}
               {mealAnalysisResult.thanaweyaTip && (
-                <div className="bg-red-50/70 dark:bg-red-950/35 p-3 rounded-xl border border-red-200 dark:border-red-900/50 flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-zinc-900 dark:text-red-200 font-bold leading-relaxed">
+                <div className="bg-amber-50/70 dark:bg-[#09090C] p-3 rounded-xl border border-amber-200 dark:border-[#D4AF37]/30 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+                  <p className="text-xs text-zinc-900 dark:text-[#F3DFA2] font-bold leading-relaxed">
                     🎓 <strong>نصيحة ثانوية عامة:</strong> {mealAnalysisResult.thanaweyaTip}
                   </p>
                 </div>
@@ -647,11 +647,11 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       {/* Plan Selector Tabs */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-sm text-zinc-950 dark:text-white flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+          <h3 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6] flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-[#D4AF37]" />
             <span>اختر خطة التغذية المصرية الملائمة لوزنك وهدفك:</span>
           </h3>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs text-zinc-500 dark:text-[#B5AA92]">
             تم تحديد النظام الملائم لوزنك ({weight} كجم) تلقائياً
           </span>
         </div>
@@ -668,8 +668,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 onClick={() => setActivePlanKey(key)}
                 className={`p-4 rounded-2xl border text-right transition-all flex flex-col justify-between cursor-pointer ${
                   isSelected
-                    ? 'bg-white dark:bg-[#121215] border-[#DC2626] dark:border-red-500 shadow-md ring-2 ring-[#DC2626]/20 dark:ring-red-500/30'
-                    : 'bg-zinc-50 dark:bg-[#09090B] border-zinc-200 dark:border-zinc-800 hover:border-red-400/50'
+                    ? 'bg-white dark:bg-[#19191F] border-[#D4AF37] shadow-md ring-2 ring-[#D4AF37]/30'
+                    : 'bg-zinc-50 dark:bg-[#09090C] border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]/50'
                 }`}
               >
                 <div>
@@ -677,29 +677,29 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                         isSelected
-                          ? 'bg-[#DC2626] text-white'
-                          : 'bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400'
+                          ? 'btn-luxury-gold'
+                          : 'bg-amber-50 dark:bg-[#19191F] text-[#9A7218] dark:text-[#E8CE88] border border-transparent dark:border-[#D4AF37]/25'
                       }`}
                     >
                       {plan.bmiRange}
                     </span>
                     {isRecommended && (
-                      <span className="text-[10px] px-2 py-0.5 bg-amber-400 text-black font-black rounded-full">
+                      <span className="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#09090B] font-black rounded-full">
                         ★ متوافق مع وزنك
                       </span>
                     )}
                   </div>
-                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white mb-1">
+                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-[#F6E2A6] mb-1">
                     {plan.categoryTitle}
                   </h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                  <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92] leading-relaxed line-clamp-2">
                     {plan.targetGoal}
                   </p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#8C7A52] dark:text-amber-400">{plan.badge}</span>
-                  <span className="text-xs font-bold text-[#DC2626] dark:text-red-400">
+                <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-[#D4AF37]/20 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#9A7218] dark:text-[#E8CE88]">{plan.badge}</span>
+                  <span className="text-xs font-bold text-[#9A7218] dark:text-[#F3DFA2]">
                     {isSelected ? '✓ معروض الآن' : 'عرض الخطة ←'}
                   </span>
                 </div>
@@ -710,32 +710,32 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Active Diet Plan Breakdown */}
-      <div className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#121215] dark:to-[#09090B] border-2 border-red-200/80 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-6 transition-colors">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#19191F] dark:to-[#09090C] border-2 border-amber-200/80 dark:border-[#D4AF37]/35 rounded-3xl p-6 shadow-sm space-y-6 transition-colors">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-[#D4AF37]/20">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#DC2626] text-white rounded-full text-xs font-bold mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 btn-luxury-gold rounded-full text-xs font-bold mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
               <span>{activePlan.badge}</span>
             </div>
-            <h3 className="text-lg font-black text-zinc-950 dark:text-white">{activePlan.categoryTitle}</h3>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 max-w-2xl">{activePlan.targetGoal}</p>
+            <h3 className="text-lg font-black text-zinc-950 dark:text-[#F6E2A6]">{activePlan.categoryTitle}</h3>
+            <p className="text-xs text-zinc-600 dark:text-[#B5AA92] mt-1 max-w-2xl">{activePlan.targetGoal}</p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#121215] border border-red-200 dark:border-red-900/40 font-bold text-[#DC2626] dark:text-red-400">
+            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 font-bold text-[#9A7218] dark:text-[#E8CE88] tabular-nums">
               🔥 السعرات: {activePlan.dailyCaloriesTarget}
             </span>
-            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#121215] border border-red-200 dark:border-red-900/40 font-bold text-[#DC2626] dark:text-red-400">
+            <span className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 font-bold text-[#9A7218] dark:text-[#E8CE88] tabular-nums">
               🥩 البروتين: {activePlan.dailyProteinTarget}
             </span>
           </div>
         </div>
 
         {/* Golden Rule Callout */}
-        <div className="bg-red-50/70 dark:bg-red-950/35 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-xs leading-relaxed text-zinc-950 dark:text-zinc-200">
-            <strong className="font-extrabold text-[#DC2626] dark:text-red-400 block mb-0.5">
+        <div className="bg-amber-50/70 dark:bg-[#09090C] border border-amber-200 dark:border-[#D4AF37]/30 rounded-2xl p-4 flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed text-zinc-950 dark:text-[#F4EFE6]">
+            <strong className="font-extrabold text-[#9A7218] dark:text-[#F6E2A6] block mb-0.5">
               القاعدة الذهبية لطالب الثانوية في هذه الخطة:
             </strong>
             {activePlan.goldenRule}
@@ -746,11 +746,11 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h4 className="font-extrabold text-sm text-zinc-950 dark:text-white flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-[#DC2626] dark:text-red-400" />
+              <h4 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6] flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-[#D4AF37]" />
                 <span>جدول الوجبات الـ 5 المتغير يومياً ({WEEK_DAYS_EG[selectedDayIndex]}):</span>
               </h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92] mt-0.5">
                 منيو متجدد كل يوم على مدار الأسبوع لكسر الملل (ومختلف عن وجبات جدولك اليومي)
               </p>
             </div>
@@ -759,14 +759,14 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedDayIndex(todayDayIndex)}
-                className="text-[11px] font-black text-[#DC2626] dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900/50 hover:bg-red-100 transition-colors cursor-pointer self-start sm:self-center"
+                className="text-[11px] font-black text-[#9A7218] dark:text-[#E8CE88] bg-amber-50 dark:bg-[#09090C] px-3 py-1.5 rounded-xl border border-amber-200 dark:border-[#D4AF37]/35 hover:bg-amber-100 dark:hover:bg-[#1E1E26] transition-colors cursor-pointer self-start sm:self-center"
               >
                 الرجوع لوجبات اليوم ({WEEK_DAYS_EG[todayDayIndex]})
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 bg-zinc-100/80 dark:bg-[#09090B] p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-wrap items-center gap-1.5 bg-zinc-100/80 dark:bg-[#09090C] p-1.5 rounded-2xl border border-zinc-200 dark:border-[#D4AF37]/25">
             {WEEK_DAYS_EG.map((dayLabel, idx) => {
               const isSelectedDay = selectedDayIndex === idx;
               const isToday = todayDayIndex === idx;
@@ -777,8 +777,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                   onClick={() => setSelectedDayIndex(idx)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     isSelectedDay
-                      ? 'bg-[#DC2626] text-white shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-900 hover:text-zinc-950 dark:hover:text-white'
+                      ? 'btn-luxury-gold shadow-xs'
+                      : 'text-zinc-600 dark:text-[#B5AA92] hover:bg-white dark:hover:bg-[#19191F] hover:text-zinc-950 dark:hover:text-[#F6E2A6]'
                   }`}
                 >
                   <span>{dayLabel}</span>
@@ -786,8 +786,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                     <span
                       className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
                         isSelectedDay
-                          ? 'bg-black/35 text-amber-300'
-                          : 'bg-red-100 dark:bg-red-950/60 text-[#DC2626] dark:text-red-300'
+                          ? 'bg-[#09090B] text-[#F6E2A6]'
+                          : 'bg-amber-100 dark:bg-[#19191F] text-[#9A7218] dark:text-[#E8CE88] border border-transparent dark:border-[#D4AF37]/30'
                       }`}
                     >
                       اليوم
@@ -802,34 +802,34 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
             {activePlan.meals.map((meal, index) => (
               <div
                 key={index}
-                className="bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-2xs hover:border-red-400/50 transition-all flex flex-col justify-between space-y-3"
+                className="bg-white dark:bg-[#19191F] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-4 shadow-2xs hover:border-[#D4AF37]/50 transition-all flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-50 dark:bg-red-950/50 text-[#DC2626] dark:text-red-400">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-50 dark:bg-[#09090C] border border-amber-200/60 dark:border-[#D4AF37]/30 text-[#9A7218] dark:text-[#E8CE88]">
                       {meal.mealTime}
                     </span>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 font-medium">
+                    <span className="text-[11px] text-zinc-500 dark:text-[#B5AA92] flex items-center gap-1 font-medium">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{meal.prepTime}</span>
                     </span>
                   </div>
 
-                  <h5 className="font-black text-sm text-zinc-950 dark:text-white mb-1.5 leading-snug">
+                  <h5 className="font-black text-sm text-zinc-950 dark:text-[#F6E2A6] mb-1.5 leading-snug">
                     {meal.dish}
                   </h5>
 
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed mb-2 font-medium">
+                  <p className="text-xs text-zinc-700 dark:text-[#F4EFE6] leading-relaxed mb-2 font-medium">
                     🛒 <strong>المكونات:</strong> {meal.items}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="bg-zinc-50 dark:bg-[#09090B] rounded-xl p-3 border border-zinc-200 dark:border-zinc-800">
-                    <span className="text-[10px] font-bold text-[#DC2626] dark:text-red-400 block mb-0.5">
+                  <div className="bg-zinc-50 dark:bg-[#09090C] rounded-xl p-3 border border-zinc-200 dark:border-[#D4AF37]/20">
+                    <span className="text-[10px] font-bold text-[#9A7218] dark:text-[#E8CE88] block mb-0.5">
                       🔬 مفعولها على تركيزك بالثانوية:
                     </span>
-                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">{meal.whyThisMeal}</p>
+                    <p className="text-xs text-zinc-700 dark:text-[#B5AA92] leading-relaxed">{meal.whyThisMeal}</p>
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] pt-1">
@@ -837,7 +837,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                       <Coins className="w-3.5 h-3.5" />
                       <span>{meal.estimatedCost}</span>
                     </span>
-                    <span className="text-zinc-400 dark:text-zinc-500 font-medium">مكونات متوفرة في مصر</span>
+                    <span className="text-zinc-400 dark:text-[#B5AA92]/70 font-medium">مكونات متوفرة في مصر</span>
                   </div>
                 </div>
               </div>
@@ -847,16 +847,16 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Cheap Egyptian Superfoods Catalog */}
-      <div className="bg-white dark:bg-[#121215] rounded-3xl border border-zinc-200 dark:border-red-900/40 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#19191F] rounded-3xl border border-zinc-200 dark:border-[#D4AF37]/30 shadow-xs p-6 space-y-4 transition-colors">
         <div>
-          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 text-[11px] font-extrabold mb-1.5">
-            <Coins className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-[#09090C] border border-transparent dark:border-[#D4AF37]/35 text-amber-900 dark:text-[#E8CE88] text-[11px] font-extrabold mb-1.5">
+            <Coins className="w-3.5 h-3.5 text-[#D4AF37]" />
             <span>قائمة التسوق الأسبوعية الاقتصادية</span>
           </div>
-          <h3 className="font-extrabold text-base text-zinc-950 dark:text-white">
+          <h3 className="font-extrabold text-base text-zinc-950 dark:text-[#F6E2A6]">
             «السوبر فود» المصري الشعبي: بدائل خارقة للمخ بتكلفة جنيهات معدودة
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
             أكلات شعبية مصرية تتفوق علمياً على المنتجات والمكملات المستوردة بأسعار في متناول أي طالب:
           </p>
         </div>
@@ -865,21 +865,21 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           {CHEAP_EGYPTIAN_SUPERFOODS.map((food, i) => (
             <div
               key={i}
-              className="bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between hover:border-red-400/50 transition-all space-y-2.5"
+              className="bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 rounded-2xl p-4 flex flex-col justify-between hover:border-[#D4AF37]/60 transition-all space-y-2.5"
             >
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-mono text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                     {food.priceEstimate}
                   </span>
-                  <span className="text-[10px] text-[#DC2626] dark:text-red-400 font-bold">بديل مصري ممتاز</span>
+                  <span className="text-[10px] text-[#9A7218] dark:text-[#E8CE88] font-bold">بديل مصري ممتاز</span>
                 </div>
-                <h4 className="font-black text-xs text-zinc-950 dark:text-white mb-1">{food.name}</h4>
-                <p className="text-[11px] text-[#DC2626] dark:text-red-400 font-bold mb-1.5">{food.nutrient}</p>
-                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">{food.benefit}</p>
+                <h4 className="font-black text-xs text-zinc-950 dark:text-[#F6E2A6] mb-1">{food.name}</h4>
+                <p className="text-[11px] text-[#9A7218] dark:text-[#DFBC5B] font-bold mb-1.5">{food.nutrient}</p>
+                <p className="text-xs text-zinc-600 dark:text-[#F4EFE6] leading-relaxed">{food.benefit}</p>
               </div>
 
-              <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <div className="pt-2 border-t border-zinc-200 dark:border-[#D4AF37]/20 text-[11px] text-zinc-500 dark:text-[#B5AA92]">
                 🍳 <strong>طريقة التحضير:</strong> {food.howToPrep}
               </div>
             </div>
@@ -888,36 +888,36 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
       </div>
 
       {/* Interactive Water Tracker */}
-      <div className="bg-gradient-to-r from-[#DC2626] via-[#991B1B] to-[#09090B] text-white rounded-3xl p-6 shadow-md relative overflow-hidden border border-red-900/40">
+      <div className="bg-gradient-to-l from-[#1E1E26] via-[#121217] to-[#08080A] text-[#F4EFE6] rounded-3xl p-6 shadow-md relative overflow-hidden border border-[#D4AF37]/45">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Droplet className="w-6 h-6 fill-current text-red-200" />
-              <h3 className="font-extrabold text-lg">عدّاد الماء اليومي لخلايا المخ</h3>
+              <Droplet className="w-6 h-6 fill-current text-[#E8CE88]" />
+              <h3 className="font-extrabold text-lg text-[#F6E2A6]">عدّاد الماء اليومي لخلايا المخ</h3>
             </div>
-            <p className="text-xs text-red-100 max-w-md">
+            <p className="text-xs text-[#B5AA92] max-w-md">
               نقص الماء بنسبة 2% فقط يقلل التركيز وسرعة الاسترجاع بنسبة 14% ويسبب الصداع المكتبي. هدفك اليومي حسب وزنك ({weight} كجم) هو {dynamicTargetCups} أكواب ({recommendedWaterLiters} لتر).
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-black/35 backdrop-blur-md p-3 rounded-2xl border border-white/20 self-start sm:self-center">
+          <div className="flex items-center gap-3 bg-[#08080A]/80 backdrop-blur-md p-3 rounded-2xl border border-[#D4AF37]/30 self-start sm:self-center">
             <button
               onClick={handleMinusWater}
-              className="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center justify-center font-bold text-lg transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-[#F6E2A6] flex items-center justify-center font-bold text-lg transition-colors cursor-pointer"
             >
               <Minus className="w-4 h-4" />
             </button>
 
             <div className="text-center px-3">
-              <span className="font-mono text-3xl font-black block leading-none" dir="ltr">
+              <span className="font-mono text-3xl font-black block leading-none text-[#F6E2A6] tabular-nums" dir="ltr">
                 {waterCups} / {dynamicTargetCups}
               </span>
-              <span className="text-[11px] text-red-200 font-bold">أكواب اليوم</span>
+              <span className="text-[11px] text-[#E8CE88] font-bold">أكواب اليوم</span>
             </div>
 
             <button
               onClick={handleAddWater}
-              className="w-9 h-9 rounded-xl bg-white text-[#DC2626] hover:bg-red-50 flex items-center justify-center font-bold text-lg shadow-sm transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-xl btn-luxury-gold flex items-center justify-center font-bold text-lg shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -925,33 +925,33 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
         </div>
 
         {/* Glasses visual icons */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-5 pt-4 border-t border-white/20">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-5 pt-4 border-t border-[#D4AF37]/20">
           {Array.from({ length: dynamicTargetCups }).map((_, i) => (
             <div
               key={i}
               onClick={() => onUpdateWaterCups(i + 1)}
               className={`cursor-pointer transition-transform hover:scale-110 flex flex-col items-center gap-1 ${
-                i < waterCups ? 'text-white' : 'text-white/30'
+                i < waterCups ? 'text-[#F6E2A6]' : 'text-white/25'
               }`}
             >
               <Droplet
                 className={`w-6 h-6 ${
-                  i < waterCups ? 'fill-current text-red-200' : 'stroke-current'
+                  i < waterCups ? 'fill-current text-[#D4AF37]' : 'stroke-current'
                 }`}
               />
-              <span className="text-[10px] font-mono font-bold">{i + 1}</span>
+              <span className="text-[10px] font-mono font-bold tabular-nums">{i + 1}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Good vs Bad Foods Comparison Table */}
-      <div className="bg-white dark:bg-[#121215] rounded-3xl border border-zinc-200 dark:border-red-900/40 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#19191F] rounded-3xl border border-zinc-200 dark:border-[#D4AF37]/30 shadow-xs p-6 space-y-4 transition-colors">
         <div>
-          <h3 className="font-extrabold text-sm text-zinc-950 dark:text-white">
+          <h3 className="font-extrabold text-sm text-zinc-950 dark:text-[#F6E2A6]">
             دليل المقارنة: أكلات تعزز استيعابك vs أكلات تسبب الضباب والخمول
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">
             احرص على القائمة الخضراء وابتعد تماماً عن القائمة الحمراء خصوصاً في أيام الامتحانات والمراجعات الكبرى
           </p>
         </div>
@@ -979,8 +979,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white mb-0.5">{food.name}</h4>
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed mb-1">{food.impact}</p>
+                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-[#F4EFE6] mb-0.5">{food.name}</h4>
+                  <p className="text-xs text-zinc-700 dark:text-[#B5AA92] leading-relaxed mb-1">{food.impact}</p>
                   <span
                     className={`text-[11px] font-bold block ${
                       isGood ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'

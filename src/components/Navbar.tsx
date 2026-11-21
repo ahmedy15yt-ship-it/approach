@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FAFAFA]/90 dark:bg-[#09090B]/95 backdrop-blur-md border-b border-red-200/70 dark:border-red-900/40 font-['Cairo',sans-serif] transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-[#F6F3EC]/92 dark:bg-[#09090C]/95 backdrop-blur-md border-b border-amber-200/70 dark:border-[#D4AF37]/28 font-['Cairo',sans-serif] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand & Logo */}
         <div className="flex items-center gap-3">
@@ -86,14 +86,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onTabChange('dashboard')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ring-2 ring-[#DC2626]/25 dark:ring-red-500/40">
+            <div className="w-10 h-10 rounded-xl btn-luxury-gold text-[#09090B] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ring-1 ring-[#F6E2A6]/50">
               <span className="font-['Amiri',serif] text-2xl font-black">نَهْج</span>
             </div>
             <div>
-              <span className="font-extrabold text-base text-zinc-950 dark:text-white block leading-tight">
+              <span className="font-extrabold text-base text-zinc-950 dark:text-[#E8CE88] block leading-tight">
                 نَهج
               </span>
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold block">
+              <span className="text-[10px] text-zinc-600 dark:text-[#B5AA92] font-semibold block">
                 تالتة ثانوي علمي علوم
               </span>
             </div>
@@ -107,15 +107,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={() => onTabChange('profile')}
             title="عرض سجل وتقويم الاستمرارية في الملف الشخصي"
-            className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 rounded-full text-xs font-bold text-amber-800 dark:text-amber-300 shadow-2xs hover:border-[#DC2626] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-[#16161B] border border-amber-300/70 dark:border-[#D4AF37]/35 rounded-full text-xs font-bold text-amber-900 dark:text-[#F3DFA2] shadow-2xs hover:border-[#D4AF37] transition-colors cursor-pointer"
           >
-            <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500 animate-pulse" />
+            <Flame className="w-4 h-4 text-amber-600 dark:text-[#E8CE88] fill-amber-500/70 animate-pulse" />
             <span className="tabular-nums">{profile.streakDays} يوم</span>
           </button>
 
           {/* XP Points */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 rounded-full text-xs font-bold text-[#DC2626] dark:text-red-300">
-            <Award className="w-4 h-4 text-[#C59B27] dark:text-amber-400" />
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50/80 dark:bg-[#121216] border border-amber-300/70 dark:border-[#D4AF37]/35 rounded-full text-xs font-bold text-[#9A7218] dark:text-[#E8CE88]">
+            <Award className="w-4 h-4 text-[#B58722] dark:text-[#F3DFA2]" />
             <span className="tabular-nums">{profile.totalXp} XP</span>
           </div>
 
@@ -130,8 +130,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             }
             className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs ${
               activeTab === 'profile'
-                ? 'bg-[#DC2626] text-white border-[#DC2626]'
-                : 'bg-white dark:bg-zinc-900/80 hover:bg-red-50/70 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800'
+                ? 'btn-luxury-gold text-[#09090B]'
+                : 'bg-white dark:bg-[#19191F] hover:bg-amber-50/70 dark:hover:bg-[#101014] text-zinc-700 dark:text-[#E8CE88] border-zinc-200 dark:border-[#D4AF37]/25'
             }`}
           >
             <User className="w-4 h-4" />
@@ -145,12 +145,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="px-2.5 py-1 text-xs font-bold bg-white dark:bg-zinc-900 border border-[#DC2626] rounded-lg focus:outline-none w-36 text-zinc-950 dark:text-white"
+                  className="px-2.5 py-1 text-xs font-bold bg-white dark:bg-[#0A0A0D] border border-[#D4AF37] rounded-lg focus:outline-none w-36 text-zinc-950 dark:text-[#F4EFE6]"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="p-1 bg-[#DC2626] text-white rounded-lg hover:bg-[#B91C1C]"
+                  className="p-1 btn-luxury-gold text-[#09090B] rounded-lg"
                   title="حفظ الاسم"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -159,12 +159,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <div
                 onClick={() => setIsEditingName(true)}
-                className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-zinc-900/90 hover:bg-red-50/70 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 hover:border-red-500/40 rounded-full text-xs font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer transition-colors group shadow-2xs"
+                className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-[#19191F] hover:bg-amber-50/70 dark:hover:bg-[#111115] border border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37]/60 rounded-full text-xs font-bold text-zinc-800 dark:text-[#F4EFE6] cursor-pointer transition-colors group shadow-2xs"
                 title="اضغط لتعديل اسمك"
               >
-                <span className="w-2 h-2 rounded-full bg-[#DC2626] ring-2 ring-red-200 dark:ring-red-900" />
+                <span className="w-2 h-2 rounded-full bg-[#D4AF37] ring-2 ring-[#D4AF37]/30" />
                 <span className="truncate max-w-[130px]">{profile.name || 'طالب نَهج 🩺'}</span>
-                <Edit3 className="w-3 h-3 text-zinc-400 group-hover:text-[#DC2626]" />
+                <Edit3 className="w-3 h-3 text-zinc-400 group-hover:text-[#D4AF37]" />
               </div>
             )}
           </div>
@@ -173,16 +173,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onToggleDarkMode && (
             <button
               onClick={onToggleDarkMode}
-              className="p-2 rounded-xl border border-zinc-200 dark:border-red-900/40 bg-white dark:bg-zinc-900/80 text-zinc-700 dark:text-amber-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
-              title={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي'}
+              className="p-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/30 bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#E8CE88] hover:bg-zinc-100 dark:hover:bg-[#101014] transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+              title={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى سيم الفخامة المظلمة'}
             >
               {isDarkMode ? (
-                <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20 animate-spin-slow" />
+                <Sun className="w-4 h-4 text-[#F3DFA2] fill-[#D4AF37]/20" />
               ) : (
                 <Moon className="w-4 h-4 text-zinc-800 fill-zinc-800/20" />
               )}
               <span className="hidden xl:inline text-[11px] font-bold">
-                {isDarkMode ? 'نهاري' : 'ليلي'}
+                {isDarkMode ? 'نهاري' : 'فخامة داكنة'}
               </span>
             </button>
           )}
@@ -192,15 +192,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={handleToggleNotification}
             className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs ${
               notifEnabled
-                ? 'bg-red-50 dark:bg-red-950/40 text-[#DC2626] dark:text-red-300 border-red-200 dark:border-red-900/50 hover:bg-red-100/70'
-                : 'bg-white dark:bg-zinc-900/80 hover:bg-amber-50 dark:hover:bg-zinc-800 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
+                ? 'bg-amber-50 dark:bg-[#19191F] text-[#9A7218] dark:text-[#E8CE88] border-amber-300 dark:border-[#D4AF37]/40 hover:bg-amber-100/70'
+                : 'bg-white dark:bg-[#19191F] hover:bg-amber-50 dark:hover:bg-[#111115] text-amber-800 dark:text-[#E8CE88]/80 border-amber-200 dark:border-[#D4AF37]/25'
             }`}
             title={notifEnabled ? 'التنبيهات مفعلة بالخلفية (اضغط لاختبار التنبيه)' : 'اضغط لتفعيل تنبيهات المذاكرة والتركيز'}
           >
             {notifEnabled ? (
-              <BellRing className="w-4 h-4 text-[#DC2626] dark:text-red-400 fill-red-100 dark:fill-red-950" />
+              <BellRing className="w-4 h-4 text-[#B58722] dark:text-[#F3DFA2]" />
             ) : (
-              <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <Bell className="w-4 h-4 text-amber-600 dark:text-[#D4AF37]" />
             )}
             <span className="hidden sm:inline text-[11px]">
               {notifEnabled ? 'التنبيهات مفعلة' : 'تفعيل التنبيهات'}
@@ -213,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             title="شات الدعم على تليجرام"
-            className="p-2 text-zinc-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
+            className="p-2 text-zinc-700 dark:text-[#E8CE88] hover:bg-amber-50 dark:hover:bg-[#19191F] rounded-xl transition-colors"
           >
             <Send className="w-4 h-4" />
           </a>
@@ -224,7 +224,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onLogout}
               title="تسجيل الخروج أو تبديل الحساب"
-              className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 hover:border-[#DC2626] hover:text-[#DC2626] dark:hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+              className="p-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/25 bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] hover:text-[#9A7218] dark:hover:text-[#F6E2A6] transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden xl:inline text-[11px]">خروج</span>

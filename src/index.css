@@ -2,47 +2,75 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  :root {
+    --luxury-charcoal: #0D0D10;
+    --luxury-matte-black: #08080A;
+    --luxury-slate-panel: #19191F;
+    --luxury-champagne: #E8CE88;
+    --luxury-gold: #D4AF37;
+    --luxury-gold-deep: #A67C1E;
+  }
+
   body {
-    background-color: #FAFAFA;
-    color: #09090B;
+    background-color: #F6F3EC;
+    color: #141417;
     font-family: 'Cairo', sans-serif;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   html.dark body {
-    background-color: #09090B;
-    color: #F4F4F5;
+    background-color: #0D0D10;
+    color: #F4EFE6;
   }
 
   ::selection {
-    background-color: #DC2626;
-    color: #FFFFFF;
+    background-color: #D4AF37;
+    color: #09090B;
   }
 }
 
-/* Sleek Crimson & Obsidian Scrollbar */
+/* Shiny Metallic Gold Primary CTA & Accent Utilities */
+.btn-luxury-gold {
+  background-image: linear-gradient(135deg, #F6E2A6 0%, #DFBC5B 45%, #B58722 100%);
+  color: #09090B;
+  border: 1px solid rgba(246, 226, 166, 0.55);
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.24), inset 0 1px 0 rgba(255, 250, 220, 0.45);
+  transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-luxury-gold:hover:not(:disabled) {
+  filter: brightness(1.07);
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.34), inset 0 1px 0 rgba(255, 252, 232, 0.6);
+}
+
+/* Dark Luxury Matte Black Badge & Champagne Frame */
+.luxury-champagne-frame {
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+/* Sleek Charcoal & Champagne Gold Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F4F4F5;
+  background: #EFECE3;
 }
 
 html.dark ::-webkit-scrollbar-track {
-  background: #09090B;
+  background: #09090C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D4D4D8;
+  background: #C7B992;
   border-radius: 9999px;
 }
 
 html.dark ::-webkit-scrollbar-thumb {
-  background: #3F3F46;
+  background: #36342F;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #DC2626;
+  background: #D4AF37;
 }
