@@ -52,9 +52,11 @@ import {
   buildChallenge7DaySeries,
   ChallengeComparisonChartPoint,
 } from '../utils/challengeCharts';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface FriendsChallengeViewProps {
   studentName: string;
+  isStudentVerified?: boolean;
   studyLog: DailyStudyHoursLog;
   challenges: FriendChallenge[];
   streakHistory?: Record<string, StreakHistoryEntry>;
@@ -141,6 +143,7 @@ const MiniComparisonTooltip: React.FC<{
 
 export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
   studentName,
+  isStudentVerified = false,
   studyLog,
   challenges,
   streakHistory,
@@ -1388,8 +1391,9 @@ export const FriendsChallengeView: React.FC<FriendsChallengeViewProps> = ({
                     {/* My Bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-extrabold">
-                        <span className="text-[#9A7218] dark:text-[#F3DFA2]">
-                          أنت ({studentName.split(' ')[0]})
+                        <span className="text-[#9A7218] dark:text-[#F3DFA2] inline-flex items-center gap-1.5">
+                          <span>أنت ({studentName.split(' ')[0]})</span>
+                          {isStudentVerified && <VerifiedBadge size="xs" />}
                         </span>
                         <span className="font-mono text-zinc-950 dark:text-[#F4EFE6] tabular-nums" dir="ltr">
                           {challenge.myHours.toFixed(1)} / {challenge.targetHours} h ({myPct}%)

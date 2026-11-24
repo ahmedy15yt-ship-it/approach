@@ -70,6 +70,19 @@ export interface DailyTask {
   currentCount?: number;
 }
 
+export interface CustomDailyTask {
+  id: string;
+  title: string;
+  category: 'study' | 'practice' | 'summary' | 'worship' | 'personal';
+  priority: 'high' | 'medium' | 'normal';
+  estimatedMinutes: number;
+  xp: number;
+  isDone: boolean;
+  xpClaimed?: boolean;
+  cycleIndex: number;
+  createdAt: string;
+}
+
 export interface StudentProfile {
   name: string;
   codeMasked: string;
@@ -83,6 +96,7 @@ export interface StudentProfile {
   weightKg?: number;
   heightCm?: number;
   fitnessGoal?: 'maintain' | 'lose' | 'gain';
+  isVerified?: boolean;
 }
 
 export interface LeaderboardUser {
@@ -93,6 +107,7 @@ export interface LeaderboardUser {
   streak: number;
   badge: string;
   isCurrentUser?: boolean;
+  isVerified?: boolean;
 }
 
 export interface DailyStudyHoursLog {
@@ -144,6 +159,7 @@ export interface AccountSession {
   username: string;
   loggedInAt: string;
   lastSyncedAt?: string;
+  isVerified?: boolean;
 }
 
 export interface StudentActivitySnapshot {
@@ -217,6 +233,192 @@ export interface QuizChallengeRoom {
   shareCode: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LessonSummaryConceptSection {
+  title: string;
+  deepExplanation: string;
+  whyItMatters: string;
+  realLifeExample: string;
+  keyTakeaways: string[];
+}
+
+export interface LessonSummaryFormulaItem {
+  label: string;
+  expression: string;
+  whenToUse: string;
+}
+
+export interface LessonSummaryTrapItem {
+  trap: string;
+  truth: string;
+}
+
+export interface LessonSummaryQuestion {
+  question: string;
+  questionType: 'فهم واستنتاج' | 'تطبيق مسألة' | 'فكرة امتحان';
+  steps: string[];
+  answer: string;
+  teacherNote: string;
+}
+
+export interface LessonSummaryQuickCheck {
+  question: string;
+  answer: string;
+  explanation: string;
+}
+
+export interface LessonMasterSummary {
+  id: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  detailLevel: 'comprehensive' | 'exam-sprint';
+  teacherIntro: string;
+  bigIdea: string;
+  conceptSections: LessonSummaryConceptSection[];
+  formulasAndRules: LessonSummaryFormulaItem[];
+  examTraps: LessonSummaryTrapItem[];
+  solvedQuestions: LessonSummaryQuestion[];
+  quickCheckQuestions: LessonSummaryQuickCheck[];
+  source: 'gemini' | 'fallback';
+  providerLabel?: string;
+  warning?: string;
+  createdAt: string;
+}
+
+export interface DictionaryWordEntry {
+  id: string;
+  letter: string;
+  word: string;
+  partOfSpeech: string;
+  phonetic: string;
+  arPronunciation: string;
+  arMeaning: string;
+}
+
+export interface ImportantSentenceEntry {
+  id: string;
+  index: number;
+  category: string;
+  en: string;
+  arPronunciation: string;
+  ar: string;
+}
+
+export type TranslationLanguageCode = 'ar' | 'en' | 'fr' | 'de' | 'es' | 'it';
+
+export interface TranslationResult {
+  sourceText: string;
+  translatedText: string;
+  sourceLang: TranslationLanguageCode;
+  targetLang: TranslationLanguageCode;
+  phoneticPronunciation: string;
+  grammarNote: string;
+  usageExamples: Array<{ source: string; target: string }>;
+  source: 'gemini' | 'fallback';
+  providerLabel?: string;
+  warning?: string;
+}
+
+export interface TranslationHistoryItem extends TranslationResult {
+  id: string;
+  createdAt: string;
+}
+
+export type CompanionMood = 'motivated' | 'stressed' | 'tired' | 'lost';
+
+export interface CompanionChatMessage {
+  id: string;
+  role: 'user' | 'companion';
+  text: string;
+  createdAt: string;
+  actionTip?: string;
+}
+
+export interface CompanionReplyItem {
+  id: string;
+  authorName: string;
+  authorPhone?: string;
+  isVerified?: boolean;
+  text: string;
+  createdAt: string;
+}
+
+export interface CompanionCommunityPost {
+  id: string;
+  authorName: string;
+  authorPhone?: string;
+  isVerified?: boolean;
+  category: 'تحفيز' | 'إنجاز يومي' | 'طلب مساعدة' | 'نصيحة مذاكرة';
+  content: string;
+  cheers: number;
+  replies: CompanionReplyItem[];
+  createdAt: string;
+}
+
+export type KhatmaPrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+
+export interface KhatmaPrayerWird {
+  prayerKey: KhatmaPrayerKey;
+  prayerLabel: string;
+  startPage: number;
+  endPage: number;
+  pagesCount: number;
+  juzStart: number;
+  juzEnd: number;
+  completed: boolean;
+}
+
+export interface KhatmaDayPlan {
+  dayNumber: number;
+  startPage: number;
+  endPage: number;
+  juzRangeLabel: string;
+  prayers: KhatmaPrayerWird[];
+}
+
+export interface KhatmaPlanState {
+  targetDays: number;
+  startedAt: string;
+  completedSlotKeys: string[]; // format: "dayNumber:prayerKey"
+}
+
+export type WhiteboardDiagramType =
+  | 'physics_circuit'
+  | 'physics_wave'
+  | 'chem_reaction'
+  | 'chem_atom'
+  | 'bio_cell'
+  | 'bio_dna'
+  | 'geology_layers'
+  | 'concept_map';
+
+export interface WhiteboardScene {
+  id: string;
+  title: string;
+  durationSec: number;
+  diagramType: WhiteboardDiagramType;
+  diagramTitle: string;
+  diagramLabels: string[];
+  boardLines: string[];
+  formulaBox?: string;
+  narration: string;
+  textbookKeyPoints?: string[];
+}
+
+export interface WhiteboardLessonScript {
+  id: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  introTitle: string;
+  lessonObjective?: string;
+  scenes: WhiteboardScene[];
+  source: 'gemini' | 'fallback';
+  providerLabel?: string;
+  warning?: string;
+  createdAt: string;
 }
 
 

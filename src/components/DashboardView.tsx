@@ -46,6 +46,7 @@ import {
 } from '../services/notificationService';
 import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
 import { streamTutorReply } from '../utils/tutorStreamClient';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface DashboardViewProps {
   profile: StudentProfile;
@@ -351,8 +352,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>اليوم يصنع المستقبل • تالتة ثانوي علمي علوم</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#F6E2A6]">
-              صباح الهمة والإصرار، يا {profile.name.split(' ')[0]} 🩺
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#F6E2A6] flex items-center gap-2 flex-wrap">
+              <span>صباح الهمة والإصرار، يا {profile.name.split(' ')[0]} 🩺</span>
+              {profile.isVerified && <VerifiedBadge size="md" />}
             </h1>
             <p className="text-sm text-[#E5DEC9] max-w-xl leading-relaxed">
               «أفضل نسخة منك لا تُولد فجأة يوم النتيجة، بل تُصنع دقيقة بدقيقة اليوم: بركعتين، بصفحة أحياء، بمسألة كيمياء، وبنوم هادئ.»

@@ -19,6 +19,8 @@ import {
   maskPhoneNumber,
   SavedAccountSummary,
 } from '../utils/accountStorage';
+import { VerifiedBadge } from './VerifiedBadge';
+import { isVerifiedPhone } from '../utils/verifiedAccounts';
 
 interface PhoneLoginPageProps {
   isDarkMode: boolean;
@@ -207,8 +209,14 @@ export const PhoneLoginPage: React.FC<PhoneLoginPageProps> = ({
                     autoComplete="tel"
                   />
                 </div>
-                <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92] font-medium">
-                  مثال: 010XXXXXXXX أو رقم دولي — يُستخدم كمفتاح لحفظ واستعادة سجلك.
+                <p className="text-[11px] text-zinc-500 dark:text-[#B5AA92] font-medium flex items-center gap-1.5 flex-wrap">
+                  <span>مثال: 010XXXXXXXX أو رقم دولي — يُستخدم كمفتاح لحفظ واستعادة سجلك.</span>
+                  {isVerifiedPhone(phone) && (
+                    <span className="inline-flex items-center gap-1 text-[#1D9BF0] font-black">
+                      <VerifiedBadge size="xs" />
+                      <span>رقم موثق بالعلامة الزرقاء</span>
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -328,8 +336,11 @@ export const PhoneLoginPage: React.FC<PhoneLoginPageProps> = ({
                       className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/25 hover:border-[#D4AF37] text-right transition-colors cursor-pointer flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0">
-                        <span className="text-xs font-extrabold text-zinc-950 dark:text-[#F4EFE6] block truncate">
-                          {acc.username}
+                        <span className="text-xs font-extrabold text-zinc-950 dark:text-[#F4EFE6] flex items-center gap-1.5 truncate">
+                          <span className="truncate">{acc.username}</span>
+                          {(acc.isVerified || isVerifiedPhone(acc.phone)) && (
+                            <VerifiedBadge size="xs" />
+                          )}
                         </span>
                         <span
                           className="text-[11px] font-mono text-zinc-500 dark:text-[#B5AA92] tabular-nums"

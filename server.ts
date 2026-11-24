@@ -19,15 +19,33 @@ import {
   QuestionGenerationParams,
 } from './src/utils/questionGenerator.js';
 import {
+  buildLessonSummaryPrompt,
+  buildLessonSummarySystemInstruction,
+  generateLessonSummaryFallback,
+  LessonSummaryGenerationParams,
+  normalizeLessonSummary,
+} from './src/utils/lessonSummary.js';
+import {
   QuestionDifficultyFilter,
   QuestionTypeFilter,
   QuizChallengeRoom,
+  CompanionCommunityPost,
+  TranslationLanguageCode,
 } from './src/types/index.js';
 import {
   callStrongSecondaryAI,
   extractJsonPayloadFromText,
   getConfiguredAIProviders,
 } from './src/utils/aiProviders.js';
+import { buildTranslationFallback, getLanguageMeta } from './src/utils/translatorFallback.js';
+import {
+  buildWhiteboardSystemInstruction,
+  buildWhiteboardUserPrompt,
+  generateWhiteboardFallback,
+  normalizeWhiteboardLessonScript,
+  sanitizeArabicForSpeech,
+} from './src/utils/whiteboardGenerator.js';
+import { generateCompanionResponse } from './src/utils/companionBrain.js';
 
 
 dotenv.config();
@@ -153,6 +171,50 @@ function classifyGeminiError(err: any): { retryable: boolean; userWarning: strin
   };
 }
 
+let geminiTextCooldownUntil = 0;
+let lastGeminiTextWarning: string | undefined;
+let geminiTtsCooldownUntil = 0;
+let lastGeminiTtsWarning: string | undefined;
+
+function shouldFastBreakGeminiLoop(err: any): boolean {
+  const msg = String(err?.message || err || '');
+  const status = Number(err?.status || err?.code || 0);
+  const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+  return (
+    isAbort ||
+    status === 400 ||
+    status === 403 ||
+    status === 429 ||
+    status >= 500 ||
+    msg.includes('TIMEOUT') ||
+    msg.includes('RESOURCE_EXHAUSTED') ||
+    msg.includes('429') ||
+    msg.includes('API_KEY_INVALID') ||
+    msg.includes('PERMISSION_DENIED') ||
+    msg.includes('fetch failed')
+  );
+}
+
+function recordGeminiTextFailure(err: any): string {
+  const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+  const warning = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
+  if (shouldFastBreakGeminiLoop(err)) {
+    geminiTextCooldownUntil = Date.now() + 90_000;
+    lastGeminiTextWarning = warning;
+  }
+  return warning;
+}
+
+function recordGeminiTtsFailure(err: any): string {
+  const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+  const warning = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
+  if (shouldFastBreakGeminiLoop(err)) {
+    geminiTtsCooldownUntil = Date.now() + 90_000;
+    lastGeminiTtsWarning = warning;
+  }
+  return warning;
+}
+
 async function runWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, timeoutMs = 28000): Promise<T> {
   let lastError: any;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -191,6 +253,8 @@ export interface ServerStudentAccount {
   phone: string;
   normalizedPhone: string;
   username: string;
+  isVerified?: boolean;
+  isPreSeededPlaceholder?: boolean;
   createdAt: string;
   lastLoginAt: string;
   lastSyncedAt?: string;
@@ -220,6 +284,87 @@ interface AppData {
   accounts?: Record<string, ServerStudentAccount>;
   challengeRooms?: Record<string, ServerChallengeRoom>;
   quizChallenges?: Record<string, QuizChallengeRoom>;
+  companionPosts?: CompanionCommunityPost[];
+}
+
+const VERIFIED_SERVER_PHONES = new Set(['01094482324']);
+
+function getInitialCompanionPosts(): CompanionCommunityPost[] {
+  const now = Date.now();
+  return [
+    {
+      id: 'cp-seed-1',
+      authorName: 'الحساب الرسمي الموثق',
+      authorPhone: '01094482324',
+      isVerified: true,
+      category: 'تحفيز',
+      content:
+        'دفعة تالتة ثانوي الأبطال 💪: كل مسألة صعبة بتغلط فيها دلوقتي هي درجة كاملة مضمونة في امتحان آخر السنة. كمل وما تسيبش حلمك!',
+      cheers: 24,
+      replies: [
+        {
+          id: 'cpr-1',
+          authorName: 'مريم طارق - الدقهلية',
+          isVerified: false,
+          text: 'شكراً جداً على الدعم، كلامك فرق معايا النهارده والله 🌟',
+          createdAt: new Date(now - 3600_000).toISOString(),
+        },
+      ],
+      createdAt: new Date(now - 7200_000).toISOString(),
+    },
+    {
+      id: 'cp-seed-2',
+      authorName: 'سارة خالد - المنصورة',
+      isVerified: false,
+      category: 'إنجاز يومي',
+      content:
+        'الحمد لله خلصت الباب الأول فيزياء وحليت 60 سؤال نظام حديث من غير ما أبص في الإجابات! عقبالكم جميعاً 🔥',
+      cheers: 17,
+      replies: [],
+      createdAt: new Date(now - 14400_000).toISOString(),
+    },
+    {
+      id: 'cp-seed-3',
+      authorName: 'عمر شريف - القاهرة',
+      isVerified: false,
+      category: 'نصيحة مذاكرة',
+      content:
+        'نصيحة عن تجربة: لما تحس إنك فصلت، خُد 15 دقيقة راحة واشرب مية وصلّي ركعتين، هترجع للمذاكرة بتركيز الضعف.',
+      cheers: 19,
+      replies: [],
+      createdAt: new Date(now - 21600_000).toISOString(),
+    },
+  ];
+}
+
+function ensureSeededAccountsAndPosts(data: AppData): AppData {
+  const nowIso = new Date().toISOString();
+  const accounts = data.accounts || {};
+  if (!accounts['01094482324']) {
+    accounts['01094482324'] = {
+      phone: '01094482324',
+      normalizedPhone: '01094482324',
+      username: 'الحساب الموثق',
+      isVerified: true,
+      isPreSeededPlaceholder: true,
+      createdAt: nowIso,
+      lastLoginAt: nowIso,
+      lastSyncedAt: nowIso,
+    };
+  } else {
+    accounts['01094482324'].isVerified = true;
+  }
+
+  return {
+    ...data,
+    accounts,
+    challengeRooms: data.challengeRooms || {},
+    quizChallenges: data.quizChallenges || {},
+    companionPosts:
+      Array.isArray(data.companionPosts) && data.companionPosts.length > 0
+        ? data.companionPosts
+        : getInitialCompanionPosts(),
+  };
 }
 
 function loadData(): AppData {
@@ -227,19 +372,14 @@ function loadData(): AppData {
     if (fs.existsSync(STORAGE_FILE)) {
       const raw = fs.readFileSync(STORAGE_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      return {
-        ...parsed,
-        accounts: parsed.accounts || {},
-        challengeRooms: parsed.challengeRooms || {},
-        quizChallenges: parsed.quizChallenges || {},
-      };
+      return ensureSeededAccountsAndPosts(parsed);
     }
   } catch (e) {
     console.error('Error reading storage, using defaults:', e);
   }
 
   // Initial Seed
-  return {
+  return ensureSeededAccountsAndPosts({
     ownerPin: process.env.OWNER_PIN || 'Ahmed1122@#',
     telegramSupportUrl: 'https://t.me/Y_lI11',
     codes: [
@@ -261,7 +401,7 @@ function loadData(): AppData {
       },
     ],
     accounts: {},
-  };
+  });
 }
 
 let appData: AppData = loadData();
@@ -385,11 +525,12 @@ app.post('/api/accounts/login', (req, res) => {
 
   const nowIso = new Date().toISOString();
   const existing = appData.accounts[normalizedPhone];
+  const isVerifiedAccount = VERIFIED_SERVER_PHONES.has(normalizedPhone);
 
   if (existing) {
     const namesMatch =
       existing.username.trim().toLowerCase() === cleanName.toLowerCase();
-    if (!namesMatch && !confirmNameUpdate) {
+    if (!namesMatch && !confirmNameUpdate && !existing.isPreSeededPlaceholder) {
       return res.status(409).json({
         success: false,
         code: 'USERNAME_MISMATCH',
@@ -399,10 +540,13 @@ app.post('/api/accounts/login', (req, res) => {
     }
 
     existing.username = cleanName;
+    existing.isVerified = isVerifiedAccount || Boolean(existing.isVerified);
+    existing.isPreSeededPlaceholder = false;
     existing.lastLoginAt = nowIso;
     if (existing.snapshot && existing.snapshot.profile) {
       existing.snapshot.username = cleanName;
       existing.snapshot.profile.name = cleanName;
+      existing.snapshot.profile.isVerified = existing.isVerified;
     }
     saveData();
 
@@ -417,6 +561,7 @@ app.post('/api/accounts/login', (req, res) => {
     phone: normalizedPhone,
     normalizedPhone,
     username: cleanName,
+    isVerified: isVerifiedAccount,
     createdAt: nowIso,
     lastLoginAt: nowIso,
     lastSyncedAt: nowIso,
@@ -445,6 +590,8 @@ app.post('/api/accounts/sync', (req, res) => {
 
   const nowIso = new Date().toISOString();
   const existing = appData.accounts[normalizedPhone];
+  const isVerifiedAccount =
+    VERIFIED_SERVER_PHONES.has(normalizedPhone) || Boolean(existing?.isVerified);
   appData.accounts[normalizedPhone] = {
     phone: normalizedPhone,
     normalizedPhone,
@@ -452,6 +599,8 @@ app.post('/api/accounts/sync', (req, res) => {
       typeof username === 'string' && username.trim()
         ? username.trim()
         : existing?.username || 'طالب نَهج',
+    isVerified: isVerifiedAccount,
+    isPreSeededPlaceholder: false,
     createdAt: existing?.createdAt || nowIso,
     lastLoginAt: existing?.lastLoginAt || nowIso,
     lastSyncedAt: nowIso,
@@ -459,7 +608,7 @@ app.post('/api/accounts/sync', (req, res) => {
   };
   saveData();
 
-  return res.json({ success: true, lastSyncedAt: nowIso });
+  return res.json({ success: true, lastSyncedAt: nowIso, isVerified: isVerifiedAccount });
 });
 
 // Retrieve Latest Activity Snapshot for a Logged-In Student
@@ -665,7 +814,7 @@ app.get('/api/gemini/status', (req, res) => {
   const providers = getConfiguredAIProviders();
   return res.json({
     configured: Boolean(client) || providers.length > 0,
-    model: 'gemini-4-hydrogen / gemini-3.1-flash-lite',
+    model: 'gemini-4-hydrogen (ThinkingLevel.HIGH)',
     providers,
   });
 });
@@ -706,15 +855,18 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
   let responseSource: 'gemini' | 'fallback' = 'fallback';
   let providerLabel = 'المحرك التعليمي السريع';
 
-  if (activeAi) {
+  if (activeAi && Date.now() < geminiTextCooldownUntil) {
+    apiWarning = lastGeminiTextWarning;
+  } else if (activeAi) {
     const candidateModels =
       modeDepth === 'deep'
         ? [
-            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 8500 },
-            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 22000 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 10000 },
           ]
         : [
-            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 12000 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 8000 },
           ];
 
     for (const candidate of candidateModels) {
@@ -741,6 +893,7 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
           if (piece) {
             if (!streamedAnyChunk) {
               clearTimeout(firstChunkTimeout);
+              geminiTextCooldownUntil = 0;
             }
             streamedAnyChunk = true;
             res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
@@ -763,9 +916,10 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
       } catch (err: any) {
         clearTimeout(firstChunkTimeout);
         const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
-        const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
-        apiWarning = classified.userWarning;
+        const rawErr = isAbort ? new Error('TIMEOUT') : err;
+        apiWarning = recordGeminiTextFailure(rawErr);
         console.warn(`Gemini tutor stream (${candidate.model}) failover:`, err?.message || err);
+        if (shouldFastBreakGeminiLoop(rawErr)) break;
       }
     }
   }
@@ -844,15 +998,18 @@ app.post('/api/gemini/tutor', async (req, res) => {
     let providerLabel = 'المحرك التعليمي السريع';
     let apiWarning: string | undefined;
 
-    if (activeAi) {
+    if (activeAi && Date.now() < geminiTextCooldownUntil) {
+      apiWarning = lastGeminiTextWarning;
+    } else if (activeAi) {
       const candidateModels =
         modeDepth === 'deep'
           ? [
-              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 9000 },
-              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6500 },
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 22000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 10000 },
             ]
           : [
-              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 6000 },
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 12000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 8000 },
             ];
 
       for (const candidate of candidateModels) {
@@ -875,6 +1032,7 @@ app.post('/api/gemini/tutor', async (req, res) => {
           );
 
           if (result && result.trim()) {
+            geminiTextCooldownUntil = 0;
             reply = result.trim();
             responseSource = 'gemini';
             providerLabel = candidate.model;
@@ -883,9 +1041,10 @@ app.post('/api/gemini/tutor', async (req, res) => {
           }
         } catch (err: any) {
           const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-          const classified = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err);
-          apiWarning = classified.userWarning;
+          const rawErr = isAbort ? new Error('TIMEOUT') : err;
+          apiWarning = recordGeminiTextFailure(rawErr);
           console.warn(`Gemini tutor (${candidate.model}) failover triggered:`, err?.message || err);
+          if (shouldFastBreakGeminiLoop(rawErr)) break;
         }
       }
     }
@@ -1089,6 +1248,203 @@ app.post('/api/gemini/generate-questions', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'تعذر توليد الأسئلة التفاعلية حالياً، يرجى إعادة المحاولة.',
+    });
+  }
+});
+
+// ----------------- AI Curriculum Lesson Summarizer + Master PDF Sheet Generator -----------------
+app.post('/api/gemini/summarize-lesson', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const subject = String(body.subject || '').trim();
+    const chapter = String(body.chapter || '').trim();
+    const lesson = String(body.lesson || '').trim();
+    const detailLevel = body.detailLevel === 'exam-sprint' ? 'exam-sprint' : 'comprehensive';
+    const customNotes = body.customNotes ? String(body.customNotes).trim() : '';
+    const formulaOrNugget = body.formulaOrNugget ? String(body.formulaOrNugget).trim() : '';
+    const contextPoints = Array.isArray(body.contextPoints)
+      ? body.contextPoints.map((s: any) => String(s || '').trim()).filter(Boolean).slice(0, 6)
+      : [];
+    const examTips = Array.isArray(body.examTips)
+      ? body.examTips.map((s: any) => String(s || '').trim()).filter(Boolean).slice(0, 4)
+      : [];
+
+    if (!subject || !lesson) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى تحديد المادة والدرس أولاً لإنشاء التلخيص المفصل.',
+      });
+    }
+
+    const params: LessonSummaryGenerationParams = {
+      subject,
+      chapter: chapter || 'الفصل المحدد',
+      lesson,
+      detailLevel,
+      customNotes,
+      contextPoints,
+      examTips,
+      formulaOrNugget,
+    };
+
+    const activeAi = getGeminiClient(req);
+    const systemInstruction = buildLessonSummarySystemInstruction();
+    const userPrompt = buildLessonSummaryPrompt(params);
+
+    let normalizedSummary: ReturnType<typeof normalizeLessonSummary> = null;
+    let apiWarning: string | undefined;
+
+    const jsonPromptWithSchemaGuide = `${userPrompt}
+
+أعد النتيجة بصيغة كائن JSON صالح فقط بدون أي نص خارج JSON، وبالمفاتيح التالية بالضبط:
+{
+  "teacherIntro": "مقدمة دافئة ومحفزة من المستر عن أهمية الدرس",
+  "bigIdea": "الفكرة المحورية للدرس في سطرين واضحين",
+  "conceptSections": [
+    {
+      "title": "عنوان المحور",
+      "deepExplanation": "شرح مفصل بالفهم العميق ليه وازاي بتحصل الظاهرة بأسلوب المستر",
+      "whyItMatters": "لماذا نفهم هذه النقطة وعلاقتها بالامتحان",
+      "realLifeExample": "مثال واقعي أو عملي ملموس",
+      "keyTakeaways": ["نقطة خلاصة 1", "نقطة خلاصة 2"]
+    }
+  ],
+  "formulasAndRules": [
+    {
+      "label": "اسم القانون أو القاعدة",
+      "expression": "القانون أو العلاقة بصيغة واضحة",
+      "whenToUse": "متى وكيف نستخدمها في الحل"
+    }
+  ],
+  "examTraps": [
+    {
+      "trap": "الخطأ الشائع الذي يقع فيه الطالب",
+      "truth": "الفهم الصحيح والقاعدة الدقيقة"
+    }
+  ],
+  "solvedQuestions": [
+    {
+      "question": "نص سؤال نظام حديث متكامل",
+      "questionType": "فهم واستنتاج",
+      "steps": ["الخطوة الأولى في التفكير", "الخطوة الثانية", "الخطوة الثالثة"],
+      "answer": "الإجابة النهائية الصحيحة",
+      "teacherNote": "ملاحظة المستر والتريكة المهمة"
+    }
+  ],
+  "quickCheckQuestions": [
+    {
+      "question": "سؤال سريع لاختبار الفهم",
+      "answer": "الإجابة الصحيحة",
+      "explanation": "تعليل سريع بالفهم"
+    }
+  ]
+}`;
+
+    if (activeAi && Date.now() < geminiTextCooldownUntil) {
+      apiWarning = lastGeminiTextWarning;
+    } else if (activeAi) {
+      const candidateModels = [
+        {
+          model: 'gemini-4-hydrogen',
+          thinkingLevel: ThinkingLevel.HIGH,
+          timeoutMs: 28000,
+          label: 'أستاذ نَهج الخبير (Gemini 4 — تحليل عميق)',
+        },
+        {
+          model: 'gemini-3.1-flash-lite',
+          thinkingLevel: ThinkingLevel.LOW,
+          timeoutMs: 14000,
+          label: 'أستاذ نَهج (Gemini Fast)',
+        },
+      ];
+
+      const formattedContents = [
+        {
+          role: 'user' as const,
+          parts: [{ text: jsonPromptWithSchemaGuide }],
+        },
+      ];
+
+      for (const candidate of candidateModels) {
+        try {
+          const rawJsonText = await runWithRetry(async () => {
+            const response = await activeAi.models.generateContent({
+              model: candidate.model,
+              contents: formattedContents,
+              config: {
+                abortSignal: AbortSignal.timeout(candidate.timeoutMs),
+                systemInstruction,
+                thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+                responseMimeType: 'application/json',
+              },
+            });
+            return response.text || '{}';
+          }, 0, candidate.timeoutMs + 500);
+
+          const parsed = extractJsonPayloadFromText(rawJsonText);
+          const candidateSummary = normalizeLessonSummary(parsed, params, {
+            source: 'gemini',
+            providerLabel: candidate.label,
+          });
+          if (candidateSummary) {
+            geminiTextCooldownUntil = 0;
+            normalizedSummary = candidateSummary;
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+          const rawErr = isAbort ? new Error('TIMEOUT') : err;
+          apiWarning = recordGeminiTextFailure(rawErr);
+          console.warn(`Gemini Lesson Summary (${candidate.model}) failover:`, err?.message || err);
+          if (shouldFastBreakGeminiLoop(rawErr)) break;
+        }
+      }
+    }
+
+    if (!normalizedSummary) {
+      try {
+        const secondary = await callStrongSecondaryAI({
+          systemInstruction: `${systemInstruction}\nأعد النتيجة ككائن JSON فقط مطابق للهيكل.`,
+          messages: [{ role: 'user', content: userPrompt }],
+          jsonMode: true,
+          timeoutMs: 12000,
+        });
+        if (secondary) {
+          const parsed = extractJsonPayloadFromText(secondary.text);
+          const candidateSummary = normalizeLessonSummary(parsed, params, {
+            source: 'gemini',
+            providerLabel: secondary.providerLabel,
+          });
+          if (candidateSummary) {
+            normalizedSummary = candidateSummary;
+            apiWarning = undefined;
+          }
+        }
+      } catch (err: any) {
+        console.warn('Secondary AI Lesson Summary error:', err?.message || err);
+      }
+    }
+
+    if (!normalizedSummary) {
+      if (!activeAi && !apiWarning) {
+        apiWarning = 'مفتاح GEMINI_API_KEY غير مضاف؛ تم إعداد الملخص من المحرك التعليمي السريع.';
+      }
+      normalizedSummary = generateLessonSummaryFallback(params, apiWarning);
+    }
+
+    return res.json({
+      success: true,
+      summary: normalizedSummary,
+      source: normalizedSummary.source,
+      providerLabel: normalizedSummary.providerLabel,
+      warning: normalizedSummary.warning,
+    });
+  } catch (error: any) {
+    console.error('Gemini Summarize Lesson Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'تعذر إنشاء ملخص الدرس حالياً، يرجى إعادة المحاولة.',
     });
   }
 });
@@ -1468,6 +1824,766 @@ app.get('/api/quran/surah/:number', async (req, res) => {
   }
 
   return res.status(500).json({ error: 'تعذر جلب آيات السورة، يرجى المحاولة ثانية' });
+});
+
+// ----------------- Instant Smart Translator API -----------------
+async function translateWithMyMemoryFallback(
+  text: string,
+  sourceLang: TranslationLanguageCode,
+  targetLang: TranslationLanguageCode
+): Promise<string | null> {
+  const sentences = text.split(/(?<=[.!؟،\n])\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let current = '';
+  for (const s of sentences) {
+    if ((current + ' ' + s).length <= 420) {
+      current = current ? `${current} ${s}` : s;
+    } else {
+      if (current) chunks.push(current);
+      current = s.slice(0, 420);
+    }
+  }
+  if (current) chunks.push(current);
+  if (chunks.length === 0) chunks.push(text.slice(0, 420));
+
+  const translatedParts: string[] = [];
+  for (const chunk of chunks.slice(0, 5)) {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+      chunk
+    )}&langpair=${encodeURIComponent(sourceLang)}|${encodeURIComponent(targetLang)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    const out = String(data?.responseData?.translatedText || '').trim();
+    if (
+      !out ||
+      out.toUpperCase().includes('MYMEMORY WARNING') ||
+      out.toUpperCase().includes('INVALID LANGUAGE')
+    ) {
+      return null;
+    }
+    translatedParts.push(out);
+  }
+  const joined = translatedParts.join(' ').trim();
+  return joined || null;
+}
+
+app.post('/api/gemini/translate', async (req, res) => {
+  try {
+    const {
+      text,
+      sourceLang = 'en',
+      targetLang = 'ar',
+    } = (req.body || {}) as {
+      text?: string;
+      sourceLang?: TranslationLanguageCode;
+      targetLang?: TranslationLanguageCode;
+    };
+
+    const cleanText = String(text || '').trim();
+    if (!cleanText) {
+      return res.status(400).json({ error: 'يرجى كتابة النص المراد ترجمته.' });
+    }
+
+    const srcMeta = getLanguageMeta(sourceLang);
+    const tgtMeta = getLanguageMeta(targetLang);
+
+    const activeAi = getGeminiClient(req) || ai;
+    let translationPayload: any = null;
+    let apiWarning: string | undefined;
+
+    const systemInstruction = `أنت مترجم أكاديمي ولغوي محترف لطلاب الصف الثالث الثانوي في مصر.
+ترجم النص بدقة من ${srcMeta.labelAr} إلى ${tgtMeta.labelAr}، مع ضبط القواعد والسياق، وتقديم نطق تقريبي بالعربية وملاحظة نحوية مختصرة ومثال تطبيقي واحد.
+أعد JSON فقط بهذه الحقول:
+{
+  "translatedText": "الترجمة الدقيقة",
+  "phoneticPronunciation": "طريقة النطق بحروف عربية واضحة (أو وصف النطق)",
+  "grammarNote": "ملاحظة نحوية أو سياقية مفيدة للطالب بالعربية",
+  "usageExamples": [{ "source": "جملة قصيرة بلغة المصدر", "target": "ترجمتها بلغة الهدف" }]
+}`;
+
+    const promptText = `ترجم النص التالي من ${srcMeta.labelAr} إلى ${tgtMeta.labelAr}:\n"${cleanText}"`;
+
+    if (activeAi && Date.now() < geminiTextCooldownUntil) {
+      apiWarning = lastGeminiTextWarning;
+    } else if (activeAi) {
+      for (const modelName of ['gemini-4-hydrogen', 'gemini-3.1-flash-lite']) {
+        try {
+          const rawJson = await runWithRetry(async () => {
+            const response = await activeAi.models.generateContent({
+              model: modelName,
+              contents: [{ role: 'user', parts: [{ text: promptText }] }],
+              config: {
+                abortSignal: AbortSignal.timeout(4800),
+                systemInstruction,
+                thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+                responseMimeType: 'application/json',
+              },
+            });
+            return response.text || '{}';
+          }, 0, 5200);
+
+          const parsed = extractJsonPayloadFromText(rawJson);
+          if (parsed && typeof parsed.translatedText === 'string' && parsed.translatedText.trim()) {
+            geminiTextCooldownUntil = 0;
+            translationPayload = {
+              sourceText: cleanText,
+              translatedText: parsed.translatedText.trim(),
+              sourceLang,
+              targetLang,
+              phoneticPronunciation: String(parsed.phoneticPronunciation || '').trim(),
+              grammarNote: String(parsed.grammarNote || '').trim(),
+              usageExamples: Array.isArray(parsed.usageExamples)
+                ? parsed.usageExamples
+                    .filter((ex: any) => ex && ex.source && ex.target)
+                    .slice(0, 2)
+                : [],
+              source: 'gemini',
+              providerLabel: 'مترجم نَهج الذكي (Gemini)',
+            };
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          apiWarning = recordGeminiTextFailure(err);
+          if (shouldFastBreakGeminiLoop(err)) break;
+        }
+      }
+    }
+
+    if (!translationPayload) {
+      try {
+        const secondary = await callStrongSecondaryAI({
+          systemInstruction,
+          messages: [{ role: 'user', content: promptText }],
+          jsonMode: true,
+          timeoutMs: 8000,
+        });
+        if (secondary) {
+          const parsed = extractJsonPayloadFromText(secondary.text);
+          if (parsed && typeof parsed.translatedText === 'string' && parsed.translatedText.trim()) {
+            translationPayload = {
+              sourceText: cleanText,
+              translatedText: parsed.translatedText.trim(),
+              sourceLang,
+              targetLang,
+              phoneticPronunciation: String(parsed.phoneticPronunciation || '').trim(),
+              grammarNote: String(parsed.grammarNote || '').trim(),
+              usageExamples: Array.isArray(parsed.usageExamples) ? parsed.usageExamples.slice(0, 2) : [],
+              source: 'gemini',
+              providerLabel: secondary.providerLabel,
+            };
+            apiWarning = undefined;
+          }
+        }
+      } catch {
+        // ignore secondary error and continue to neural machine translation backup
+      }
+    }
+
+    // Tier 3: Real Neural Machine Translation API (works across all 6 languages independently of Gemini quota)
+    if (!translationPayload) {
+      try {
+        const mtText = await translateWithMyMemoryFallback(cleanText, sourceLang, targetLang);
+        if (mtText) {
+          translationPayload = {
+            sourceText: cleanText,
+            translatedText: mtText,
+            sourceLang,
+            targetLang,
+            phoneticPronunciation: `استمع للنطق الصحيح بالضغط على زر السماعة (${tgtMeta.labelAr})`,
+            grammarNote: `تمت الترجمة من ${srcMeta.labelAr} إلى ${tgtMeta.labelAr} بدقة سياقية عبر محرك الترجمة الفوري.`,
+            usageExamples: [{ source: cleanText, target: mtText }],
+            source: 'gemini',
+            providerLabel: 'محرك نَهج الفوري للترجمة الدقيقة',
+          };
+          apiWarning = undefined;
+        }
+      } catch {
+        // fallback below
+      }
+    }
+
+    if (!translationPayload) {
+      translationPayload = buildTranslationFallback({
+        text: cleanText,
+        sourceLang,
+        targetLang,
+        warning: apiWarning,
+      });
+    }
+
+    return res.json({ success: true, result: translationPayload });
+  } catch (error) {
+    console.error('Translate Error:', error);
+    return res.status(500).json({ error: 'تعذر إتمام الترجمة حالياً، يرجى إعادة المحاولة.' });
+  }
+});
+
+// ----------------- «رفيقي» Study & Daily-Life Companion + Community Wall -----------------
+app.post('/api/gemini/companion', async (req, res) => {
+  try {
+    const { message, mood = 'motivated', studentName = 'بطل نَهج', history = [] } = req.body || {};
+    const cleanMessage = String(message || '').trim();
+    if (!cleanMessage) {
+      return res.status(400).json({ error: 'اكتب ما تشعر به أو ما تريد التخطيط له.' });
+    }
+
+    const moodLabel =
+      mood === 'stressed'
+        ? 'مضغوط وقلق'
+        : mood === 'tired'
+        ? 'مرهق ويحتاج شحن طاقة'
+        : mood === 'lost'
+        ? 'مشتت ويحتاج ترتيب أولويات'
+        : 'متحمس ومنجز';
+
+    const systemInstruction = `أنت «رفيقي» — الصديق الداعم والمرشد الشخصي للطالب «${studentName}» في الصف الثالث الثانوي والحياة اليومية.
+حالة الطالب الآن: ${moodLabel}.
+أسلوبك: دافئ، مشجع، واقعي، قريب للقلب باللهجة المصرية المهذبة أو العربية الواضحة، يقدم خطوة عملية قابلة للتنفيذ في 15 دقيقة سواء في المذاكرة أو تنظيم اليوم والراحة والنفسية.
+يجب أن يكون ردك مختلفاً ومرتبطاً مباشرة بسؤال الطالب الأخير دون تكرار الردود السابقة.
+أجب في فقرة مركزة + نصيحة عملية واحدة بعنوان «خطوتك الآن:».`;
+
+    const previousReplies: string[] = Array.isArray(history)
+      ? history
+          .filter((m: any) => m?.role === 'companion' && typeof m?.text === 'string')
+          .map((m: any) => String(m.text))
+      : [];
+
+    // Cleanly sanitize history so it alternates user/model, never starts with model, and never duplicates the final user turn
+    const priorHistory = Array.isArray(history)
+      ? history.slice(0, -1).slice(-6).filter((m: any) => String(m?.text || '').trim())
+      : [];
+    while (priorHistory.length > 0 && priorHistory[0].role === 'companion') {
+      priorHistory.shift();
+    }
+
+    const activeAi = getGeminiClient(req) || ai;
+    let replyText = '';
+    let source: 'gemini' | 'fallback' = 'fallback';
+    let warning: string | undefined;
+
+    if (activeAi && Date.now() < geminiTextCooldownUntil) {
+      warning = lastGeminiTextWarning;
+    } else if (activeAi) {
+      const formattedHistory = priorHistory.map((m: any) => ({
+        role: (m.role === 'companion' ? 'model' : 'user') as 'model' | 'user',
+        parts: [{ text: String(m.text || '').trim() }],
+      }));
+      formattedHistory.push({ role: 'user', parts: [{ text: cleanMessage }] });
+
+      for (const modelName of ['gemini-4-hydrogen', 'gemini-3.1-flash-lite']) {
+        try {
+          const text = await runWithRetry(async () => {
+            const response = await activeAi.models.generateContent({
+              model: modelName,
+              contents: formattedHistory,
+              config: {
+                abortSignal: AbortSignal.timeout(4800),
+                systemInstruction,
+                thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+              },
+            });
+            return response.text || '';
+          }, 0, 5200);
+
+          if (text.trim()) {
+            geminiTextCooldownUntil = 0;
+            replyText = text.trim();
+            source = 'gemini';
+            warning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          warning = recordGeminiTextFailure(err);
+          if (shouldFastBreakGeminiLoop(err)) break;
+        }
+      }
+    }
+
+    if (!replyText) {
+      try {
+        const extMsgs = [
+          ...priorHistory.map((m: any) => ({
+            role: (m.role === 'companion' ? 'assistant' : 'user') as 'user' | 'assistant',
+            content: String(m.text || '').trim(),
+          })),
+          { role: 'user' as const, content: cleanMessage },
+        ];
+        const secondary = await callStrongSecondaryAI({
+          systemInstruction,
+          messages: extMsgs,
+          timeoutMs: 8000,
+        });
+        if (secondary && secondary.text.trim()) {
+          replyText = secondary.text.trim();
+          source = 'gemini';
+          warning = undefined;
+        }
+      } catch {
+        // fallback to dynamic non-repeating companion brain
+      }
+    }
+
+    if (!replyText) {
+      replyText = generateCompanionResponse({
+        message: cleanMessage,
+        mood,
+        studentName,
+        previousReplies,
+      });
+    }
+
+    return res.json({
+      success: true,
+      reply: replyText,
+      source,
+      warning,
+    });
+  } catch (error) {
+    console.error('Companion Error:', error);
+    return res.status(500).json({ error: 'تعذر الرد حالياً من رفيقي.' });
+  }
+});
+
+app.get('/api/companion/posts', (req, res) => {
+  const posts = (appData.companionPosts || []).slice().sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  );
+  return res.json({ success: true, posts });
+});
+
+app.post('/api/companion/posts', (req, res) => {
+  const { authorName, authorPhone, category = 'تحفيز', content } = req.body || {};
+  const cleanContent = String(content || '').trim();
+  const cleanAuthor = String(authorName || 'طالب نَهج').trim();
+
+  if (cleanContent.length < 3) {
+    return res.status(400).json({ error: 'يرجى كتابة رسالة أو نصيحة مفيدة (3 أحرف على الأقل).' });
+  }
+
+  const normalizedPhone = normalizeServerPhone(String(authorPhone || ''));
+  const isVerified = VERIFIED_SERVER_PHONES.has(normalizedPhone);
+
+  const validCategories = ['تحفيز', 'إنجاز يومي', 'طلب مساعدة', 'نصيحة مذاكرة'] as const;
+  const safeCat = validCategories.includes(category) ? category : 'تحفيز';
+
+  const newPost: CompanionCommunityPost = {
+    id: `cp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    authorName: cleanAuthor,
+    authorPhone: normalizedPhone || undefined,
+    isVerified,
+    category: safeCat,
+    content: cleanContent.slice(0, 600),
+    cheers: 1,
+    replies: [],
+    createdAt: new Date().toISOString(),
+  };
+
+  if (!appData.companionPosts) appData.companionPosts = [];
+  appData.companionPosts.unshift(newPost);
+  appData.companionPosts = appData.companionPosts.slice(0, 60);
+  saveData();
+
+  return res.json({ success: true, post: newPost });
+});
+
+app.post('/api/companion/posts/:id/cheer', (req, res) => {
+  const postId = req.params.id;
+  const post = (appData.companionPosts || []).find((p) => p.id === postId);
+  if (!post) {
+    return res.status(404).json({ error: 'المنشور غير موجود' });
+  }
+  post.cheers = (post.cheers || 0) + 1;
+  saveData();
+  return res.json({ success: true, post });
+});
+
+app.post('/api/companion/posts/:id/reply', (req, res) => {
+  const postId = req.params.id;
+  const { authorName, authorPhone, text } = req.body || {};
+  const cleanText = String(text || '').trim();
+  if (cleanText.length < 2) {
+    return res.status(400).json({ error: 'يرجى كتابة رد واضح' });
+  }
+  const post = (appData.companionPosts || []).find((p) => p.id === postId);
+  if (!post) {
+    return res.status(404).json({ error: 'المنشور غير موجود' });
+  }
+  const normalizedPhone = normalizeServerPhone(String(authorPhone || ''));
+  const reply = {
+    id: `cpr-${Date.now()}`,
+    authorName: String(authorName || 'طالب نَهج').trim(),
+    authorPhone: normalizedPhone || undefined,
+    isVerified: VERIFIED_SERVER_PHONES.has(normalizedPhone),
+    text: cleanText.slice(0, 350),
+    createdAt: new Date().toISOString(),
+  };
+  if (!Array.isArray(post.replies)) post.replies = [];
+  post.replies.push(reply);
+  saveData();
+  return res.json({ success: true, post });
+});
+
+// ----------------- Interactive Whiteboard Video Explainer API -----------------
+const whiteboardTtsCache = new Map<
+  string,
+  { audioBase64: string; mimeType: string; voiceName: string; needsMalePitchTune?: boolean }
+>();
+
+const MALE_TEACHER_VOICE_MAP: Record<string, { voiceName: string; style: string }> = {
+  calm_teacher: {
+    voiceName: 'Charon',
+    style:
+      'Deep, calm, warm, authoritative Egyptian male high school teacher explaining a textbook lesson in eloquent clear Arabic with steady natural pacing and clear pauses at punctuation.',
+  },
+  energetic_teacher: {
+    voiceName: 'Fenrir',
+    style:
+      'Clear, confident, engaging male Egyptian lecturer explaining high school science concepts enthusiastically in crisp fluent Arabic without rushing or stumbling.',
+  },
+  academic_lecturer: {
+    voiceName: 'Puck',
+    style:
+      'Articulate, friendly, clear-spoken male teacher guiding high school students step by step in accurate Modern Standard Arabic with natural intonation.',
+  },
+};
+
+async function synthesizeArabicSpeechFallbackMp3(spokenText: string): Promise<string | null> {
+  const sentences = spokenText.split(/(?<=[.!؟،؛])\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let buf = '';
+  for (const s of sentences) {
+    if ((buf + ' ' + s).length <= 165) {
+      buf = buf ? `${buf} ${s}` : s;
+    } else {
+      if (buf) chunks.push(buf);
+      if (s.length <= 165) {
+        buf = s;
+      } else {
+        // Hard word split if a single clause > 165 chars
+        const words = s.split(/\s+/);
+        let wBuf = '';
+        for (const w of words) {
+          if ((wBuf + ' ' + w).length <= 160) {
+            wBuf = wBuf ? `${wBuf} ${w}` : w;
+          } else {
+            if (wBuf) chunks.push(wBuf);
+            wBuf = w;
+          }
+        }
+        buf = wBuf;
+      }
+    }
+  }
+  if (buf) chunks.push(buf);
+  if (chunks.length === 0) return null;
+
+  const audioBuffers: Buffer[] = [];
+  for (const chunk of chunks.slice(0, 8)) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=${encodeURIComponent(
+      chunk
+    )}`;
+    const ttsRes = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!ttsRes.ok) return null;
+    const arrBuf = await ttsRes.arrayBuffer();
+    if (!arrBuf.byteLength) return null;
+    audioBuffers.push(Buffer.from(arrBuf));
+  }
+  if (audioBuffers.length === 0) return null;
+  return Buffer.concat(audioBuffers).toString('base64');
+}
+
+app.post('/api/gemini/whiteboard-tts', async (req, res) => {
+  try {
+    const rawText = String(req.body?.text || '').trim();
+    const voiceStyleKey = String(req.body?.voiceStyle || 'calm_teacher');
+    const selectedVoice =
+      MALE_TEACHER_VOICE_MAP[voiceStyleKey] || MALE_TEACHER_VOICE_MAP.calm_teacher;
+
+    const cleanedText = sanitizeArabicForSpeech(rawText);
+    if (!cleanedText) {
+      return res.status(400).json({
+        success: false,
+        error: 'النص المطلوب نطقه فارغ.',
+      });
+    }
+
+    const spokenText = cleanedText.slice(0, 950);
+    const cacheKey = `${selectedVoice.voiceName}::${spokenText}`;
+    const cached = whiteboardTtsCache.get(cacheKey);
+    if (cached) {
+      return res.json({
+        success: true,
+        audioBase64: cached.audioBase64,
+        mimeType: cached.mimeType,
+        voiceName: cached.voiceName,
+        needsMalePitchTune: Boolean(cached.needsMalePitchTune),
+        cleanedText: spokenText,
+        cached: true,
+      });
+    }
+
+    const activeAi = getGeminiClient(req) || ai;
+    let lastWarning: string | undefined;
+
+    if (activeAi && Date.now() < geminiTtsCooldownUntil) {
+      lastWarning = lastGeminiTtsWarning;
+    } else if (activeAi) {
+      try {
+        const response = await runWithRetry(
+          async () =>
+            activeAi.models.generateContent({
+              model: 'gemini-3.8-flash-lite-tts',
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    {
+                      text: spokenText,
+                      speechMetadata: {
+                        style: selectedVoice.style,
+                      },
+                    },
+                  ],
+                },
+              ],
+              config: {
+                abortSignal: AbortSignal.timeout(8000),
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: selectedVoice.voiceName },
+                  },
+                },
+              },
+            }),
+          0,
+          8500
+        );
+
+        const inlinePart = response.candidates?.[0]?.content?.parts?.find(
+          (p: any) => p?.inlineData?.data
+        )?.inlineData;
+
+        if (inlinePart?.data) {
+          geminiTtsCooldownUntil = 0;
+          const mimeType = inlinePart.mimeType || 'audio/wav';
+          if (whiteboardTtsCache.size >= 80) {
+            const oldestKey = whiteboardTtsCache.keys().next().value;
+            if (oldestKey) whiteboardTtsCache.delete(oldestKey);
+          }
+          whiteboardTtsCache.set(cacheKey, {
+            audioBase64: inlinePart.data,
+            mimeType,
+            voiceName: selectedVoice.voiceName,
+            needsMalePitchTune: false,
+          });
+
+          return res.json({
+            success: true,
+            audioBase64: inlinePart.data,
+            mimeType,
+            voiceName: selectedVoice.voiceName,
+            needsMalePitchTune: false,
+            cleanedText: spokenText,
+            cached: false,
+          });
+        }
+      } catch (ttsErr: any) {
+        lastWarning = recordGeminiTtsFailure(ttsErr);
+      }
+    }
+
+    // Tier 2: Real server-side Arabic MP3 synthesis (pitch-tuned cleanly to male register on client)
+    try {
+      const mp3Base64 = await synthesizeArabicSpeechFallbackMp3(spokenText);
+      if (mp3Base64) {
+        const voiceLabel = `أستاذ نَهج (${selectedVoice.voiceName})`;
+        if (whiteboardTtsCache.size >= 80) {
+          const oldestKey = whiteboardTtsCache.keys().next().value;
+          if (oldestKey) whiteboardTtsCache.delete(oldestKey);
+        }
+        whiteboardTtsCache.set(cacheKey, {
+          audioBase64: mp3Base64,
+          mimeType: 'audio/mpeg',
+          voiceName: voiceLabel,
+          needsMalePitchTune: true,
+        });
+
+        return res.json({
+          success: true,
+          audioBase64: mp3Base64,
+          mimeType: 'audio/mpeg',
+          voiceName: voiceLabel,
+          needsMalePitchTune: true,
+          cleanedText: spokenText,
+          cached: false,
+        });
+      }
+    } catch {
+      // fall through to browser speech
+    }
+
+    return res.json({
+      success: false,
+      fallbackToBrowserMale: true,
+      cleanedText: spokenText,
+      warning: lastWarning || 'تم استخدام الصوت الرجالي المحلي لقراءة الشرح بوضوح.',
+    });
+  } catch (err) {
+    console.error('Whiteboard TTS Error:', err);
+    return res.json({
+      success: false,
+      fallbackToBrowserMale: true,
+      cleanedText: sanitizeArabicForSpeech(String(req.body?.text || '')),
+      warning: 'تم تفعيل الصوت الرجالي البديل لشرح الدرس.',
+    });
+  }
+});
+
+app.post('/api/gemini/whiteboard-lesson', async (req, res) => {
+  try {
+    const { subject, chapter, lesson, chapterSummary } = req.body || {};
+    const cleanSubject = String(subject || '').trim();
+    const cleanChapter = String(chapter || '').trim() || 'المنهج الأساسي';
+    const cleanLesson = String(lesson || '').trim();
+
+    if (!cleanSubject || !cleanLesson) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى اختيار المادة والدرس أولاً لتوليد شرح السبورة.',
+      });
+    }
+
+    const params = {
+      subject: cleanSubject,
+      chapter: cleanChapter,
+      lesson: cleanLesson,
+      chapterSummary:
+        chapterSummary && typeof chapterSummary === 'object'
+          ? {
+              title: String(chapterSummary.title || '').trim(),
+              keyPoints: Array.isArray(chapterSummary.keyPoints)
+                ? chapterSummary.keyPoints.map((p: any) => String(p || '').trim()).filter(Boolean)
+                : [],
+              examTips: Array.isArray(chapterSummary.examTips)
+                ? chapterSummary.examTips.map((p: any) => String(p || '').trim()).filter(Boolean)
+                : [],
+              formulaOrNugget: chapterSummary.formulaOrNugget
+                ? String(chapterSummary.formulaOrNugget).trim()
+                : undefined,
+            }
+          : undefined,
+    };
+    const systemInstruction = buildWhiteboardSystemInstruction();
+    const userPrompt = buildWhiteboardUserPrompt(params);
+    const activeAi = getGeminiClient(req) || ai;
+
+    let script = null;
+    let apiWarning: string | undefined;
+
+    if (activeAi && Date.now() < geminiTextCooldownUntil) {
+      apiWarning = lastGeminiTextWarning;
+    } else if (activeAi) {
+      for (const candidate of [
+        {
+          model: 'gemini-4-hydrogen',
+          label: 'أستاذ نَهج الخبير (Gemini 4 — تحليل وشرح الكتاب العميق)',
+          thinking: ThinkingLevel.HIGH,
+          timeout: 24000,
+        },
+        {
+          model: 'gemini-3.1-flash-lite',
+          label: 'سبورة أستاذ نَهج (Gemini Fast)',
+          thinking: ThinkingLevel.LOW,
+          timeout: 14000,
+        },
+      ]) {
+        try {
+          const rawJson = await runWithRetry(
+            async () => {
+              const response = await activeAi.models.generateContent({
+                model: candidate.model,
+                contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                config: {
+                  abortSignal: AbortSignal.timeout(candidate.timeout),
+                  systemInstruction,
+                  thinkingConfig: { thinkingLevel: candidate.thinking },
+                  responseMimeType: 'application/json',
+                },
+              });
+              return response.text || '{}';
+            },
+            0,
+            candidate.timeout + 500
+          );
+
+          const parsed = extractJsonPayloadFromText(rawJson);
+          const normalized = normalizeWhiteboardLessonScript(parsed, params, {
+            source: 'gemini',
+            providerLabel: candidate.label,
+          });
+          if (normalized) {
+            geminiTextCooldownUntil = 0;
+            script = normalized;
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          apiWarning = recordGeminiTextFailure(err);
+          if (shouldFastBreakGeminiLoop(err)) break;
+        }
+      }
+    }
+
+    if (!script) {
+      try {
+        const secondary = await callStrongSecondaryAI({
+          systemInstruction: `${systemInstruction}\nأعد كائن JSON صالحاً فقط.`,
+          messages: [{ role: 'user', content: userPrompt }],
+          jsonMode: true,
+          timeoutMs: 14000,
+        });
+        if (secondary) {
+          const parsed = extractJsonPayloadFromText(secondary.text);
+          const normalized = normalizeWhiteboardLessonScript(parsed, params, {
+            source: 'gemini',
+            providerLabel: secondary.providerLabel,
+          });
+          if (normalized) {
+            script = normalized;
+            apiWarning = undefined;
+          }
+        }
+      } catch {
+        // fallback below
+      }
+    }
+
+    if (!script) {
+      script = generateWhiteboardFallback(params, apiWarning);
+    }
+
+    return res.json({
+      success: true,
+      script,
+      source: script.source,
+      providerLabel: script.providerLabel,
+      warning: script.warning,
+    });
+  } catch (error) {
+    console.error('Whiteboard Lesson Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'تعذر توليد سيناريو السبورة حالياً، يرجى المحاولة مرة أخرى.',
+    });
+  }
 });
 
 // ----------------- Vite Server Mounting -----------------

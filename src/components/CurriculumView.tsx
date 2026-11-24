@@ -103,6 +103,7 @@ interface CurriculumViewProps {
   onToggleLesson: (subjectId: string, chapterId: string, lessonId: string) => void;
   onAddCustomLesson: (subjectId: string, chapterId: string, lessonTitle: string) => void;
   onAskTutor: (subjectName: string, promptText: string) => void;
+  onOpenSummarizer?: (subjectName: string, chapterTitle: string, lessonTitle?: string) => void;
 }
 
 export const CurriculumView: React.FC<CurriculumViewProps> = ({
@@ -110,6 +111,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   onToggleLesson,
   onAddCustomLesson,
   onAskTutor,
+  onOpenSummarizer,
 }) => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(curriculum[0].id);
   const [activeTabMode, setActiveTabMode] = useState<'lessons' | 'summaries' | 'revision_notes'>('lessons');
@@ -509,18 +511,36 @@ ${note.examTraps || 'انتبه لصياغة الأسئلة وقراءة رأس 
                   </h3>
                 </div>
 
-                <button
-                  onClick={() =>
-                    onAskTutor(
-                      currentSubject.name,
-                      `أستاذ نَهج، اختبرني في ${chapter.title} بـ 4 أسئلة اختيار من متعدد نظام حديث وشوف إجابتي!`
-                    )
-                  }
-                  className="px-3 py-1.5 btn-luxury-gold rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
-                >
-                  <Bot className="w-3.5 h-3.5 text-[#09090B]" />
-                  <span>اختبرني في هذا الباب الآن</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                  {onOpenSummarizer && (
+                    <button
+                      onClick={() =>
+                        onOpenSummarizer(
+                          currentSubject.name,
+                          chapter.title,
+                          chapter.lessons[0]?.title
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/35 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-800 dark:text-[#E8CE88] hover:border-[#D4AF37] transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>شرح ومذكرة PDF</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() =>
+                      onAskTutor(
+                        currentSubject.name,
+                        `أستاذ نَهج، اختبرني في ${chapter.title} بـ 4 أسئلة اختيار من متعدد نظام حديث وشوف إجابتي!`
+                      )
+                    }
+                    className="px-3 py-1.5 btn-luxury-gold rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-[#09090B]" />
+                    <span>اختبرني في هذا الباب الآن</span>
+                  </button>
+                </div>
               </div>
 
               {/* Key Concept Points */}

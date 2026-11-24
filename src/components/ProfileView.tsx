@@ -30,6 +30,8 @@ import {
   formatArabicFullDate,
   formatArabicMonthYear,
 } from '../utils/streakHistory';
+import { VerifiedBadge } from './VerifiedBadge';
+import { isVerifiedPhone } from '../utils/verifiedAccounts';
 
 interface ProfileViewProps {
   profile: StudentProfile;
@@ -382,8 +384,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h1 className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-[#F6E2A6]">
-                      {profile.name}
+                    <h1 className="text-xl sm:text-2xl font-black text-zinc-950 dark:text-[#F6E2A6] flex items-center gap-2">
+                      <span>{profile.name}</span>
+                      {(profile.isVerified || isVerifiedPhone(accountPhone)) && (
+                        <VerifiedBadge size="md" showLabel />
+                      )}
                     </h1>
                     <button
                       onClick={() => {

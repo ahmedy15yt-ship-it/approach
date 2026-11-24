@@ -13,6 +13,7 @@ import {
 import confetti from 'canvas-confetti';
 import { DailyTask, LeaderboardUser } from '../types';
 import { getTaskCycleRemainingMs } from '../data/tasks';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface TasksLeaderboardViewProps {
   tasks: DailyTask[];
@@ -21,6 +22,7 @@ interface TasksLeaderboardViewProps {
   studentXp: number;
   streakDays: number;
   nextStreakAtMs?: number;
+  isCurrentUserVerified?: boolean;
 }
 
 export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
@@ -30,6 +32,7 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
   studentXp,
   streakDays,
   nextStreakAtMs,
+  isCurrentUserVerified = false,
 }) => {
   // 13-Hour Refresh Countdown & 24-Hour Streak Countdown
   const [secondsRemaining, setSecondsRemaining] = useState(() =>
@@ -74,6 +77,7 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
           ...u,
           xp: studentXp,
           streak: streakDays,
+          isVerified: isCurrentUserVerified || u.isVerified,
         };
       }
       return u;
@@ -255,8 +259,9 @@ export const TasksLeaderboardView: React.FC<TasksLeaderboardViewProps> = ({
                       )}
                     </td>
                     <td className="p-3">
-                      <span className="font-bold text-zinc-900 dark:text-[#F4EFE6] block">
-                        {user.name} {user.isCurrentUser && '(أنت)'}
+                      <span className="font-bold text-zinc-900 dark:text-[#F4EFE6] flex items-center gap-1.5">
+                        <span>{user.name} {user.isCurrentUser && '(أنت)'}</span>
+                        {user.isVerified && <VerifiedBadge size="xs" />}
                       </span>
                       <span className="text-[10px] text-zinc-500 dark:text-[#B5AA92] font-medium block">
                         {user.governorate}

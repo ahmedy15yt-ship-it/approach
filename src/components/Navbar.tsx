@@ -20,6 +20,8 @@ import {
   requestNotificationPermission,
   sendNotification,
 } from '../services/notificationService';
+import { VerifiedBadge } from './VerifiedBadge';
+import { isVerifiedPhone } from '../utils/verifiedAccounts';
 
 interface NavbarProps {
   profile: StudentProfile;
@@ -56,9 +58,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     setIsEditingName(false);
   };
 
+  const [notifNotice, setNotifNotice] = useState(false);
+
+  const isVerifiedAccount = Boolean(profile.isVerified || isVerifiedPhone(accountPhone));
+
   const handleToggleNotification = async () => {
     if (!isNotificationSupported()) {
-      alert('متصفحك لا يدعم نظام التنبيهات المباشرة.');
+      setNotifNotice(true);
+      setTimeout(() => setNotifNotice(false), 3000);
       return;
     }
 
@@ -164,10 +171,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <span className="w-2 h-2 rounded-full bg-[#D4AF37] ring-2 ring-[#D4AF37]/30" />
                 <span className="truncate max-w-[130px]">{profile.name || 'طالب نَهج 🩺'}</span>
+                {isVerifiedAccount && <VerifiedBadge size="xs" />}
                 <Edit3 className="w-3 h-3 text-zinc-400 group-hover:text-[#D4AF37]" />
               </div>
             )}
           </div>
+          {notifNotice && (
+            <span className="text-[10px] font-bold text-amber-700 dark:text-[#F3DFA2]">
+              التنبيهات غير مدعومة بهذا المتصفح
+            </span>
+          )}
 
           {/* Dark / Light Theme Toggle Button */}
           {onToggleDarkMode && (

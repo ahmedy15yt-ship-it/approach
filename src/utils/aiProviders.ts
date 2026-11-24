@@ -257,7 +257,20 @@ export function extractJsonPayloadFromText(rawText: string): any {
     .replace(/```json/gi, '')
     .replace(/```/g, '')
     .trim();
-  const parsed = JSON.parse(cleaned);
+
+  let jsonCandidate = cleaned;
+  if (!(cleaned.startsWith('{') && cleaned.endsWith('}')) && !(cleaned.startsWith('[') && cleaned.endsWith(']'))) {
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+    const useArray = firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace);
+    const startIdx = useArray ? firstBracket : firstBrace;
+    const endIdx = useArray ? cleaned.lastIndexOf(']') : cleaned.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx > startIdx) {
+      jsonCandidate = cleaned.slice(startIdx, endIdx + 1);
+    }
+  }
+
+  const parsed = JSON.parse(jsonCandidate);
   if (Array.isArray(parsed)) return parsed;
   if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
   if (parsed && Array.isArray(parsed.items)) return parsed.items;

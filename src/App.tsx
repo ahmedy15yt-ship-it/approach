@@ -18,6 +18,14 @@ import {
   Swords,
   User,
   FileQuestion,
+  BookOpenCheck,
+  Languages,
+  Globe,
+  HeartHandshake,
+  Calculator,
+  BookMarked,
+  Presentation,
+  CheckSquare,
 } from 'lucide-react';
 
 import {
@@ -59,8 +67,17 @@ import { AITutorView } from './components/AITutorView';
 import { FriendsChallengeView } from './components/FriendsChallengeView';
 import { ProfileView } from './components/ProfileView';
 import { QuestionGeneratorView } from './components/QuestionGeneratorView';
+import { LessonSummarizerView } from './components/LessonSummarizerView';
+import { VocabularyVaultView } from './components/VocabularyVaultView';
+import { TranslatorView } from './components/TranslatorView';
+import { CompanionView } from './components/CompanionView';
+import { CalculatorView } from './components/CalculatorView';
+import { QuranKhatmaView } from './components/QuranKhatmaView';
+import { WhiteboardExplainerView } from './components/WhiteboardExplainerView';
+import { DailyTasksView } from './components/DailyTasksView';
 import { PhoneLoginPage } from './components/PhoneLoginPage';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
+import { isVerifiedPhone } from './utils/verifiedAccounts';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
 import { playAdhan, isAutoAdhanEnabled } from './utils/adhanPlayer';
@@ -321,6 +338,9 @@ function AuthenticatedApp({
   });
 
   // Student Profile state (Scoped to logged-in phone & username)
+  const isAccountVerified = Boolean(
+    accountSession.isVerified || isVerifiedPhone(accountSession.normalizedPhone)
+  );
   const [profile, setProfile] = useState<StudentProfile>(() => {
     const p = initialAccountSnapshot?.profile;
     return {
@@ -335,6 +355,7 @@ function AuthenticatedApp({
         p?.dailyWin || 'أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!',
       weightKg: p?.weightKg || 68,
       heightCm: p?.heightCm || 172,
+      isVerified: Boolean(p?.isVerified) || isAccountVerified,
       weeklyHoursAllocation: p?.weeklyHoursAllocation || {
         biology: 6,
         chemistry: 5,
@@ -999,9 +1020,14 @@ function AuthenticatedApp({
   // Active Focus Session (Pomodoro Modal)
   const [activeFocusSession, setActiveFocusSession] = useState<StudySession | null>(null);
 
-  // Prefilled parameters for AI Tutor from other screens
+  // Prefilled parameters for AI Tutor & Lesson Summarizer from other screens
   const [tutorSubject, setTutorSubject] = useState<string>('الأحياء');
   const [tutorPrompt, setTutorPrompt] = useState<string>('');
+  const [summarySelection, setSummarySelection] = useState<{
+    subjectName?: string;
+    chapterTitle?: string;
+    lessonTitle?: string;
+  } | null>(null);
 
   // Automatic daily 4:00 AM Egypt Time task rotation check every 30 seconds
   useEffect(() => {
@@ -1166,6 +1192,15 @@ function AuthenticatedApp({
     setActiveTab('tutor');
   };
 
+  const handleOpenSummarizerFromCurriculum = (
+    subjectName: string,
+    chapterTitle: string,
+    lessonTitle?: string
+  ) => {
+    setSummarySelection({ subjectName, chapterTitle, lessonTitle });
+    setActiveTab('lesson-summarizer');
+  };
+
   // Next study session calculation
   const nextStudySession: StudySession = {
     id: 'next-1',
@@ -1181,10 +1216,18 @@ function AuthenticatedApp({
   const NAV_ITEMS = [
     { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
     { id: 'schedule', label: 'الجدول', icon: Calendar },
+    { id: 'daily-tasks', label: 'المهام اليومية', icon: CheckSquare },
     { id: 'curriculum', label: 'المنهج والكبسولات', icon: BookOpen },
+    { id: 'lesson-summarizer', label: 'ملخصات PDF', icon: BookOpenCheck },
+    { id: 'whiteboard', label: 'سبورة الشرح', icon: Presentation },
+    { id: 'english-vault', label: 'القاموس والجمل', icon: Languages },
+    { id: 'translator', label: 'المترجم', icon: Globe },
+    { id: 'calculator', label: 'الآلة الحاسبة', icon: Calculator },
     { id: 'question-builder', label: 'مُنشئ الأسئلة', icon: FileQuestion },
     { id: 'backlog', label: 'المتراكم', icon: Layers },
     { id: 'tutor', label: 'أستاذ نَهج', icon: Bot, highlight: true },
+    { id: 'companion', label: 'رفيقي والمستخدمون', icon: HeartHandshake },
+    { id: 'khatma', label: 'خطة ختم القرآن', icon: BookMarked },
     { id: 'quran', label: 'القرآن والأذكار والصلاة', icon: Compass },
     { id: 'nutrition', label: 'الأكل والصحة', icon: Utensils },
     { id: 'exercises', label: 'التمارين', icon: Dumbbell },
@@ -1286,12 +1329,74 @@ function AuthenticatedApp({
             />
           )}
 
+          {activeTab === 'daily-tasks' && (
+            <DailyTasksView
+              accountPhone={accountSession.normalizedPhone}
+              systemTasks={dailyTasks}
+              onToggleSystemTask={handleToggleTask}
+              onAwardBonusXp={handleAwardBonusXp}
+              onStartFocusSession={(s) => setActiveFocusSession(s)}
+              onOpenLeaderboard={() => setActiveTab('tasks')}
+            />
+          )}
+
           {activeTab === 'curriculum' && (
             <CurriculumView
               curriculum={curriculum}
               onToggleLesson={handleToggleLesson}
               onAddCustomLesson={handleAddCustomLesson}
               onAskTutor={handleOpenTutorFromConcept}
+              onOpenSummarizer={handleOpenSummarizerFromCurriculum}
+            />
+          )}
+
+          {activeTab === 'lesson-summarizer' && (
+            <LessonSummarizerView
+              curriculum={curriculum}
+              accountPhone={accountSession.normalizedPhone}
+              initialSelection={summarySelection}
+              onAwardBonusXp={handleAwardBonusXp}
+              onAskTutor={handleOpenTutorFromConcept}
+              onPracticeQuestions={() => setActiveTab('question-builder')}
+            />
+          )}
+
+          {activeTab === 'english-vault' && (
+            <VocabularyVaultView
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'translator' && (
+            <TranslatorView
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'calculator' && <CalculatorView />}
+
+          {activeTab === 'whiteboard' && (
+            <WhiteboardExplainerView
+              curriculum={curriculum}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'companion' && (
+            <CompanionView
+              studentName={profile.name}
+              accountPhone={accountSession.normalizedPhone}
+              isStudentVerified={isAccountVerified}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'khatma' && (
+            <QuranKhatmaView
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
             />
           )}
 
@@ -1328,6 +1433,7 @@ function AuthenticatedApp({
               currentGovernorate={profile.governorate}
               onUpdateGovernorate={(gov) => setProfile((p) => ({ ...p, governorate: gov }))}
               onAwardBonusXp={handleAwardBonusXp}
+              accountPhone={accountSession.normalizedPhone}
             />
           )}
 
@@ -1365,12 +1471,14 @@ function AuthenticatedApp({
               studentXp={profile.totalXp}
               streakDays={profile.streakDays}
               nextStreakAtMs={streakLastTickMs + STREAK_INTERVAL_MS}
+              isCurrentUserVerified={isAccountVerified}
             />
           )}
 
           {activeTab === 'challenges' && (
             <FriendsChallengeView
               studentName={profile.name}
+              isStudentVerified={isAccountVerified}
               studyLog={todayStudyLog}
               challenges={friendChallenges}
               streakHistory={streakHistory}

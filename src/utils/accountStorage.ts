@@ -9,6 +9,7 @@ import {
   StudentProfile,
   Subject,
 } from '../types';
+import { isVerifiedPhone } from './verifiedAccounts';
 
 export const ACTIVE_ACCOUNT_KEY = 'nahj_active_account';
 export const ACCOUNT_DATA_PREFIX = 'nahj_account_data_';
@@ -22,6 +23,7 @@ export interface SavedAccountSummary {
   lastUsedAt: string;
   streakDays: number;
   totalXp: number;
+  isVerified?: boolean;
 }
 
 export function normalizeDigits(input: string): string {
@@ -98,7 +100,10 @@ export function getActiveAccountSession(): AccountSession | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as AccountSession;
     if (parsed && parsed.normalizedPhone && parsed.username) {
-      return parsed;
+      return {
+        ...parsed,
+        isVerified: Boolean(parsed.isVerified) || isVerifiedPhone(parsed.normalizedPhone),
+      };
     }
   } catch {
     // ignore malformed session
@@ -147,6 +152,7 @@ export function saveLocalAccountSnapshot(snapshot: StudentActivitySnapshot): voi
       lastUsedAt: snapshot.updatedAt || new Date().toISOString(),
       streakDays: snapshot.profile?.streakDays || 0,
       totalXp: snapshot.profile?.totalXp || 0,
+      isVerified: Boolean(snapshot.profile?.isVerified) || isVerifiedPhone(snapshot.normalizedPhone),
     });
   } catch {
     // ignore quota errors
@@ -348,6 +354,10 @@ export async function loginWithPhoneAndUsername(params: {
     chosenSnapshot = serverSnapshot || localSnapshot;
   }
 
+  const serverVerified = Boolean(
+    chosenSnapshot?.profile?.isVerified || isVerifiedPhone(normalizedPhone)
+  );
+
   if (chosenSnapshot) {
     chosenSnapshot = {
       ...chosenSnapshot,
@@ -355,6 +365,7 @@ export async function loginWithPhoneAndUsername(params: {
       profile: {
         ...chosenSnapshot.profile,
         name: cleanName,
+        isVerified: serverVerified,
       },
     };
     saveLocalAccountSnapshot(chosenSnapshot);
@@ -367,6 +378,7 @@ export async function loginWithPhoneAndUsername(params: {
     username: cleanName,
     loggedInAt: nowIso,
     lastSyncedAt: chosenSnapshot?.updatedAt || nowIso,
+    isVerified: serverVerified,
   };
 
   setActiveAccountSession(session);
@@ -377,6 +389,7 @@ export async function loginWithPhoneAndUsername(params: {
     lastUsedAt: nowIso,
     streakDays: chosenSnapshot?.profile?.streakDays || 0,
     totalXp: chosenSnapshot?.profile?.totalXp || 0,
+    isVerified: serverVerified,
   });
 
   return {

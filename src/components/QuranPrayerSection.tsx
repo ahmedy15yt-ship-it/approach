@@ -41,6 +41,7 @@ import {
   Ayah,
 } from '../data/quran';
 import { AzkarTasbihSection } from './AzkarTasbihSection';
+import { QuranKhatmaView } from './QuranKhatmaView';
 import {
   MUEZZINS,
   isAdhanPlaying,
@@ -57,15 +58,17 @@ interface QuranPrayerSectionProps {
   currentGovernorate: string;
   onUpdateGovernorate: (govName: string) => void;
   onAwardBonusXp?: (amount: number) => void;
+  accountPhone?: string;
 }
 
 export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
   currentGovernorate,
   onUpdateGovernorate,
   onAwardBonusXp,
+  accountPhone,
 }) => {
-  // Main Tab: Quran or Azkar
-  const [activeMainSection, setActiveMainSection] = useState<'quran' | 'azkar'>('quran');
+  // Main Tab: Quran, Azkar, or Khatma Plan
+  const [activeMainSection, setActiveMainSection] = useState<'quran' | 'azkar' | 'khatma'>('quran');
 
   const [selectedGov, setSelectedGov] = useState<Governorate>(() => {
     return (
@@ -323,39 +326,53 @@ export const QuranPrayerSection: React.FC<QuranPrayerSectionProps> = ({
 
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
-      {/* 0) Top Main Navigation Tabs: Quran & Prayers vs Azkar & Tasbih */}
-      <div className="flex items-center gap-2 p-1.5 bg-zinc-200/70 dark:bg-[#09090C] border border-zinc-300/70 dark:border-[#D4AF37]/30 rounded-2xl">
+      {/* 0) Top Main Navigation Tabs: Quran & Prayers vs Azkar & Tasbih vs Khatma */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-zinc-200/70 dark:bg-[#09090C] border border-zinc-300/70 dark:border-[#D4AF37]/30 rounded-2xl">
         <button
           onClick={() => setActiveMainSection('quran')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
             activeMainSection === 'quran'
               ? 'btn-luxury-gold shadow-md'
               : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-900 dark:hover:text-[#F6E2A6] hover:bg-white/60 dark:hover:bg-[#19191F]'
           }`}
         >
           <Compass className="w-4 h-4" />
-          <span>المصحف الشريف ومواقيت الصلاة والأذان</span>
+          <span>المصحف ومواقيت الصلاة</span>
+        </button>
+
+        <button
+          onClick={() => setActiveMainSection('khatma')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
+            activeMainSection === 'khatma'
+              ? 'btn-luxury-gold shadow-md'
+              : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-900 dark:hover:text-[#F6E2A6] hover:bg-white/60 dark:hover:bg-[#19191F]'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>خطة ختم القرآن</span>
         </button>
 
         <button
           onClick={() => setActiveMainSection('azkar')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
             activeMainSection === 'azkar'
               ? 'btn-luxury-gold shadow-md'
               : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-900 dark:hover:text-[#F6E2A6] hover:bg-white/60 dark:hover:bg-[#19191F]'
           }`}
         >
           <Sparkles className={`w-4 h-4 ${activeMainSection === 'azkar' ? 'text-[#09090B]' : 'text-[#D4AF37]'}`} />
-          <span>حصن المسلم وأذكار المذاكرة والمسبحة</span>
-          <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${activeMainSection === 'azkar' ? 'bg-[#09090B] text-[#F6E2A6]' : 'bg-[#D4AF37] text-[#09090B]'}`}>
-            جديد
-          </span>
+          <span>الأذكار والمسبحة</span>
         </button>
       </div>
 
       {/* Render Azkar & Tasbih View if selected */}
       {activeMainSection === 'azkar' && (
         <AzkarTasbihSection onAwardXp={onAwardBonusXp} />
+      )}
+
+      {/* Render Quran Khatma Plan if selected */}
+      {activeMainSection === 'khatma' && (
+        <QuranKhatmaView accountPhone={accountPhone} onAwardBonusXp={onAwardBonusXp} />
       )}
 
       {/* Render Quran & Prayer Times if selected */}
