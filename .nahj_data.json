@@ -40,35 +40,37 @@
     "01094482324": {
       "phone": "01094482324",
       "normalizedPhone": "01094482324",
-      "username": "AHMED YAHYA",
+      "username": "الجوكر المطور",
+      "isVerified": true,
+      "isPreSeededPlaceholder": false,
       "createdAt": "2026-11-15T16:46:10.131Z",
       "lastLoginAt": "2026-11-24T17:31:49.685Z",
-      "lastSyncedAt": "2026-11-24T17:30:31.526Z",
+      "lastSyncedAt": "2026-11-25T16:58:41.551Z",
       "snapshot": {
-        "username": "AHMED YAHYA",
+        "username": "الجوكر المطور",
         "phone": "01094482324",
         "normalizedPhone": "01094482324",
         "profile": {
-          "name": "AHMED YAHYA",
+          "name": "الجوكر المطور",
           "codeMasked": "010••••324",
-          "streakDays": 9,
-          "totalXp": 3468,
-          "rankTitle": "طبيب المستقبل 🩺",
+          "streakDays": 10,
+          "totalXp": 3699,
+          "rankTitle": "دكتور امتياز قريباً",
           "governorate": "قنا",
           "dailyWaterCups": 5,
           "dailyWin": "أنهيت فصل الدعامة في النبات وحليت 40 سؤالاً بدون أي خطأ!",
           "weightKg": 85,
           "heightCm": 179,
+          "isVerified": true,
           "weeklyHoursAllocation": {
-            "biology": 6,
-            "chemistry": 5,
-            "physics": 5,
-            "geology": 4,
-            "arabic": 5,
-            "english": 4,
-            "second-language": 3
-          },
-          "isVerified": true
+            "biology": 3,
+            "chemistry": 3,
+            "physics": 3,
+            "geology": 2,
+            "arabic": 3,
+            "english": 3,
+            "second-language": 1
+          }
         },
         "curriculum": [
           {
@@ -1148,35 +1150,35 @@
         ],
         "dailyTasks": [
           {
-            "id": "c2-study",
-            "title": "حل 25 سؤال نظام حديث (اختيار من متعدد) مع تدوين أفكار الأسئلة الصعبة",
+            "id": "c3-study",
+            "title": "كتابة مذكرة أو ملخص قوانين/مقارنات في صفحة واحدة لأحد فصول المنهج",
             "category": "study",
-            "xp": 55,
+            "xp": 50,
             "isDone": false,
             "targetCount": 1,
             "currentCount": 0
           },
           {
-            "id": "c2-prayer",
-            "title": "أداء الصلوات الخمس في وقتها + قراءة ورد القرآن اليومي (صفحتين على الأقل)",
+            "id": "c3-prayer",
+            "title": "المحافظة على صلاة الجماعة أو الصلاة في أول الوقت مع أذكار المذاكرة",
             "category": "prayer",
-            "xp": 45,
+            "xp": 40,
             "isDone": false,
             "targetCount": 5,
             "currentCount": 0
           },
           {
-            "id": "c2-water",
-            "title": "شرب كوب ماء قبل كل جلسة مذاكرة لتقوية الذاكرة قصيرة المدى",
+            "id": "c3-water",
+            "title": "تجنب المشروبات الغازية واستبدالها بالماء أو كوب شاي أخضر/أعشاب",
             "category": "water",
-            "xp": 30,
+            "xp": 35,
             "isDone": false,
             "targetCount": 8,
             "currentCount": 0
           },
           {
-            "id": "c2-backlog",
-            "title": "مراجعة وحل تطبيق عملي على أصعب درس مؤجل في الكيمياء أو الفيزياء",
+            "id": "c3-backlog",
+            "title": "إغلاق مسألة متراكمة كاملة أو مراجعة باب قديم في الأحياء أو الجيولوجيا",
             "category": "backlog",
             "xp": 60,
             "isDone": false,
@@ -1184,8 +1186,8 @@
             "currentCount": 0
           },
           {
-            "id": "c2-exercise",
-            "title": "مشي سريع أو تمرين تنفس 4-7-8 لتفريغ التوتر بين جلسات المذاكرة",
+            "id": "c3-exercise",
+            "title": "تمارين إطالة العمود الفقري والكتفين لمنع آلام الجلوس على المكتب",
             "category": "exercise",
             "xp": 35,
             "isDone": false,
@@ -1193,8 +1195,8 @@
             "currentCount": 0
           },
           {
-            "id": "c2-mindset",
-            "title": "اختبار نفسك مع أستاذ نَهج في 3 أسئلة تفاعلية وتصحيح أي تركة خطأ",
+            "id": "c3-mindset",
+            "title": "تطبيق ساعة كاملة بدون سوشيال ميديا أو تشتيت الهاتف (Focus Mode)",
             "category": "mindset",
             "xp": 30,
             "isDone": false,
@@ -1202,13 +1204,13 @@
             "currentCount": 0
           }
         ],
-        "taskCycleIndex": 20781,
+        "taskCycleIndex": 20782,
         "todayStudyLog": {
-          "date": "2026-11-24",
-          "hours": 0,
-          "sessionsCount": 0,
-          "dailyGoalHours": 8,
-          "updatedAt": "2026-11-24T16:28:53.849Z"
+          "date": "2026-11-25",
+          "hours": 0.42,
+          "sessionsCount": 1,
+          "dailyGoalHours": 6,
+          "updatedAt": "2026-11-25T16:54:46.113Z"
         },
         "friendChallenges": [
           {
@@ -1216,21 +1218,26 @@
             "title": "ماراثون 6 ساعات فيزياء وكيمياء ⚡",
             "friendName": "Ahmed",
             "targetHours": 6,
-            "myHours": 1.08,
+            "myHours": 1.5,
             "friendHours": 0,
             "status": "active",
             "rewardXp": 80,
             "rewardClaimed": false,
-            "shareCode": "NAHJ-CH:eyJ2IjoxLCJpZCI6ImNoLTE3OTQ3NjEzMTE5NTYiLCJ0aXRsZSI6ItmF2KfYsdin2KvZiNmGIDYg2LPYp9i52KfYqiDZgdmK2LLZitin2KEg2YjZg9mK2YXZitin2KEg4pqhIiwiY2hhbGxlbmdlck5hbWUiOiJBSE1FRCIsInRhcmdldEhvdXJzIjo2LCJjaGFsbGVuZ2VySG91cnMiOjEuMDgsInNlc3Npb25EdXJhdGlvbk1pbnV0ZXMiOjUwLCJzZXNzaW9uU3RhcnRlZEF0IjoiMjAyNi0xMS0yMVQxMzoxNjoyOS41OTZaIiwiY3JlYXRlZEF0IjoiMjAyNi0xMS0xNVQxNjo0ODozMS45NTZaIn0=",
+            "shareCode": "NAHJ-CH:eyJ2IjoxLCJpZCI6ImNoLTE3OTQ3NjEzMTE5NTYiLCJ0aXRsZSI6ItmF2KfYsdin2KvZiNmGIDYg2LPYp9i52KfYqiDZgdmK2LLZitin2KEg2YjZg9mK2YXZitin2KEg4pqhIiwiY2hhbGxlbmdlck5hbWUiOiLYp9mE2KzZiNmD2LEiLCJ0YXJnZXRIb3VycyI6NiwiY2hhbGxlbmdlckhvdXJzIjoxLjUsInNlc3Npb25EdXJhdGlvbk1pbnV0ZXMiOjUwLCJzZXNzaW9uU3RhcnRlZEF0IjoiMjAyNi0xMS0yMVQxMzoxNjoyOS41OTZaIiwiY3JlYXRlZEF0IjoiMjAyNi0xMS0xNVQxNjo0ODozMS45NTZaIn0=",
             "sessionDurationMinutes": 50,
             "sessionStartedAt": "2026-11-21T13:16:29.596Z",
             "sessionCompletedCount": 1,
             "createdAt": "2026-11-15T16:48:31.956Z",
-            "updatedAt": "2026-11-21T13:16:29.596Z",
+            "updatedAt": "2026-11-25T16:54:46.115Z",
             "dailyHistory": [
               {
                 "date": "2026-11-21",
                 "myHours": 1.08,
+                "friendHours": 0
+              },
+              {
+                "date": "2026-11-25",
+                "myHours": 1.5,
                 "friendHours": 0
               }
             ]
@@ -1271,13 +1278,20 @@
             "xpEarned": 0,
             "note": "تحديث تلقائي بعد إتمام دورة الـ 24 ساعة",
             "updatedAt": "2026-11-24T16:28:54.498Z"
+          },
+          "2026-11-25": {
+            "date": "2026-11-25",
+            "status": "completed",
+            "studyHours": 0.42,
+            "tasksCompleted": 0,
+            "xpEarned": 0,
+            "note": "تحديث تلقائي بعد إتمام دورة الـ 24 ساعة",
+            "updatedAt": "2026-11-25T16:54:46.115Z"
           }
         },
-        "streakLastTickMs": 1795529055489,
-        "updatedAt": "2026-11-24T17:30:29.292Z"
-      },
-      "isVerified": true,
-      "isPreSeededPlaceholder": false
+        "streakLastTickMs": 1795615455489,
+        "updatedAt": "2026-11-25T16:58:38.492Z"
+      }
     }
   },
   "challengeRooms": {

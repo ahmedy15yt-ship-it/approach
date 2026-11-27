@@ -21,11 +21,17 @@ import {
   BookOpenCheck,
   Languages,
   Globe,
-  HeartHandshake,
   Calculator,
   BookMarked,
   Presentation,
   CheckSquare,
+  Atom,
+  BookA,
+  ListChecks,
+  ShieldCheck,
+  PenTool,
+  SpellCheck,
+  AlertOctagon,
 } from 'lucide-react';
 
 import {
@@ -40,6 +46,7 @@ import {
   StreakHistoryEntry,
   AccountSession,
   StudentActivitySnapshot,
+  MistakeItem,
 } from './types';
 import { INITIAL_CURRICULUM } from './data/curriculum';
 import {
@@ -70,13 +77,22 @@ import { QuestionGeneratorView } from './components/QuestionGeneratorView';
 import { LessonSummarizerView } from './components/LessonSummarizerView';
 import { VocabularyVaultView } from './components/VocabularyVaultView';
 import { TranslatorView } from './components/TranslatorView';
-import { CompanionView } from './components/CompanionView';
 import { CalculatorView } from './components/CalculatorView';
 import { QuranKhatmaView } from './components/QuranKhatmaView';
 import { WhiteboardExplainerView } from './components/WhiteboardExplainerView';
 import { DailyTasksView } from './components/DailyTasksView';
+import { UnderstandingLabView } from './components/UnderstandingLabView';
+import { SubjectTermsView } from './components/SubjectTermsView';
+import { StudyWithMeView } from './components/StudyWithMeView';
+import { EssayPracticeView } from './components/EssayPracticeView';
+import { MyMistakesView } from './components/MyMistakesView';
+import { SolidifyLessonView } from './components/SolidifyLessonView';
+import { IrabAnalyzerView } from './components/IrabAnalyzerView';
 import { PhoneLoginPage } from './components/PhoneLoginPage';
 import { PomodoroTimerModal } from './components/PomodoroTimerModal';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { appendMistake } from './utils/mistakesStorage';
 import { isVerifiedPhone } from './utils/verifiedAccounts';
 import { isNotificationsEnabled, notifyPrayerTime } from './services/notificationService';
 import { announcePrayer, announceTask, playBellChime } from './utils/voiceAlerts';
@@ -1110,6 +1126,48 @@ function AuthenticatedApp({
     );
   };
 
+  const [mistakeBump, setMistakeBump] = useState<number>(0);
+
+  const handleSaveMistake = (
+    mistake: Omit<MistakeItem, 'id' | 'reviewCount' | 'isResolved' | 'createdAt'>
+  ) => {
+    appendMistake(accountSession.normalizedPhone, mistake);
+    setMistakeBump((n) => n + 1);
+  };
+
+  const handleSolidifyCurriculumLesson = (
+    subjectId: string,
+    chapterId: string,
+    lessonId: string
+  ) => {
+    setCurriculum((prev) =>
+      prev.map((subj) => {
+        if (subj.id !== subjectId) return subj;
+        return {
+          ...subj,
+          chapters: subj.chapters.map((ch) => {
+            if (ch.id !== chapterId) return ch;
+            return {
+              ...ch,
+              lessons: ch.lessons.map((les) => {
+                if (les.id !== lessonId) return les;
+                if (!les.isCompleted) {
+                  setProfile((p) => ({ ...p, totalXp: p.totalXp + 20 }));
+                  recordTodayAchievement({ xpDelta: 20 });
+                }
+                return {
+                  ...les,
+                  isCompleted: true,
+                  completedAt: les.completedAt || new Date().toISOString(),
+                };
+              }),
+            };
+          }),
+        };
+      })
+    );
+  };
+
   const handleAddCustomLesson = (subjectId: string, chapterId: string, title: string) => {
     setCurriculum((prev) =>
       prev.map((subj) => {
@@ -1218,6 +1276,13 @@ function AuthenticatedApp({
     { id: 'schedule', label: 'الجدول', icon: Calendar },
     { id: 'daily-tasks', label: 'المهام اليومية', icon: CheckSquare },
     { id: 'curriculum', label: 'المنهج والكبسولات', icon: BookOpen },
+    { id: 'understanding-lab', label: 'الفهم والتجارب', icon: Atom },
+    { id: 'study-with-me', label: 'ذاكر معايا', icon: ListChecks },
+    { id: 'solidify-lesson', label: 'ثبت درسك', icon: ShieldCheck },
+    { id: 'subject-terms', label: 'مصطلحات المادة', icon: BookA },
+    { id: 'essay-practice', label: 'تدرب على المقالي', icon: PenTool },
+    { id: 'irab-analyzer', label: 'الإعراب النحوي', icon: SpellCheck },
+    { id: 'my-mistakes', label: 'غلطاتي', icon: AlertOctagon },
     { id: 'lesson-summarizer', label: 'ملخصات PDF', icon: BookOpenCheck },
     { id: 'whiteboard', label: 'سبورة الشرح', icon: Presentation },
     { id: 'english-vault', label: 'القاموس والجمل', icon: Languages },
@@ -1226,7 +1291,6 @@ function AuthenticatedApp({
     { id: 'question-builder', label: 'مُنشئ الأسئلة', icon: FileQuestion },
     { id: 'backlog', label: 'المتراكم', icon: Layers },
     { id: 'tutor', label: 'أستاذ نَهج', icon: Bot, highlight: true },
-    { id: 'companion', label: 'رفيقي والمستخدمون', icon: HeartHandshake },
     { id: 'khatma', label: 'خطة ختم القرآن', icon: BookMarked },
     { id: 'quran', label: 'القرآن والأذكار والصلاة', icon: Compass },
     { id: 'nutrition', label: 'الأكل والصحة', icon: Utensils },
@@ -1316,6 +1380,7 @@ function AuthenticatedApp({
               onQuickAddStudyHours={(delta) => syncMyHoursAcrossChallenges(delta, 0)}
               onLogStudyMinutes={handleLogStudyMinutes}
               nextStreakAtMs={streakLastTickMs + STREAK_INTERVAL_MS}
+              accountPhone={accountSession.normalizedPhone}
             />
           )}
 
@@ -1384,12 +1449,63 @@ function AuthenticatedApp({
             />
           )}
 
-          {activeTab === 'companion' && (
-            <CompanionView
-              studentName={profile.name}
+          {activeTab === 'understanding-lab' && (
+            <UnderstandingLabView
+              curriculum={curriculum}
               accountPhone={accountSession.normalizedPhone}
-              isStudentVerified={isAccountVerified}
               onAwardBonusXp={handleAwardBonusXp}
+              onAskTutor={handleOpenTutorFromConcept}
+            />
+          )}
+
+          {activeTab === 'subject-terms' && (
+            <SubjectTermsView
+              curriculum={curriculum}
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'study-with-me' && (
+            <StudyWithMeView
+              curriculum={curriculum}
+              onAwardBonusXp={handleAwardBonusXp}
+              onSaveMistake={handleSaveMistake}
+            />
+          )}
+
+          {activeTab === 'solidify-lesson' && (
+            <SolidifyLessonView
+              curriculum={curriculum}
+              accountPhone={accountSession.normalizedPhone}
+              onSolidifyCurriculumLesson={handleSolidifyCurriculumLesson}
+              onAwardBonusXp={handleAwardBonusXp}
+              onSaveMistake={handleSaveMistake}
+            />
+          )}
+
+          {activeTab === 'essay-practice' && (
+            <EssayPracticeView
+              curriculum={curriculum}
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+              onSaveMistake={handleSaveMistake}
+            />
+          )}
+
+          {activeTab === 'irab-analyzer' && (
+            <IrabAnalyzerView
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+            />
+          )}
+
+          {activeTab === 'my-mistakes' && (
+            <MyMistakesView
+              curriculum={curriculum}
+              accountPhone={accountSession.normalizedPhone}
+              onAwardBonusXp={handleAwardBonusXp}
+              externalMistakeBump={mistakeBump}
             />
           )}
 
@@ -1425,6 +1541,7 @@ function AuthenticatedApp({
               accountPhone={accountSession.normalizedPhone}
               onAwardBonusXp={handleAwardBonusXp}
               onAskTutor={handleOpenTutorFromConcept}
+              onSaveMistake={handleSaveMistake}
             />
           )}
 
@@ -1585,12 +1702,15 @@ function AuthenticatedApp({
           <div className="bg-white dark:bg-[#19191F] w-full rounded-t-3xl p-6 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto border-t border-amber-200/70 dark:border-[#D4AF37]/35">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-[#D4AF37]/20">
               <span className="font-extrabold text-sm text-zinc-950 dark:text-[#E8CE88]">باقي أقسام نَهج</span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full text-zinc-500 dark:text-[#E8CE88] hover:bg-zinc-100 dark:hover:bg-[#101014]"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <PWAInstallButton />
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 rounded-full text-zinc-500 dark:text-[#E8CE88] hover:bg-zinc-100 dark:hover:bg-[#101014]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -1619,6 +1739,9 @@ function AuthenticatedApp({
           </div>
         </div>
       )}
+
+      {/* Offline Connectivity Indicator */}
+      <OfflineIndicator />
 
       {/* Pomodoro Focus Timer Modal */}
       {activeFocusSession && (

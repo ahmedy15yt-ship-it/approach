@@ -47,6 +47,7 @@ import {
 import { playBellChime, announceSessionComplete } from '../utils/voiceAlerts';
 import { streamTutorReply } from '../utils/tutorStreamClient';
 import { VerifiedBadge } from './VerifiedBadge';
+import { ExamCountdownWidget } from './ExamCountdownWidget';
 
 interface DashboardViewProps {
   profile: StudentProfile;
@@ -67,6 +68,7 @@ interface DashboardViewProps {
   onQuickAddStudyHours?: (deltaHours: number) => void;
   onLogStudyMinutes?: (minutes: number) => void;
   nextStreakAtMs?: number;
+  accountPhone?: string;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -88,6 +90,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onQuickAddStudyHours,
   onLogStudyMinutes,
   nextStreakAtMs,
+  accountPhone,
 }) => {
   // Embedded Pomodoro Timer State
   const [pomoPresetMinutes, setPomoPresetMinutes] = useState<number>(25);
@@ -849,15 +852,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <p className="text-xs text-zinc-500 dark:text-[#B5AA92]">تتغير المهام الستة تلقائياً كل يوم الساعة 4:00 صباحاً بتوقيت مصر وتمنحك نقاط المتفوقين</p>
           </div>
-          <div className="text-left">
-            <span className="text-xs font-bold text-[#9A7218] dark:text-[#E8CE88] block tabular-nums">
-              {completedTasksCount} من {tasks.length} منجز
-            </span>
-            <div className="w-24 h-2 bg-zinc-200 dark:bg-[#09090C] rounded-full overflow-hidden mt-1 border border-transparent dark:border-[#D4AF37]/20">
-              <div
-                className="h-full bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722] transition-all duration-300"
-                style={{ width: `${tasksPercent}%` }}
-              />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onNavigateTab('daily-tasks')}
+              className="px-3 py-1.5 rounded-xl bg-zinc-50 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/30 text-[11px] font-black text-[#9A7218] dark:text-[#E8CE88] hover:border-[#D4AF37] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              إضافة مهامك اليومية ←
+            </button>
+            <div className="text-left">
+              <span className="text-xs font-bold text-[#9A7218] dark:text-[#E8CE88] block tabular-nums">
+                {completedTasksCount} من {tasks.length} منجز
+              </span>
+              <div className="w-24 h-2 bg-zinc-200 dark:bg-[#09090C] rounded-full overflow-hidden mt-1 border border-transparent dark:border-[#D4AF37]/20">
+                <div
+                  className="h-full bg-gradient-to-l from-[#F6E2A6] via-[#D4AF37] to-[#B58722] transition-all duration-300"
+                  style={{ width: `${tasksPercent}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -947,6 +959,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Exam Dates Countdown Table */}
+      <ExamCountdownWidget accountPhone={accountPhone} />
 
       {/* Quick Launchpad to Core Sections */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

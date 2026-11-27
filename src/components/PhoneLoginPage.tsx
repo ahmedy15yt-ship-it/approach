@@ -21,6 +21,7 @@ import {
 } from '../utils/accountStorage';
 import { VerifiedBadge } from './VerifiedBadge';
 import { isVerifiedPhone } from '../utils/verifiedAccounts';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface PhoneLoginPageProps {
   isDarkMode: boolean;
@@ -114,24 +115,28 @@ export const PhoneLoginPage: React.FC<PhoneLoginPageProps> = ({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleDarkMode}
-          aria-label={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى سيم الفخامة المظلمة'}
-          className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/30 bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shrink-0"
-        >
-          {isDarkMode ? (
-            <>
-              <Sun className="w-4 h-4 text-[#F3DFA2]" />
-              <span>نهاري</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-zinc-800" />
-              <span>فخامة داكنة</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <PWAInstallButton compact />
+
+          <button
+            type="button"
+            onClick={onToggleDarkMode}
+            aria-label={isDarkMode ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى سيم الفخامة المظلمة'}
+            className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/30 bg-white dark:bg-[#19191F] text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shrink-0"
+          >
+            {isDarkMode ? (
+              <>
+                <Sun className="w-4 h-4 text-[#F3DFA2]" />
+                <span>نهاري</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-zinc-800" />
+                <span>فخامة داكنة</span>
+              </>
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Main Centered Login Workspace */}

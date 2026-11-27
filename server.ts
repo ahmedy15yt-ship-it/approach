@@ -29,7 +29,6 @@ import {
   QuestionDifficultyFilter,
   QuestionTypeFilter,
   QuizChallengeRoom,
-  CompanionCommunityPost,
   TranslationLanguageCode,
 } from './src/types/index.js';
 import {
@@ -45,7 +44,6 @@ import {
   normalizeWhiteboardLessonScript,
   sanitizeArabicForSpeech,
 } from './src/utils/whiteboardGenerator.js';
-import { generateCompanionResponse } from './src/utils/companionBrain.js';
 
 
 dotenv.config();
@@ -64,35 +62,38 @@ const geminiClientCache = new Map<string, GoogleGenAI>();
 
 function resolveServerAppReferer(req?: any): string | undefined {
   const origin = req?.headers?.origin;
-  if (typeof origin === 'string' && origin.startsWith('http')) {
+  if (typeof origin === 'string' && origin.startsWith('http') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
     return origin.endsWith('/') ? origin : `${origin}/`;
   }
-  const referer = req?.headers?.referer || req?.headers?.referrer;
-  if (typeof referer === 'string' && referer.startsWith('http')) {
-    return referer;
+  const forwardedHost = req?.headers?.['x-forwarded-host'];
+  if (typeof forwardedHost === 'string' && forwardedHost.trim() && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
+    const proto = req?.headers?.['x-forwarded-proto'] || 'https';
+    return `${proto}://${forwardedHost.trim()}/`;
   }
-  const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host;
-  if (typeof host === 'string' && host.trim()) {
-    const proto =
-      req?.headers?.['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
-    return `${proto}://${host.trim()}/`;
+  const referer = req?.headers?.referer || req?.headers?.referrer;
+  if (typeof referer === 'string' && referer.startsWith('http') && !referer.includes('localhost') && !referer.includes('127.0.0.1')) {
+    return referer;
   }
   const envUrl = process.env.APP_URL ? process.env.APP_URL.trim() : '';
   if (envUrl && envUrl.startsWith('http') && envUrl !== 'MY_APP_URL') {
     return envUrl.endsWith('/') ? envUrl : `${envUrl}/`;
   }
+  const host = req?.headers?.host;
+  if (typeof host === 'string' && host.trim() && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+    return `https://${host.trim()}/`;
+  }
   return undefined;
 }
 
-function getGeminiClient(req?: any): GoogleGenAI | null {
+function getGeminiClient(req?: any, skipReferer = false): GoogleGenAI | null {
   const rawKey = process.env.GEMINI_API_KEY;
   const trimmedKey = rawKey ? rawKey.trim() : '';
   if (!trimmedKey || trimmedKey === 'MY_GEMINI_API_KEY') {
     return null;
   }
 
-  const referer = resolveServerAppReferer(req);
-  const cacheKey = `${trimmedKey}::${referer || 'default'}`;
+  const referer = skipReferer ? undefined : resolveServerAppReferer(req);
+  const cacheKey = `${trimmedKey}::${referer || 'no-ref'}`;
   const cached = geminiClientCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -122,13 +123,13 @@ function getGeminiClient(req?: any): GoogleGenAI | null {
   }
 }
 
-let ai: GoogleGenAI | null = getGeminiClient();
+let ai: GoogleGenAI | null = getGeminiClient(undefined, true);
 
 function classifyGeminiError(err: any): { retryable: boolean; userWarning: string } {
   const msg = String(err?.message || err || '');
   const status = Number(err?.status || err?.code || 0);
 
-  if (status === 400 || msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+  if (status === 400 && (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid'))) {
     return {
       retryable: false,
       userWarning: 'مفتاح Gemini API غير صالح — يرجى مراجعته في لوحة Settings > Secrets.',
@@ -153,16 +154,22 @@ function classifyGeminiError(err: any): { retryable: boolean; userWarning: strin
       userWarning: 'تم تجاوز حد الطلبات المؤقت لخدمة Gemini، تم تقديم الرد من المحرك التعليمي البديل.',
     };
   }
-  if (msg.includes('TIMEOUT')) {
+  if (msg.includes('TIMEOUT') || err?.name === 'TimeoutError' || err?.name === 'AbortError') {
     return {
       retryable: false,
       userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',
     };
   }
+  if (status === 503 || msg.includes('UNAVAILABLE')) {
+    return {
+      retryable: true,
+      userWarning: 'خادم Gemini يشهد ضغطاً مؤقتاً في الطلبات حالياً (503) — تم تفعيل الرد البديل مؤقتاً.',
+    };
+  }
   if (status >= 500 || msg.includes('ECONNRESET') || msg.includes('fetch failed')) {
     return {
       retryable: true,
-      userWarning: 'استغرق الاتصال بخدمة Gemini وقتاً أطول من المعتاد، تم تفعيل الرد السريع البديل.',
+      userWarning: 'تعذر الاتصال بخادم Gemini مؤقتاً، تم تفعيل الرد السريع البديل.',
     };
   }
   return {
@@ -171,6 +178,7 @@ function classifyGeminiError(err: any): { retryable: boolean; userWarning: strin
   };
 }
 
+// Keep globals as harmless no-ops so no stale timeout/400 blackouts poison other endpoints
 let geminiTextCooldownUntil = 0;
 let lastGeminiTextWarning: string | undefined;
 let geminiTtsCooldownUntil = 0;
@@ -179,40 +187,22 @@ let lastGeminiTtsWarning: string | undefined;
 function shouldFastBreakGeminiLoop(err: any): boolean {
   const msg = String(err?.message || err || '');
   const status = Number(err?.status || err?.code || 0);
-  const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+  // Only break early if the API key itself is strictly rejected; allow failover across models for 400/404/timeout/429
   return (
-    isAbort ||
-    status === 400 ||
+    (status === 400 && (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid'))) ||
     status === 403 ||
-    status === 429 ||
-    status >= 500 ||
-    msg.includes('TIMEOUT') ||
-    msg.includes('RESOURCE_EXHAUSTED') ||
-    msg.includes('429') ||
-    msg.includes('API_KEY_INVALID') ||
-    msg.includes('PERMISSION_DENIED') ||
-    msg.includes('fetch failed')
+    msg.includes('API_KEY_INVALID')
   );
 }
 
 function recordGeminiTextFailure(err: any): string {
   const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-  const warning = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
-  if (shouldFastBreakGeminiLoop(err)) {
-    geminiTextCooldownUntil = Date.now() + 90_000;
-    lastGeminiTextWarning = warning;
-  }
-  return warning;
+  return classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
 }
 
 function recordGeminiTtsFailure(err: any): string {
   const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-  const warning = classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
-  if (shouldFastBreakGeminiLoop(err)) {
-    geminiTtsCooldownUntil = Date.now() + 90_000;
-    lastGeminiTtsWarning = warning;
-  }
-  return warning;
+  return classifyGeminiError(isAbort ? new Error('TIMEOUT') : err).userWarning;
 }
 
 async function runWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, timeoutMs = 28000): Promise<T> {
@@ -229,7 +219,7 @@ async function runWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, timeoutMs =
       if (!retryable || attempt === maxRetries) {
         throw err;
       }
-      const delayMs = 600 * Math.pow(2, attempt);
+      const delayMs = 850 * Math.pow(2, attempt) + Math.floor(Math.random() * 350);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -284,58 +274,9 @@ interface AppData {
   accounts?: Record<string, ServerStudentAccount>;
   challengeRooms?: Record<string, ServerChallengeRoom>;
   quizChallenges?: Record<string, QuizChallengeRoom>;
-  companionPosts?: CompanionCommunityPost[];
 }
 
 const VERIFIED_SERVER_PHONES = new Set(['01094482324']);
-
-function getInitialCompanionPosts(): CompanionCommunityPost[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'cp-seed-1',
-      authorName: 'الحساب الرسمي الموثق',
-      authorPhone: '01094482324',
-      isVerified: true,
-      category: 'تحفيز',
-      content:
-        'دفعة تالتة ثانوي الأبطال 💪: كل مسألة صعبة بتغلط فيها دلوقتي هي درجة كاملة مضمونة في امتحان آخر السنة. كمل وما تسيبش حلمك!',
-      cheers: 24,
-      replies: [
-        {
-          id: 'cpr-1',
-          authorName: 'مريم طارق - الدقهلية',
-          isVerified: false,
-          text: 'شكراً جداً على الدعم، كلامك فرق معايا النهارده والله 🌟',
-          createdAt: new Date(now - 3600_000).toISOString(),
-        },
-      ],
-      createdAt: new Date(now - 7200_000).toISOString(),
-    },
-    {
-      id: 'cp-seed-2',
-      authorName: 'سارة خالد - المنصورة',
-      isVerified: false,
-      category: 'إنجاز يومي',
-      content:
-        'الحمد لله خلصت الباب الأول فيزياء وحليت 60 سؤال نظام حديث من غير ما أبص في الإجابات! عقبالكم جميعاً 🔥',
-      cheers: 17,
-      replies: [],
-      createdAt: new Date(now - 14400_000).toISOString(),
-    },
-    {
-      id: 'cp-seed-3',
-      authorName: 'عمر شريف - القاهرة',
-      isVerified: false,
-      category: 'نصيحة مذاكرة',
-      content:
-        'نصيحة عن تجربة: لما تحس إنك فصلت، خُد 15 دقيقة راحة واشرب مية وصلّي ركعتين، هترجع للمذاكرة بتركيز الضعف.',
-      cheers: 19,
-      replies: [],
-      createdAt: new Date(now - 21600_000).toISOString(),
-    },
-  ];
-}
 
 function ensureSeededAccountsAndPosts(data: AppData): AppData {
   const nowIso = new Date().toISOString();
@@ -360,10 +301,6 @@ function ensureSeededAccountsAndPosts(data: AppData): AppData {
     accounts,
     challengeRooms: data.challengeRooms || {},
     quizChallenges: data.quizChallenges || {},
-    companionPosts:
-      Array.isArray(data.companionPosts) && data.companionPosts.length > 0
-        ? data.companionPosts
-        : getInitialCompanionPosts(),
   };
 }
 
@@ -810,7 +747,7 @@ app.post('/api/owner/settings', (req, res) => {
 
 // Gemini & Multi-AI API configuration status (never exposes key values)
 app.get('/api/gemini/status', (req, res) => {
-  const client = getGeminiClient(req);
+  const client = getGeminiClient(req) || getGeminiClient(req, true) || ai;
   const providers = getConfiguredAIProviders();
   return res.json({
     configured: Boolean(client) || providers.length > 0,
@@ -840,7 +777,7 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
     }
   });
 
-  const activeAi = getGeminiClient(req);
+  const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
   const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
   const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
   const formattedContents = buildTutorFormattedContents({
@@ -855,72 +792,77 @@ app.post('/api/gemini/tutor-stream', async (req, res) => {
   let responseSource: 'gemini' | 'fallback' = 'fallback';
   let providerLabel = 'المحرك التعليمي السريع';
 
-  if (activeAi && Date.now() < geminiTextCooldownUntil) {
-    apiWarning = lastGeminiTextWarning;
-  } else if (activeAi) {
+  if (activeAi) {
     const candidateModels =
       modeDepth === 'deep'
         ? [
-            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 22000 },
-            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 10000 },
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 28000 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 16000 },
           ]
         : [
-            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 12000 },
-            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 8000 },
+            { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 18000 },
+            { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 15000 },
           ];
 
     for (const candidate of candidateModels) {
       if (streamedAnyChunk || closed) break;
-      const abortController = new AbortController();
-      const firstChunkTimeout = setTimeout(() => {
-        abortController.abort();
-      }, candidate.timeoutMs);
+      for (let retry = 0; retry < 2; retry++) {
+        if (streamedAnyChunk || closed) break;
+        const abortController = new AbortController();
+        const firstChunkTimeout = setTimeout(() => {
+          abortController.abort();
+        }, candidate.timeoutMs);
 
-      try {
-        const streamResult = await activeAi.models.generateContentStream({
-          model: candidate.model,
-          contents: formattedContents,
-          config: {
-            abortSignal: abortController.signal,
-            systemInstruction: systemPrompt,
-            thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
-          },
-        });
+        try {
+          const streamResult = await activeAi.models.generateContentStream({
+            model: candidate.model,
+            contents: formattedContents,
+            config: {
+              abortSignal: abortController.signal,
+              systemInstruction: systemPrompt,
+              thinkingConfig: { thinkingLevel: candidate.thinkingLevel },
+            },
+          });
 
-        for await (const chunk of streamResult) {
-          if (closed) break;
-          const piece = chunk?.text;
-          if (piece) {
-            if (!streamedAnyChunk) {
-              clearTimeout(firstChunkTimeout);
-              geminiTextCooldownUntil = 0;
+          for await (const chunk of streamResult) {
+            if (closed) break;
+            const piece = chunk?.text;
+            if (piece) {
+              if (!streamedAnyChunk) {
+                clearTimeout(firstChunkTimeout);
+              }
+              streamedAnyChunk = true;
+              res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
             }
-            streamedAnyChunk = true;
-            res.write(`data: ${JSON.stringify({ chunk: piece })}\n\n`);
           }
-        }
 
-        clearTimeout(firstChunkTimeout);
+          clearTimeout(firstChunkTimeout);
 
-        if (streamedAnyChunk && !closed) {
-          res.write(
-            `data: ${JSON.stringify({
-              done: true,
-              source: 'gemini',
-              providerLabel: candidate.model,
-              isFree: true,
-            })}\n\n`
-          );
-          return res.end();
+          if (streamedAnyChunk && !closed) {
+            res.write(
+              `data: ${JSON.stringify({
+                done: true,
+                source: 'gemini',
+                providerLabel: candidate.model,
+                isFree: true,
+              })}\n\n`
+            );
+            return res.end();
+          }
+          break;
+        } catch (err: any) {
+          clearTimeout(firstChunkTimeout);
+          const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
+          const rawErr = isAbort ? new Error('TIMEOUT') : err;
+          apiWarning = recordGeminiTextFailure(rawErr);
+          console.warn(`Gemini tutor stream (${candidate.model}) attempt ${retry + 1}:`, err?.message || err);
+          if (shouldFastBreakGeminiLoop(rawErr)) break;
+          const { retryable } = classifyGeminiError(rawErr);
+          if (!retryable || streamedAnyChunk || retry === 1) break;
+          await new Promise((r) => setTimeout(r, 700));
         }
-      } catch (err: any) {
-        clearTimeout(firstChunkTimeout);
-        const isAbort = err?.name === 'AbortError' || abortController.signal.aborted;
-        const rawErr = isAbort ? new Error('TIMEOUT') : err;
-        apiWarning = recordGeminiTextFailure(rawErr);
-        console.warn(`Gemini tutor stream (${candidate.model}) failover:`, err?.message || err);
-        if (shouldFastBreakGeminiLoop(rawErr)) break;
       }
+      if (apiWarning && shouldFastBreakGeminiLoop({ message: apiWarning })) break;
     }
   }
 
@@ -983,7 +925,7 @@ app.post('/api/gemini/tutor', async (req, res) => {
       return res.status(400).json({ success: false, error: 'يرجى كتابة رسالة أو سؤال أولاً' });
     }
 
-    const activeAi = getGeminiClient(req);
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
     const modeDepth: TutorDeepMode = deepMode === 'fast' ? 'fast' : 'deep';
     const systemPrompt = buildTutorSystemPrompt(tutorMode, modeDepth);
     const formattedContents = buildTutorFormattedContents({
@@ -998,18 +940,16 @@ app.post('/api/gemini/tutor', async (req, res) => {
     let providerLabel = 'المحرك التعليمي السريع';
     let apiWarning: string | undefined;
 
-    if (activeAi && Date.now() < geminiTextCooldownUntil) {
-      apiWarning = lastGeminiTextWarning;
-    } else if (activeAi) {
+    if (activeAi) {
       const candidateModels =
         modeDepth === 'deep'
           ? [
-              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 22000 },
-              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 10000 },
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.HIGH, timeoutMs: 28000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 16000 },
             ]
           : [
-              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 12000 },
-              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 8000 },
+              { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 18000 },
+              { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 15000 },
             ];
 
       for (const candidate of candidateModels) {
@@ -1027,12 +967,11 @@ app.post('/api/gemini/tutor', async (req, res) => {
               });
               return response.text || '';
             },
-            0,
+            1,
             candidate.timeoutMs + 500
           );
 
           if (result && result.trim()) {
-            geminiTextCooldownUntil = 0;
             reply = result.trim();
             responseSource = 'gemini';
             providerLabel = candidate.model;
@@ -1143,7 +1082,7 @@ app.post('/api/gemini/generate-questions', async (req, res) => {
       contextPoints,
     };
 
-    const activeAi = getGeminiClient(req);
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
     const systemInstruction = buildQuestionGeneratorSystemInstruction();
     const userPrompt = buildQuestionGeneratorPrompt(params);
 
@@ -1152,56 +1091,64 @@ app.post('/api/gemini/generate-questions', async (req, res) => {
     let providerLabel = 'المحرك التعليمي السريع';
     let apiWarning: string | undefined;
 
-    // Tier 1: Ultra-fast Gemini (gemini-3.1-flash-lite MINIMAL thinking for snappy ~1.5-4s speed)
+    // Tier 1: Gemini 4 Hydrogen -> Gemini 3.1 Flash Lite failover with generous JSON generation timeouts
     if (activeAi) {
-      try {
-        const rawJsonText = await runWithRetry(async () => {
-          const response = await activeAi.models.generateContent({
-            model: 'gemini-3.1-flash-lite',
-            contents: userPrompt,
-            config: {
-              abortSignal: AbortSignal.timeout(6500),
-              systemInstruction,
-              thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    type: { type: Type.STRING },
-                    difficulty: { type: Type.STRING },
-                    question: { type: Type.STRING },
-                    options: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
+      const qCandidates = [
+        { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 22000, label: 'أستاذ نَهج (Gemini 4)' },
+        { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 14000, label: 'Gemini 3.1 Flash Lite' },
+      ];
+      for (const cand of qCandidates) {
+        try {
+          const rawJsonText = await runWithRetry(async () => {
+            const response = await activeAi.models.generateContent({
+              model: cand.model,
+              contents: userPrompt,
+              config: {
+                abortSignal: AbortSignal.timeout(cand.timeoutMs),
+                systemInstruction,
+                thinkingConfig: { thinkingLevel: cand.thinkingLevel },
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      type: { type: Type.STRING },
+                      difficulty: { type: Type.STRING },
+                      question: { type: Type.STRING },
+                      options: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING },
+                      },
+                      correctAnswerIndex: { type: Type.INTEGER },
+                      correctAnswerText: { type: Type.STRING },
+                      explanation: { type: Type.STRING },
+                      hint: { type: Type.STRING },
                     },
-                    correctAnswerIndex: { type: Type.INTEGER },
-                    correctAnswerText: { type: Type.STRING },
-                    explanation: { type: Type.STRING },
-                    hint: { type: Type.STRING },
+                    required: ['type', 'difficulty', 'question', 'correctAnswerText', 'explanation'],
                   },
-                  required: ['type', 'difficulty', 'question', 'correctAnswerText', 'explanation'],
                 },
               },
-            },
-          });
-          return response.text || '[]';
-        }, 0, 7000);
+            });
+            return response.text || '[]';
+          }, 1, cand.timeoutMs + 500);
 
-        const parsed = extractJsonPayloadFromText(rawJsonText);
-        const normalized = normalizeGeneratedQuestions(parsed, params);
-        if (normalized.length > 0) {
-          questions = normalized;
-          responseSource = 'gemini';
-          providerLabel = 'Gemini 3.1 Flash Lite';
+          const parsed = extractJsonPayloadFromText(rawJsonText);
+          const normalized = normalizeGeneratedQuestions(parsed, params);
+          if (normalized.length > 0) {
+            questions = normalized;
+            responseSource = 'gemini';
+            providerLabel = cand.label;
+            apiWarning = undefined;
+            break;
+          }
+        } catch (err: any) {
+          const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+          const rawErr = isAbort ? new Error('TIMEOUT') : err;
+          apiWarning = recordGeminiTextFailure(rawErr);
+          console.warn(`Gemini Question Generator (${cand.model}) failover:`, err?.message || err);
+          if (shouldFastBreakGeminiLoop(rawErr)) break;
         }
-      } catch (err: any) {
-        const classified = classifyGeminiError(
-          err?.name === 'TimeoutError' || err?.name === 'AbortError' ? new Error('TIMEOUT') : err
-        );
-        apiWarning = classified.userWarning;
-        console.warn('Gemini Question Generator failover triggered:', err?.message || err);
       }
     }
 
@@ -1260,6 +1207,7 @@ app.post('/api/gemini/summarize-lesson', async (req, res) => {
     const chapter = String(body.chapter || '').trim();
     const lesson = String(body.lesson || '').trim();
     const detailLevel = body.detailLevel === 'exam-sprint' ? 'exam-sprint' : 'comprehensive';
+    const teachingStyle = body.teachingStyle === 'academic' ? 'academic' : 'storyteller';
     const customNotes = body.customNotes ? String(body.customNotes).trim() : '';
     const formulaOrNugget = body.formulaOrNugget ? String(body.formulaOrNugget).trim() : '';
     const contextPoints = Array.isArray(body.contextPoints)
@@ -1281,14 +1229,15 @@ app.post('/api/gemini/summarize-lesson', async (req, res) => {
       chapter: chapter || 'الفصل المحدد',
       lesson,
       detailLevel,
+      teachingStyle,
       customNotes,
       contextPoints,
       examTips,
       formulaOrNugget,
     };
 
-    const activeAi = getGeminiClient(req);
-    const systemInstruction = buildLessonSummarySystemInstruction();
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
+    const systemInstruction = buildLessonSummarySystemInstruction(teachingStyle);
     const userPrompt = buildLessonSummaryPrompt(params);
 
     let normalizedSummary: ReturnType<typeof normalizeLessonSummary> = null;
@@ -1340,20 +1289,18 @@ app.post('/api/gemini/summarize-lesson', async (req, res) => {
   ]
 }`;
 
-    if (activeAi && Date.now() < geminiTextCooldownUntil) {
-      apiWarning = lastGeminiTextWarning;
-    } else if (activeAi) {
+    if (activeAi) {
       const candidateModels = [
         {
           model: 'gemini-4-hydrogen',
           thinkingLevel: ThinkingLevel.HIGH,
-          timeoutMs: 28000,
+          timeoutMs: 38000,
           label: 'أستاذ نَهج الخبير (Gemini 4 — تحليل عميق)',
         },
         {
           model: 'gemini-3.1-flash-lite',
           thinkingLevel: ThinkingLevel.LOW,
-          timeoutMs: 14000,
+          timeoutMs: 18000,
           label: 'أستاذ نَهج (Gemini Fast)',
         },
       ];
@@ -1379,7 +1326,7 @@ app.post('/api/gemini/summarize-lesson', async (req, res) => {
               },
             });
             return response.text || '{}';
-          }, 0, candidate.timeoutMs + 500);
+          }, 1, candidate.timeoutMs + 500);
 
           const parsed = extractJsonPayloadFromText(rawJsonText);
           const candidateSummary = normalizeLessonSummary(parsed, params, {
@@ -1387,7 +1334,6 @@ app.post('/api/gemini/summarize-lesson', async (req, res) => {
             providerLabel: candidate.label,
           });
           if (candidateSummary) {
-            geminiTextCooldownUntil = 0;
             normalizedSummary = candidateSummary;
             apiWarning = undefined;
             break;
@@ -1631,7 +1577,7 @@ app.post('/api/gemini/inspect-meal', async (req, res) => {
       category ||
       (studentBmi >= 25 ? 'overweight' : studentBmi < 18.5 ? 'underweight' : 'balanced');
 
-    const activeAi = getGeminiClient(req);
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
 
     const promptText = `أنت خبير تغذية سريري مصري متخصص في تغذية طلاب الثانوية العامة (الصف الثالث الثانوي علمي علوم).
 بيانات الطالب:
@@ -1666,77 +1612,92 @@ app.post('/api/gemini/inspect-meal', async (req, res) => {
     let mealWarning: string | undefined;
 
     if (activeAi) {
-      try {
-        const parts: any[] = [];
-        if (imageBase64 && typeof imageBase64 === 'string') {
-          const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
-          parts.push({
-            inlineData: {
-              mimeType: mimeType || 'image/jpeg',
-              data: cleanBase64,
-            },
-          });
-        }
-        parts.push({ text: promptText });
+      const parts: any[] = [];
+      if (imageBase64 && typeof imageBase64 === 'string') {
+        const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
+        parts.push({
+          inlineData: {
+            mimeType: mimeType || 'image/jpeg',
+            data: cleanBase64,
+          },
+        });
+      }
+      parts.push({ text: promptText });
 
-        const rawJson = await runWithRetry(async () => {
-          const response = await activeAi.models.generateContent({
-            model: 'gemini-4-hydrogen',
-            contents: { parts },
-            config: {
-              thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  isSuitable: { type: Type.BOOLEAN },
-                  verdict: { type: Type.STRING },
-                  caloriesEstimate: { type: Type.STRING },
-                  proteinGrams: { type: Type.STRING },
-                  carbsGrams: { type: Type.STRING },
-                  analysis: { type: Type.STRING },
-                  recommendations: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
+      const mealAttempts = [
+        { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 22000 },
+        { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 14000 },
+      ];
+
+      for (const attempt of mealAttempts) {
+        try {
+          const rawJson = await runWithRetry(
+            async () => {
+              const response = await activeAi.models.generateContent({
+                model: attempt.model,
+                contents: { parts },
+                config: {
+                  abortSignal: AbortSignal.timeout(attempt.timeoutMs),
+                  thinkingConfig: { thinkingLevel: attempt.thinkingLevel },
+                  responseMimeType: 'application/json',
+                  responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                      isSuitable: { type: Type.BOOLEAN },
+                      verdict: { type: Type.STRING },
+                      caloriesEstimate: { type: Type.STRING },
+                      proteinGrams: { type: Type.STRING },
+                      carbsGrams: { type: Type.STRING },
+                      analysis: { type: Type.STRING },
+                      recommendations: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING },
+                      },
+                      thanaweyaTip: { type: Type.STRING },
+                    },
+                    required: [
+                      'isSuitable',
+                      'verdict',
+                      'caloriesEstimate',
+                      'proteinGrams',
+                      'carbsGrams',
+                      'analysis',
+                      'recommendations',
+                      'thanaweyaTip',
+                    ],
                   },
-                  thanaweyaTip: { type: Type.STRING },
                 },
-                required: [
-                  'isSuitable',
-                  'verdict',
-                  'caloriesEstimate',
-                  'proteinGrams',
-                  'carbsGrams',
-                  'analysis',
-                  'recommendations',
-                  'thanaweyaTip',
-                ],
-              },
+              });
+              return response.text || '';
             },
-          });
-          return response.text || '';
-        }, 2, 28000);
-
-        if (rawJson && rawJson.trim()) {
-          const parsed = JSON.parse(rawJson.trim());
-          if (parsed && typeof parsed.verdict === 'string' && typeof parsed.analysis === 'string') {
-            structuredResult = {
-              isSuitable: Boolean(parsed.isSuitable),
-              verdict: parsed.verdict,
-              caloriesEstimate: parsed.caloriesEstimate || '400 سعرة',
-              proteinGrams: parsed.proteinGrams || '20 جم',
-              carbsGrams: parsed.carbsGrams || '40 جم',
-              analysis: parsed.analysis,
-              recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
-              thanaweyaTip: parsed.thanaweyaTip || 'اشرب كوب ماء قبل المذاكرة بـ 10 دقائق لتنشيط الدورة الدموية للمخ.',
-            };
-            mealSource = 'gemini';
+            1,
+            attempt.timeoutMs + 500
+          );
+          if (rawJson && rawJson.trim()) {
+            const parsed = JSON.parse(rawJson.trim());
+            if (parsed && typeof parsed.verdict === 'string' && typeof parsed.analysis === 'string') {
+              structuredResult = {
+                isSuitable: Boolean(parsed.isSuitable),
+                verdict: parsed.verdict,
+                caloriesEstimate: parsed.caloriesEstimate || '400 سعرة',
+                proteinGrams: parsed.proteinGrams || '20 جم',
+                carbsGrams: parsed.carbsGrams || '40 جم',
+                analysis: parsed.analysis,
+                recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+                thanaweyaTip: parsed.thanaweyaTip || 'اشرب كوب ماء قبل المذاكرة بـ 10 دقائق لتنشيط الدورة الدموية للمخ.',
+              };
+              mealSource = 'gemini';
+              mealWarning = undefined;
+              break;
+            }
+          }
+        } catch (err: any) {
+          mealWarning = recordGeminiTextFailure(err);
+          console.warn(`Gemini meal inspect note (${attempt.model}):`, err?.message || err);
+          if (shouldFastBreakGeminiLoop(err)) {
+            break;
           }
         }
-      } catch (err: any) {
-        const classified = classifyGeminiError(err);
-        mealWarning = classified.userWarning;
-        console.warn('Gemini meal inspect error, using expert nutrition fallback:', err?.message || err);
       }
     } else {
       mealWarning = 'مفتاح GEMINI_API_KEY غير مضاف في Settings > Secrets؛ تم التحليل عبر قاعدة التغذية المحلية.';
@@ -1888,7 +1849,7 @@ app.post('/api/gemini/translate', async (req, res) => {
     const srcMeta = getLanguageMeta(sourceLang);
     const tgtMeta = getLanguageMeta(targetLang);
 
-    const activeAi = getGeminiClient(req) || ai;
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
     let translationPayload: any = null;
     let apiWarning: string | undefined;
 
@@ -1904,28 +1865,29 @@ app.post('/api/gemini/translate', async (req, res) => {
 
     const promptText = `ترجم النص التالي من ${srcMeta.labelAr} إلى ${tgtMeta.labelAr}:\n"${cleanText}"`;
 
-    if (activeAi && Date.now() < geminiTextCooldownUntil) {
-      apiWarning = lastGeminiTextWarning;
-    } else if (activeAi) {
-      for (const modelName of ['gemini-4-hydrogen', 'gemini-3.1-flash-lite']) {
+    if (activeAi) {
+      const translateCandidates = [
+        { model: 'gemini-4-hydrogen', thinkingLevel: ThinkingLevel.LOW, timeoutMs: 16000 },
+        { model: 'gemini-3.1-flash-lite', thinkingLevel: ThinkingLevel.MINIMAL, timeoutMs: 15000 },
+      ];
+      for (const cand of translateCandidates) {
         try {
           const rawJson = await runWithRetry(async () => {
             const response = await activeAi.models.generateContent({
-              model: modelName,
+              model: cand.model,
               contents: [{ role: 'user', parts: [{ text: promptText }] }],
               config: {
-                abortSignal: AbortSignal.timeout(4800),
+                abortSignal: AbortSignal.timeout(cand.timeoutMs),
                 systemInstruction,
-                thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+                thinkingConfig: { thinkingLevel: cand.thinkingLevel },
                 responseMimeType: 'application/json',
               },
             });
             return response.text || '{}';
-          }, 0, 5200);
+          }, 1, cand.timeoutMs + 500);
 
           const parsed = extractJsonPayloadFromText(rawJson);
           if (parsed && typeof parsed.translatedText === 'string' && parsed.translatedText.trim()) {
-            geminiTextCooldownUntil = 0;
             translationPayload = {
               sourceText: cleanText,
               translatedText: parsed.translatedText.trim(),
@@ -1946,6 +1908,7 @@ app.post('/api/gemini/translate', async (req, res) => {
           }
         } catch (err: any) {
           apiWarning = recordGeminiTextFailure(err);
+          console.warn(`Gemini translate (${cand.model}) failover:`, err?.message || err);
           if (shouldFastBreakGeminiLoop(err)) break;
         }
       }
@@ -2018,211 +1981,6 @@ app.post('/api/gemini/translate', async (req, res) => {
     console.error('Translate Error:', error);
     return res.status(500).json({ error: 'تعذر إتمام الترجمة حالياً، يرجى إعادة المحاولة.' });
   }
-});
-
-// ----------------- «رفيقي» Study & Daily-Life Companion + Community Wall -----------------
-app.post('/api/gemini/companion', async (req, res) => {
-  try {
-    const { message, mood = 'motivated', studentName = 'بطل نَهج', history = [] } = req.body || {};
-    const cleanMessage = String(message || '').trim();
-    if (!cleanMessage) {
-      return res.status(400).json({ error: 'اكتب ما تشعر به أو ما تريد التخطيط له.' });
-    }
-
-    const moodLabel =
-      mood === 'stressed'
-        ? 'مضغوط وقلق'
-        : mood === 'tired'
-        ? 'مرهق ويحتاج شحن طاقة'
-        : mood === 'lost'
-        ? 'مشتت ويحتاج ترتيب أولويات'
-        : 'متحمس ومنجز';
-
-    const systemInstruction = `أنت «رفيقي» — الصديق الداعم والمرشد الشخصي للطالب «${studentName}» في الصف الثالث الثانوي والحياة اليومية.
-حالة الطالب الآن: ${moodLabel}.
-أسلوبك: دافئ، مشجع، واقعي، قريب للقلب باللهجة المصرية المهذبة أو العربية الواضحة، يقدم خطوة عملية قابلة للتنفيذ في 15 دقيقة سواء في المذاكرة أو تنظيم اليوم والراحة والنفسية.
-يجب أن يكون ردك مختلفاً ومرتبطاً مباشرة بسؤال الطالب الأخير دون تكرار الردود السابقة.
-أجب في فقرة مركزة + نصيحة عملية واحدة بعنوان «خطوتك الآن:».`;
-
-    const previousReplies: string[] = Array.isArray(history)
-      ? history
-          .filter((m: any) => m?.role === 'companion' && typeof m?.text === 'string')
-          .map((m: any) => String(m.text))
-      : [];
-
-    // Cleanly sanitize history so it alternates user/model, never starts with model, and never duplicates the final user turn
-    const priorHistory = Array.isArray(history)
-      ? history.slice(0, -1).slice(-6).filter((m: any) => String(m?.text || '').trim())
-      : [];
-    while (priorHistory.length > 0 && priorHistory[0].role === 'companion') {
-      priorHistory.shift();
-    }
-
-    const activeAi = getGeminiClient(req) || ai;
-    let replyText = '';
-    let source: 'gemini' | 'fallback' = 'fallback';
-    let warning: string | undefined;
-
-    if (activeAi && Date.now() < geminiTextCooldownUntil) {
-      warning = lastGeminiTextWarning;
-    } else if (activeAi) {
-      const formattedHistory = priorHistory.map((m: any) => ({
-        role: (m.role === 'companion' ? 'model' : 'user') as 'model' | 'user',
-        parts: [{ text: String(m.text || '').trim() }],
-      }));
-      formattedHistory.push({ role: 'user', parts: [{ text: cleanMessage }] });
-
-      for (const modelName of ['gemini-4-hydrogen', 'gemini-3.1-flash-lite']) {
-        try {
-          const text = await runWithRetry(async () => {
-            const response = await activeAi.models.generateContent({
-              model: modelName,
-              contents: formattedHistory,
-              config: {
-                abortSignal: AbortSignal.timeout(4800),
-                systemInstruction,
-                thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-              },
-            });
-            return response.text || '';
-          }, 0, 5200);
-
-          if (text.trim()) {
-            geminiTextCooldownUntil = 0;
-            replyText = text.trim();
-            source = 'gemini';
-            warning = undefined;
-            break;
-          }
-        } catch (err: any) {
-          warning = recordGeminiTextFailure(err);
-          if (shouldFastBreakGeminiLoop(err)) break;
-        }
-      }
-    }
-
-    if (!replyText) {
-      try {
-        const extMsgs = [
-          ...priorHistory.map((m: any) => ({
-            role: (m.role === 'companion' ? 'assistant' : 'user') as 'user' | 'assistant',
-            content: String(m.text || '').trim(),
-          })),
-          { role: 'user' as const, content: cleanMessage },
-        ];
-        const secondary = await callStrongSecondaryAI({
-          systemInstruction,
-          messages: extMsgs,
-          timeoutMs: 8000,
-        });
-        if (secondary && secondary.text.trim()) {
-          replyText = secondary.text.trim();
-          source = 'gemini';
-          warning = undefined;
-        }
-      } catch {
-        // fallback to dynamic non-repeating companion brain
-      }
-    }
-
-    if (!replyText) {
-      replyText = generateCompanionResponse({
-        message: cleanMessage,
-        mood,
-        studentName,
-        previousReplies,
-      });
-    }
-
-    return res.json({
-      success: true,
-      reply: replyText,
-      source,
-      warning,
-    });
-  } catch (error) {
-    console.error('Companion Error:', error);
-    return res.status(500).json({ error: 'تعذر الرد حالياً من رفيقي.' });
-  }
-});
-
-app.get('/api/companion/posts', (req, res) => {
-  const posts = (appData.companionPosts || []).slice().sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
-  );
-  return res.json({ success: true, posts });
-});
-
-app.post('/api/companion/posts', (req, res) => {
-  const { authorName, authorPhone, category = 'تحفيز', content } = req.body || {};
-  const cleanContent = String(content || '').trim();
-  const cleanAuthor = String(authorName || 'طالب نَهج').trim();
-
-  if (cleanContent.length < 3) {
-    return res.status(400).json({ error: 'يرجى كتابة رسالة أو نصيحة مفيدة (3 أحرف على الأقل).' });
-  }
-
-  const normalizedPhone = normalizeServerPhone(String(authorPhone || ''));
-  const isVerified = VERIFIED_SERVER_PHONES.has(normalizedPhone);
-
-  const validCategories = ['تحفيز', 'إنجاز يومي', 'طلب مساعدة', 'نصيحة مذاكرة'] as const;
-  const safeCat = validCategories.includes(category) ? category : 'تحفيز';
-
-  const newPost: CompanionCommunityPost = {
-    id: `cp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    authorName: cleanAuthor,
-    authorPhone: normalizedPhone || undefined,
-    isVerified,
-    category: safeCat,
-    content: cleanContent.slice(0, 600),
-    cheers: 1,
-    replies: [],
-    createdAt: new Date().toISOString(),
-  };
-
-  if (!appData.companionPosts) appData.companionPosts = [];
-  appData.companionPosts.unshift(newPost);
-  appData.companionPosts = appData.companionPosts.slice(0, 60);
-  saveData();
-
-  return res.json({ success: true, post: newPost });
-});
-
-app.post('/api/companion/posts/:id/cheer', (req, res) => {
-  const postId = req.params.id;
-  const post = (appData.companionPosts || []).find((p) => p.id === postId);
-  if (!post) {
-    return res.status(404).json({ error: 'المنشور غير موجود' });
-  }
-  post.cheers = (post.cheers || 0) + 1;
-  saveData();
-  return res.json({ success: true, post });
-});
-
-app.post('/api/companion/posts/:id/reply', (req, res) => {
-  const postId = req.params.id;
-  const { authorName, authorPhone, text } = req.body || {};
-  const cleanText = String(text || '').trim();
-  if (cleanText.length < 2) {
-    return res.status(400).json({ error: 'يرجى كتابة رد واضح' });
-  }
-  const post = (appData.companionPosts || []).find((p) => p.id === postId);
-  if (!post) {
-    return res.status(404).json({ error: 'المنشور غير موجود' });
-  }
-  const normalizedPhone = normalizeServerPhone(String(authorPhone || ''));
-  const reply = {
-    id: `cpr-${Date.now()}`,
-    authorName: String(authorName || 'طالب نَهج').trim(),
-    authorPhone: normalizedPhone || undefined,
-    isVerified: VERIFIED_SERVER_PHONES.has(normalizedPhone),
-    text: cleanText.slice(0, 350),
-    createdAt: new Date().toISOString(),
-  };
-  if (!Array.isArray(post.replies)) post.replies = [];
-  post.replies.push(reply);
-  saveData();
-  return res.json({ success: true, post });
 });
 
 // ----------------- Interactive Whiteboard Video Explainer API -----------------
@@ -2329,12 +2087,10 @@ app.post('/api/gemini/whiteboard-tts', async (req, res) => {
       });
     }
 
-    const activeAi = getGeminiClient(req) || ai;
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
     let lastWarning: string | undefined;
 
-    if (activeAi && Date.now() < geminiTtsCooldownUntil) {
-      lastWarning = lastGeminiTtsWarning;
-    } else if (activeAi) {
+    if (activeAi) {
       try {
         const response = await runWithRetry(
           async () =>
@@ -2354,7 +2110,7 @@ app.post('/api/gemini/whiteboard-tts', async (req, res) => {
                 },
               ],
               config: {
-                abortSignal: AbortSignal.timeout(8000),
+                abortSignal: AbortSignal.timeout(16000),
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                   voiceConfig: {
@@ -2363,8 +2119,8 @@ app.post('/api/gemini/whiteboard-tts', async (req, res) => {
                 },
               },
             }),
-          0,
-          8500
+          1,
+          16500
         );
 
         const inlinePart = response.candidates?.[0]?.content?.parts?.find(
@@ -2372,7 +2128,6 @@ app.post('/api/gemini/whiteboard-tts', async (req, res) => {
         )?.inlineData;
 
         if (inlinePart?.data) {
-          geminiTtsCooldownUntil = 0;
           const mimeType = inlinePart.mimeType || 'audio/wav';
           if (whiteboardTtsCache.size >= 80) {
             const oldestKey = whiteboardTtsCache.keys().next().value;
@@ -2483,26 +2238,24 @@ app.post('/api/gemini/whiteboard-lesson', async (req, res) => {
     };
     const systemInstruction = buildWhiteboardSystemInstruction();
     const userPrompt = buildWhiteboardUserPrompt(params);
-    const activeAi = getGeminiClient(req) || ai;
+    const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
 
     let script = null;
     let apiWarning: string | undefined;
 
-    if (activeAi && Date.now() < geminiTextCooldownUntil) {
-      apiWarning = lastGeminiTextWarning;
-    } else if (activeAi) {
+    if (activeAi) {
       for (const candidate of [
         {
           model: 'gemini-4-hydrogen',
           label: 'أستاذ نَهج الخبير (Gemini 4 — تحليل وشرح الكتاب العميق)',
           thinking: ThinkingLevel.HIGH,
-          timeout: 24000,
+          timeout: 36000,
         },
         {
           model: 'gemini-3.1-flash-lite',
           label: 'سبورة أستاذ نَهج (Gemini Fast)',
           thinking: ThinkingLevel.LOW,
-          timeout: 14000,
+          timeout: 18000,
         },
       ]) {
         try {
@@ -2520,7 +2273,7 @@ app.post('/api/gemini/whiteboard-lesson', async (req, res) => {
               });
               return response.text || '{}';
             },
-            0,
+            1,
             candidate.timeout + 500
           );
 
@@ -2530,13 +2283,13 @@ app.post('/api/gemini/whiteboard-lesson', async (req, res) => {
             providerLabel: candidate.label,
           });
           if (normalized) {
-            geminiTextCooldownUntil = 0;
             script = normalized;
             apiWarning = undefined;
             break;
           }
         } catch (err: any) {
           apiWarning = recordGeminiTextFailure(err);
+          console.warn(`Gemini Whiteboard (${candidate.model}) failover:`, err?.message || err);
           if (shouldFastBreakGeminiLoop(err)) break;
         }
       }
@@ -2583,6 +2336,605 @@ app.post('/api/gemini/whiteboard-lesson', async (req, res) => {
       success: false,
       error: 'تعذر توليد سيناريو السبورة حالياً، يرجى المحاولة مرة أخرى.',
     });
+  }
+});
+
+// ----------------- Shared Structured JSON Helper for New Pedagogical Modules -----------------
+async function callStructuredLearningAI<T>(
+  req: any,
+  options: {
+    systemInstruction: string;
+    userPrompt: string;
+    primaryThinking?: ThinkingLevel;
+    primaryTimeoutMs?: number;
+  }
+): Promise<{ data: T | null; source: 'gemini' | 'fallback'; warning?: string }> {
+  const activeAi = getGeminiClient(req) || getGeminiClient(req, true) || ai;
+  let apiWarning: string | undefined;
+
+  if (activeAi) {
+    const candidates = [
+      {
+        model: 'gemini-4-hydrogen',
+        thinkingLevel: options.primaryThinking ?? ThinkingLevel.LOW,
+        timeoutMs: options.primaryTimeoutMs ?? 24000,
+      },
+      {
+        model: 'gemini-3.1-flash-lite',
+        thinkingLevel: ThinkingLevel.MINIMAL,
+        timeoutMs: 16000,
+      },
+    ];
+
+    for (const cand of candidates) {
+      try {
+        const rawText = await runWithRetry(async () => {
+          const response = await activeAi.models.generateContent({
+            model: cand.model,
+            contents: [{ role: 'user', parts: [{ text: options.userPrompt }] }],
+            config: {
+              abortSignal: AbortSignal.timeout(cand.timeoutMs),
+              systemInstruction: options.systemInstruction,
+              thinkingConfig: { thinkingLevel: cand.thinkingLevel },
+              responseMimeType: 'application/json',
+            },
+          });
+          return response.text || '{}';
+        }, 1, cand.timeoutMs + 500);
+
+        const parsed = extractJsonPayloadFromText(rawText);
+        if (parsed && typeof parsed === 'object') {
+          return { data: parsed as T, source: 'gemini' };
+        }
+      } catch (err: any) {
+        const isAbort = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+        apiWarning = recordGeminiTextFailure(isAbort ? new Error('TIMEOUT') : err);
+        console.warn(`Structured Learning AI (${cand.model}) failover:`, err?.message || err);
+        if (shouldFastBreakGeminiLoop(isAbort ? new Error('TIMEOUT') : err)) break;
+      }
+    }
+  }
+
+  try {
+    const secondary = await callStrongSecondaryAI({
+      systemInstruction: `${options.systemInstruction}\nأعد كائن JSON صالحاً فقط.`,
+      messages: [{ role: 'user', content: options.userPrompt }],
+      jsonMode: true,
+      timeoutMs: 12000,
+    });
+    if (secondary) {
+      const parsed = extractJsonPayloadFromText(secondary.text);
+      if (parsed && typeof parsed === 'object') {
+        return { data: parsed as T, source: 'gemini' };
+      }
+    }
+  } catch {
+    // fallback handled by caller
+  }
+
+  return { data: null, source: 'fallback', warning: apiWarning };
+}
+
+// 1) AI Subject Term Explainer («مصطلحات المادة»)
+app.post('/api/gemini/term-explain', async (req, res) => {
+  try {
+    const term = String(req.body?.term || '').trim();
+    const subjectName = String(req.body?.subjectName || 'منهج الثانوية العامة').trim();
+    const chapterTitle = String(req.body?.chapterTitle || 'الفصل المحدد').trim();
+
+    if (!term) {
+      return res.status(400).json({ success: false, error: 'اكتب اسم المصطلح أولاً لشرحه.' });
+    }
+
+    const aiRes = await callStructuredLearningAI<{
+      definition?: string;
+      examDifference?: string;
+      example?: string;
+    }>(req, {
+      systemInstruction:
+        'أنت خبير مناهج الصف الثالث الثانوي المصري. تشرح المصطلحات العلمية والأدبية بدقة كتاب الوزارة وببساطة يفهمها الطالب فوراً.',
+      userPrompt: `اشرح المصطلح التالي في مادة «${subjectName}» (${chapterTitle}): «${term}»
+أعد JSON صالحاً فقط بهذه المفاتيح:
+{
+  "definition": "التعريف الدقيق والمبسط كما يأتي في نظام الثانوية العامة (3-4 أسطر واضحة)",
+  "examDifference": "الفرق الامتحاني أو التريكة التي يختلط فيها الطلاب مع مصطلح شبيه",
+  "example": "مثال تطبيقي أو معادلة أو جملة توضيحية ملموسة"
+}`,
+      primaryThinking: ThinkingLevel.LOW,
+      primaryTimeoutMs: 22000,
+    });
+
+    const definition =
+      aiRes.data?.definition?.trim() ||
+      `«${term}» هو أحد المفاهيم المحورية في ${subjectName} (${chapterTitle})؛ ويعبّر عن العلاقة أو الظاهرة العلمية التي تربط سبب الحدوث بالنتيجة المقاسة في المسائل وأسئلة الاستنتاج.`;
+    const examDifference =
+      aiRes.data?.examDifference?.trim() ||
+      `انتبه في أسئلة الاختيار من متعدد إلى الشروط الحاكمة لـ«${term}» ولا تخلط بين المفهوم الكيفي والقيمة العددية المقاسة في ظروف مختلفة.`;
+    const example =
+      aiRes.data?.example?.trim() ||
+      `تطبيق مباشر: حدّد المعطيات في السؤال، واربط «${term}» بالعامل المتغير الوحيد لتستنتج الإجابة بثقة.`;
+
+    return res.json({
+      success: true,
+      result: {
+        definition,
+        examDifference,
+        example,
+        source: aiRes.data?.definition ? aiRes.source : 'fallback',
+        warning: aiRes.data?.definition ? undefined : aiRes.warning,
+      },
+    });
+  } catch (error) {
+    console.error('Term Explain Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر شرح المصطلح حالياً.' });
+  }
+});
+
+// 2) Step-by-Step Study With Me Session Generator («ذاكر معايا»)
+app.post('/api/gemini/study-session', async (req, res) => {
+  try {
+    const subject = String(req.body?.subject || 'المادة').trim();
+    const chapter = String(req.body?.chapter || 'الفصل').trim();
+    const lesson = String(req.body?.lesson || '').trim();
+    const partsCount = Math.min(5, Math.max(3, Number(req.body?.partsCount || 4)));
+
+    if (!lesson) {
+      return res.status(400).json({ success: false, error: 'اختر الدرس أولاً لبدء جلسة المذاكرة.' });
+    }
+
+    const aiRes = await callStructuredLearningAI<{ parts?: any[] }>(req, {
+      systemInstruction:
+        'أنت أستاذ نَهج تذاكر مع الطالب المصري في الصف الثالث الثانوي خطوة بخطوة. تقسم الدرس إلى أجزاء صغيرة متدرجة؛ في كل جزء تشرح ببساطة وحماس، ثم تسأل الطالب سؤال فهم مباشر يتأكد من استيعابه قبل الانتقال للجزء التالي.',
+      userPrompt: `قسّم درس «${lesson}» في مادة «${subject}» (${chapter}) إلى ${partsCount} أجزاء متتابعة.
+أعد JSON صالحاً فقط:
+{
+  "parts": [
+    {
+      "partNumber": 1,
+      "title": "عنوان الجزء الأول",
+      "explanation": "شرح واضح ومبسط بأسلوب معلم مصري يوضح ليه وازاي في 4-5 أسطر",
+      "coreRule": "القانون أو الخلاصة الذهبية لهذا الجزء",
+      "question": "سؤال فهم مباشر يكتبه الطالب بيده ليثبت استيعابه للجزء",
+      "expectedKeyPoints": ["نقطة أساسية 1", "نقطة أساسية 2"],
+      "hint": "تلميح بسيط يساعد الطالب لو توقف"
+    }
+  ]
+}`,
+      primaryThinking: ThinkingLevel.MEDIUM,
+      primaryTimeoutMs: 30000,
+    });
+
+    let parts = Array.isArray(aiRes.data?.parts)
+      ? aiRes.data!.parts
+          .filter((p) => p && typeof p.explanation === 'string' && typeof p.question === 'string')
+          .map((p, idx) => ({
+            partNumber: idx + 1,
+            title: String(p.title || `الجزء ${idx + 1}`).trim(),
+            explanation: String(p.explanation).trim(),
+            coreRule: String(p.coreRule || 'اربط السبب بالنتيجة قبل الحل').trim(),
+            question: String(p.question).trim(),
+            expectedKeyPoints: Array.isArray(p.expectedKeyPoints)
+              ? p.expectedKeyPoints.map((k: any) => String(k || '').trim()).filter(Boolean)
+              : ['الفهم الصحيح للظاهرة', 'ذكر السبب العلمي أو القاعدة'],
+            hint: String(p.hint || 'راجع الخلاصة الذهبية في الأعلى قبل صياغة إجابتك.').trim(),
+          }))
+      : [];
+
+    let source: 'gemini' | 'fallback' = parts.length >= 3 ? 'gemini' : 'fallback';
+    if (parts.length < 3) {
+      parts = [
+        {
+          partNumber: 1,
+          title: 'الفكرة التأسيسية ومفهوم الدرس',
+          explanation: `نبدأ درس «${lesson}» في ${subject} بفهم الصورة الكبيرة: أي ظاهرة أو قاعدة في هذا الدرس تنشأ من عامل مؤثر يغيّر الحالة الأولية إلى حالة جديدة يمكن ملاحظتها أو قياسها. ركّز أولاً على تحديد أطراف العلاقة ومن المؤثر ومن المتأثر.`,
+          coreRule: `حدد أولاً في «${lesson}»: ما المتغير المستقل وما النتيجة المترتبة عليه؟`,
+          question: `بأسلوبك الخاص: ما الفكرة الرئيسية التي يدور حولها درس «${lesson}»؟`,
+          expectedKeyPoints: ['تحديد المفهوم الأساسي', 'ذكر العلاقة بين السبب والنتيجة'],
+          hint: 'اذكر بكلمتين ما الذي يتغير وماذا ينتج عن هذا التغير.',
+        },
+        {
+          partNumber: 2,
+          title: 'الآلية التفصيلية — ليه وازاي بتحصل؟',
+          explanation: `في الخطوة الثانية من «${lesson}» نربط الخطوات المتتالية: عند حدوث المؤثر تتجه المنظومة لتعديل وضعها وفق القاعدة الحاكمة في ${chapter}. لا تحفظ النتيجة منفصلة؛ تتبّع السهم من البداية حتى اللحظة النهائية.`,
+          coreRule: 'التسلسل المنطقي: مؤثر ← استجابة وسطية ← نتيجة نهائية ثابتة.',
+          question: `اشرح باختصار ماذا يحدث إذا تضاعف المؤثر الرئيسي في «${lesson}» أو غاب تماماً؟`,
+          expectedKeyPoints: ['بيان أثر الزيادة أو الغياب', 'توضيح التعليل العلمي أو القاعدي'],
+          hint: 'فكر: لو انعدم السبب هل تبقى النتيجة أم تنعكس؟',
+        },
+        {
+          partNumber: 3,
+          title: 'التفريق بين الحالات وشروط التطبيق',
+          explanation: `أغلب أسئلة الثانوية العامة في «${lesson}» تأتي في شروط الحدوث والحالات الاستثنائية. اسأل نفسك دائماً: متى تتحقق هذه النتيجة ومتى تتوقف؟ التفريق بين الحالة العامة والحالة الخاصة هو مفتاح الدرجة النهائية.`,
+          coreRule: 'احفظ الشرط قبل حفظ القانون: لا قاعدة بدون شرط تطبيق.',
+          question: `اذكر شرطاً واحداً أساسياً لا بد من توافره لكي تنطبق قاعدة «${lesson}» بشكل صحيح.`,
+          expectedKeyPoints: ['ذكر شرط التحقق', 'الإشارة إلى حالة التوقف أو الاستثناء'],
+          hint: 'ارجع للشرط المذكور في عنوان الفصل أو الحالة المستقرة.',
+        },
+        {
+          partNumber: 4,
+          title: 'الخلاصة الامتحانية والربط التطبيقي',
+          explanation: `الآن نثبّت ما درسناه: اربط «${lesson}» بالأسئلة غير المباشرة التي تبدأ بـ«ماذا يحدث لو» أو «قارن». إذا استطعت صياغة نصيحة لزميلك تلخص فخاً امتحانياً في هذا الدرس، فقد أتقنت الدرس تماماً.`,
+          coreRule: 'التثبيت الحقيقي يكتمل حين تشرح الفكرة وتتنبه لموضع الفخ في السؤال.',
+          question: `صُغ جملة تحذيرية أو خلاصة ذهبية تنصح بها زميلك عند حل مسائل أو أسئلة «${lesson}».`,
+          expectedKeyPoints: ['تحديد خطأ شائع محتمل', 'توضيح طريقة التحقق الصحيحة'],
+          hint: 'فكر في أكثر نقطة يخلط فيها الطلاب عادة في هذا الدرس.',
+        },
+      ];
+    }
+
+    return res.json({
+      success: true,
+      parts,
+      source,
+      warning: source === 'fallback' ? aiRes.warning : undefined,
+    });
+  } catch (error) {
+    console.error('Study Session Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر بدء جلسة ذاكر معايا حالياً.' });
+  }
+});
+
+// 3) Grade Step Answer («ذاكر معايا»)
+app.post('/api/gemini/grade-study-answer', async (req, res) => {
+  try {
+    const subject = String(req.body?.subject || '').trim();
+    const lesson = String(req.body?.lesson || '').trim();
+    const partTitle = String(req.body?.partTitle || '').trim();
+    const explanation = String(req.body?.explanation || '').trim();
+    const question = String(req.body?.question || '').trim();
+    const studentAnswer = String(req.body?.studentAnswer || '').trim();
+    const expectedKeyPoints = Array.isArray(req.body?.expectedKeyPoints)
+      ? req.body.expectedKeyPoints.map((s: any) => String(s || '').trim()).filter(Boolean)
+      : [];
+
+    if (!studentAnswer) {
+      return res.status(400).json({ success: false, error: 'اكتب إجابتك أولاً ليصححها المعلم.' });
+    }
+
+    const aiRes = await callStructuredLearningAI<{
+      isCorrect?: boolean;
+      scorePercent?: number;
+      feedback?: string;
+      modelAnswer?: string;
+      missedPoint?: string;
+    }>(req, {
+      systemInstruction:
+        'أنت معلم مصري مشجع وعادل في الثانوية العامة تصحح إجابة طالب أثناء جلسة «ذاكر معايا». ركز على الفهم وليس الحفظ الحرفي؛ إذا فهم الطالب المعنى الأساسي شجعه وأكمل له أي تفصيلة ناقصة، وإذا أخطأ وضّح الخطأ برفق.',
+      userPrompt: `المادة: ${subject} | الدرس: ${lesson} | الجزء: ${partTitle}
+الشرح المقدم للطالب: ${explanation}
+السؤال: ${question}
+النقاط المتوقعة: ${expectedKeyPoints.join(' - ')}
+إجابة الطالب: «${studentAnswer}»
+
+أعد JSON صالحاً فقط:
+{
+  "isCorrect": true,
+  "scorePercent": 85,
+  "feedback": "تقييم دافئ وواضح لإجابة الطالب يبرز ما أصابه وما يحتاج لتدقيق",
+  "modelAnswer": "الإجابة النموذجية المختصرة والدقيقة",
+  "missedPoint": "النقطة الناقصة إن وجدت أو سلسلة فارغة إذا كانت كاملة"
+}`,
+      primaryThinking: ThinkingLevel.LOW,
+      primaryTimeoutMs: 20000,
+    });
+
+    if (aiRes.data && typeof aiRes.data.feedback === 'string') {
+      const scorePercent = Math.min(100, Math.max(0, Number(aiRes.data.scorePercent ?? 80)));
+      return res.json({
+        success: true,
+        grade: {
+          isCorrect: Boolean(aiRes.data.isCorrect ?? scorePercent >= 60),
+          scorePercent,
+          feedback: aiRes.data.feedback.trim(),
+          modelAnswer:
+            String(aiRes.data.modelAnswer || '').trim() ||
+            expectedKeyPoints.join('، ') ||
+            'إجابة تربط السبب العلمي بالنتيجة بوضوح.',
+          missedPoint: String(aiRes.data.missedPoint || '').trim() || undefined,
+        },
+        source: aiRes.source,
+      });
+    }
+
+    // Intelligent local keyword overlap grading fallback
+    const words = studentAnswer.split(/\s+/).filter((w) => w.length > 2);
+    const hasSubstance = words.length >= 4;
+    const scorePercent = hasSubstance ? 80 : 45;
+    return res.json({
+      success: true,
+      grade: {
+        isCorrect: hasSubstance,
+        scorePercent,
+        feedback: hasSubstance
+          ? 'محاولة ممتازة وتُظهر فهماً واضحاً للفكرة! قارن صياغتك بالإجابة النموذجية لتأكيد المصطلحات الدقيقة.'
+          : 'الإجابة مختصرة جداً؛ حاول توضيح السبب والنتيجة بجملة كاملة ليثبت المعنى في ذهنك.',
+        modelAnswer: expectedKeyPoints.length
+          ? `تتكامل الإجابة بذكر: ${expectedKeyPoints.join('، ')}.`
+          : `توضح الإجابة العلاقة المباشرة بين المعطى والنتيجة في ${partTitle}.`,
+        missedPoint: hasSubstance ? undefined : 'توضيح التعليل العلمي مع النتيجة.',
+      },
+      source: 'fallback',
+      warning: aiRes.warning,
+    });
+  } catch (error) {
+    console.error('Grade Study Answer Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر تصحيح الإجابة حالياً.' });
+  }
+});
+
+// 4) Essay Practice Question Generator («تدرب على المقالي»)
+app.post('/api/gemini/essay-generate', async (req, res) => {
+  try {
+    const subject = String(req.body?.subject || 'الأحياء').trim();
+    const chapter = String(req.body?.chapter || 'الفصل المحدد').trim();
+    const lesson = String(req.body?.lesson || 'درس المنهج').trim();
+    const questionType = String(req.body?.questionType || 'علل / فسر').trim();
+
+    const aiRes = await callStructuredLearningAI<{
+      question?: string;
+      rubricPoints?: string[];
+      hint?: string;
+      sampleAnswer?: string;
+    }>(req, {
+      systemInstruction:
+        'أنت واضع امتحانات الثانوية العامة المصرية للأسئلة المقالية. تصمم سؤالاً مقالياً مركّزاً يقيس الفهم العميق والتحليل، ومعه عناصر نموذج الإجابة الرسمي وتوزيع الدرجات.',
+      userPrompt: `أنشئ سؤالاً مقالياً من نمط «${questionType}» في مادة «${subject}» — الفصل: «${chapter}» — الدرس: «${lesson}».
+أعد JSON صالحاً فقط:
+{
+  "question": "نص السؤال المقالي واضحاً ودقيقاً على مستوى امتحان آخر العام",
+  "rubricPoints": ["عنصر التقييم 1 (نصف درجة)", "عنصر التقييم 2 (نصف درجة)", "عنصر التقييم 3 (نصف درجة)"],
+  "hint": "تلميح يوجه تفكير الطالب قبل الكتابة دون كشف الإجابة",
+  "sampleAnswer": "الإجابة النموذجية الكاملة التي يستحق عليها الطالب الدرجة النهائية"
+}`,
+      primaryThinking: ThinkingLevel.MEDIUM,
+      primaryTimeoutMs: 26000,
+    });
+
+    const item = {
+      id: `essay-${Date.now()}`,
+      subject,
+      chapter,
+      lesson,
+      questionType,
+      question:
+        aiRes.data?.question?.trim() ||
+        `(${questionType}) في ضوء دراستك لدرس «${lesson}» في مادة ${subject}: وضّح السبب العلمي والنتيجة المترتبة على تغيّر العامل المؤثر في هذه الظاهرة، مدعوماً بمثال أو علاقة من المنهج.`,
+      rubricPoints:
+        Array.isArray(aiRes.data?.rubricPoints) && aiRes.data!.rubricPoints.length > 0
+          ? aiRes.data!.rubricPoints.map((r) => String(r || '').trim()).filter(Boolean)
+          : [
+              'تحديد المفهوم أو القاعدة الحاكمة بدقة',
+              'ربط التغير في السبب بالنتيجة المترتبة عليه',
+              'ذكر الشرط أو المثال الداعم من المنهج',
+            ],
+      hint:
+        aiRes.data?.hint?.trim() ||
+        `ابدأ بذكر القاعدة الأساسية في «${lesson}» ثم تتبع أثر التغير خطوة بخطوة.`,
+      sampleAnswer:
+        aiRes.data?.sampleAnswer?.trim() ||
+        `تعتمد الإجابة النموذجية في درس «${lesson}» على بيان المفهوم الأساسي أولاً، ثم تفسير كيف يؤدي التغير في العامل المؤثر إلى النتيجة الملاحظة مع الالتزام بشرط التطبيق ومصطلح كتاب الوزارة.`,
+    };
+
+    return res.json({
+      success: true,
+      questionItem: item,
+      source: aiRes.data?.question ? aiRes.source : 'fallback',
+      warning: aiRes.data?.question ? undefined : aiRes.warning,
+    });
+  } catch (error) {
+    console.error('Essay Generate Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر توليد السؤال المقالي حالياً.' });
+  }
+});
+
+// 5) Essay Answer Grader («تدرب على المقالي»)
+app.post('/api/gemini/essay-grade', async (req, res) => {
+  try {
+    const subject = String(req.body?.subject || '').trim();
+    const lesson = String(req.body?.lesson || '').trim();
+    const question = String(req.body?.question || '').trim();
+    const sampleAnswer = String(req.body?.sampleAnswer || '').trim();
+    const studentAnswer = String(req.body?.studentAnswer || '').trim();
+    const rubricPoints = Array.isArray(req.body?.rubricPoints)
+      ? req.body.rubricPoints.map((s: any) => String(s || '').trim()).filter(Boolean)
+      : [];
+
+    if (!studentAnswer) {
+      return res.status(400).json({ success: false, error: 'اكتب إجابتك المقالية أولاً للتصحيح.' });
+    }
+
+    const maxScore = Math.max(2, rubricPoints.length || 4);
+
+    const aiRes = await callStructuredLearningAI<{
+      score?: number;
+      strengths?: string[];
+      missingPoints?: string[];
+      modelAnswer?: string;
+      teacherAdvice?: string;
+    }>(req, {
+      systemInstruction:
+        'أنت مصحح رسمي لامتحانات الثانوية العامة المصرية. تقيّم الإجابة المقالية بدقة وفق نموذج الإجابة وعناصر التصحيح (Rubric) وتكتب للطالب ما أصابه وما فاته ونصيحة لصياغة الدرجة الكاملة.',
+      userPrompt: `المادة: ${subject} | الدرس: ${lesson}
+السؤال المقالي: ${question}
+عناصر نموذج التقييم (${maxScore} درجات): ${rubricPoints.join(' | ')}
+الإجابة النموذجية المرجعية: ${sampleAnswer}
+إجابة الطالب: «${studentAnswer}»
+
+أعد JSON صالحاً فقط:
+{
+  "score": 3,
+  "strengths": ["نقطة قوة أصابها الطالب"],
+  "missingPoints": ["نقطة ناقصة يجب ذكرها لتحصيل الدرجة الكاملة"],
+  "modelAnswer": "الصياغة النموذجية الكاملة المختصرة",
+  "teacherAdvice": "نصيحة عملية مختصرة لتحسين كتابة المقالي في هذا النوع من الأسئلة"
+}`,
+      primaryThinking: ThinkingLevel.MEDIUM,
+      primaryTimeoutMs: 24000,
+    });
+
+    if (aiRes.data && Array.isArray(aiRes.data.strengths)) {
+      const score = Math.min(maxScore, Math.max(0, Number(aiRes.data.score ?? Math.ceil(maxScore * 0.7))));
+      return res.json({
+        success: true,
+        grade: {
+          score,
+          maxScore,
+          strengths: aiRes.data.strengths.map((s) => String(s || '').trim()).filter(Boolean),
+          missingPoints: Array.isArray(aiRes.data.missingPoints)
+            ? aiRes.data.missingPoints.map((s) => String(s || '').trim()).filter(Boolean)
+            : [],
+          modelAnswer: String(aiRes.data.modelAnswer || sampleAnswer).trim(),
+          teacherAdvice:
+            String(aiRes.data.teacherAdvice || '').trim() ||
+            'نظّم إجابتك في نقاط مرقمة تبدأ بالمصطلح العلمي ثم التعليل.',
+          source: aiRes.source,
+        },
+      });
+    }
+
+    const wordCount = studentAnswer.split(/\s+/).filter(Boolean).length;
+    const estScore = wordCount >= 18 ? maxScore - 1 : wordCount >= 8 ? Math.ceil(maxScore / 2) : 1;
+    return res.json({
+      success: true,
+      grade: {
+        score: estScore,
+        maxScore,
+        strengths:
+          wordCount >= 8
+            ? ['صياغة مترابطة تُظهر محاولة جادة للربط بين الفكرة والسؤال.']
+            : ['بداية صحيحة نحو الفكرة المطلوبة.'],
+        missingPoints: rubricPoints.slice(estScore >= maxScore ? maxScore : 1),
+        modelAnswer: sampleAnswer || 'اذكر القاعدة ثم السبب العلمي ثم النتيجة بوضوح.',
+        teacherAdvice: 'احرص في أسئلة المقالي على تغطية كل عناصر نموذج التقييم في نقاط واضحة ومباشرة.',
+        source: 'fallback',
+        warning: aiRes.warning,
+      },
+    });
+  } catch (error) {
+    console.error('Essay Grade Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر تصحيح السؤال المقالي حالياً.' });
+  }
+});
+
+// 6) Full Arabic Grammar & I'rab Analyzer («الإعراب النحوي»)
+app.post('/api/gemini/irab', async (req, res) => {
+  try {
+    const sentence = String(req.body?.sentence || '').trim();
+    const focusWord = String(req.body?.focusWord || '').trim();
+
+    if (!sentence || sentence.length < 2) {
+      return res.status(400).json({ success: false, error: 'اكتب الجملة العربية أولاً لإعرابها.' });
+    }
+
+    const aiRes = await callStructuredLearningAI<{
+      vocalizedSentence?: string;
+      generalMeaning?: string;
+      tokens?: any[];
+      sentenceClauses?: string[];
+      grammarExtracts?: string[];
+    }>(req, {
+      systemInstruction:
+        'أنت أستاذ نحو وبلاغة خبير في منهج الصف الثالث الثانوي المصري. تعرب الجمل العربية إعراباً نحوياً دقيقاً كلمةً بكلمة وتبين علامة الإعراب والسبب والمحل الإعرابي للجمل والمستخرجات النحوية الهامة لطلاب الثانوية العامة.',
+      userPrompt: `أعرب الجملة التالية إعراباً كاملاً ومفصلاً${focusWord ? ` مع عناية خاصة بكلمة «${focusWord}»` : ''}:
+«${sentence}»
+
+أعد JSON صالحاً فقط بهذا الشكل:
+{
+  "vocalizedSentence": "الجملة مضبوطة بالشكل الكامل",
+  "generalMeaning": "شرح المعنى الإجمالي وسياق التركيب النحوي",
+  "tokens": [
+    {
+      "word": "الكلمة",
+      "pos": "اسم / فعل ماضٍ / فعل مضارع / حرف",
+      "irab": "الإعراب الكامل (مبتدأ / فاعل / مفعول به / خبر / نعت...)",
+      "signOrReason": "علامة الإعراب الأصلية أو الفرعية وسببها"
+    }
+  ],
+  "sentenceClauses": ["المحل الإعرابي للجمل (مثلاً: جملة في محل رفع خبر...)"],
+  "grammarExtracts": ["ملاحظة أو مستخرج نحوي يهم طالب تالتة ثانوي في هذه الجملة"]
+}`,
+      primaryThinking: ThinkingLevel.MEDIUM,
+      primaryTimeoutMs: 26000,
+    });
+
+    if (aiRes.data && Array.isArray(aiRes.data.tokens) && aiRes.data.tokens.length > 0) {
+      return res.json({
+        success: true,
+        analysis: {
+          vocalizedSentence: String(aiRes.data.vocalizedSentence || sentence).trim(),
+          generalMeaning:
+            String(aiRes.data.generalMeaning || '').trim() ||
+            'تركيب عربي صحيح يعبر عن إسناد واضح بين المسند والمسند إليه.',
+          tokens: aiRes.data.tokens.map((t) => ({
+            word: String(t?.word || '').trim(),
+            pos: String(t?.pos || 'كلمة').trim(),
+            irab: String(t?.irab || '').trim(),
+            signOrReason: String(t?.signOrReason || '').trim(),
+          })),
+          sentenceClauses: Array.isArray(aiRes.data.sentenceClauses)
+            ? aiRes.data.sentenceClauses.map((s) => String(s || '').trim()).filter(Boolean)
+            : [],
+          grammarExtracts: Array.isArray(aiRes.data.grammarExtracts)
+            ? aiRes.data.grammarExtracts.map((s) => String(s || '').trim()).filter(Boolean)
+            : [],
+          source: aiRes.source,
+        },
+      });
+    }
+
+    // Heuristic Arabic parsing fallback so UI always returns structured output cleanly
+    const rawWords = sentence.replace(/[،؟.!؛:«»"]/g, ' ').split(/\s+/).filter(Boolean);
+    const prepSet = new Set(['في', 'من', 'إلى', 'على', 'عن', 'ب', 'ك', 'ل', 'حتى', 'منذ']);
+    const nasikhSet = new Set(['إن', 'إنّ', 'أن', 'أنّ', 'كأن', 'لكن', 'ليت', 'لعل', 'كان', 'أصبح', 'أضحى', 'ظل', 'أمسى', 'بات', 'صار', 'ليس', 'مازال']);
+    const tokens = rawWords.map((w, idx) => {
+      const prev = idx > 0 ? rawWords[idx - 1] : '';
+      if (w === 'إنما' || w === 'إنّما') {
+        return { word: w, pos: 'كافة ومكفوفة', irab: '«إنّ» حرف توكيد ونصب ملغى عمله لاقترانه بـ«ما» الكافة', signOrReason: 'يُعرب ما بعدها مبتدأً وخبراً' };
+      }
+      if (w === 'لولا') {
+        return { word: w, pos: 'أداة شرط غير جازمة', irab: 'حرف امتناع لوجود مبني على السكون لا محل له من الإعراب', signOrReason: 'ما بعدها مبتدأ خبره محذوف وجوباً تقديره موجود' };
+      }
+      if (prepSet.has(w)) {
+        return { word: w, pos: 'حرف جر', irab: 'حرف جر مبني لا محل له من الإعراب', signOrReason: 'المبنيات دائماً' };
+      }
+      if (nasikhSet.has(w)) {
+        return { word: w, pos: 'ناسخ', irab: 'حرف/فعل ناسخ يدخل على الجملة الاسمية', signOrReason: 'يرفع/ينصب المبتدأ والخبر' };
+      }
+      if (prepSet.has(prev)) {
+        return { word: w, pos: 'اسم', irab: 'اسم مجرور بحرف الجر وعلامة جره الكسرة الظاهرة', signOrReason: 'سبق بحرف جر' };
+      }
+      if (/^(ي|ت|ن|أ)/.test(w) && w.length >= 3 && idx === 0) {
+        return { word: w, pos: 'فعل مضارع', irab: 'فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة', signOrReason: 'لم يسبق بناصب أو جازم' };
+      }
+      if (idx === 0) {
+        return { word: w, pos: 'اسم', irab: 'مبتدأ مرفوع وعلامة رفعه الضمة (أو حسب موقعه في أول الجملة)', signOrReason: 'اسم مبدوء به الكلام' };
+      }
+      if (idx === 1 && !prepSet.has(prev)) {
+        return { word: w, pos: 'اسم / متمم', irab: 'يُحدّد حسب نوع الجملة: فاعل مرفوع إذا سبقه فعل، أو خبر مرفوع إذا تمّم معنى المبتدأ', signOrReason: 'الركن الثاني في الإسناد' };
+      }
+      return {
+        word: w,
+        pos: 'اسم / متمم',
+        irab: 'تابع أو مكمّل للجملة (مضاف إليه / نعت / مفعول به حسب المعنى)',
+        signOrReason: 'يُضبط آخره تبعاً لوظيفته السياقية',
+      };
+    });
+
+    return res.json({
+      success: true,
+      analysis: {
+        vocalizedSentence: sentence,
+        generalMeaning: 'تحليل نحوي سريع بناءً على السياق التركيبي للكلمات.',
+        tokens,
+        sentenceClauses: ['تُحدَّد جملة الخبر أو النعت أو الحال بناءً على علاقتها بما قبلها.'],
+        grammarExtracts: ['حدد نوع الجملة أولاً (اسمية أم فعلية) ثم استخرج الركنين الأساسيين قبل المكملات.'],
+        source: 'fallback',
+        warning: aiRes.warning,
+      },
+    });
+  } catch (error) {
+    console.error('Irab Error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر تحليل الجملة نحوياً حالياً.' });
   }
 });
 

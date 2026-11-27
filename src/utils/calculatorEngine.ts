@@ -121,10 +121,15 @@ function normalizeDisplayExpression(raw: string): string {
     .replace(/×/g, '*')
     .replace(/÷/g, '/')
     .replace(/−/g, '-')
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .replace(/⁻¹/g, '^(-1)')
     .replace(/√\(/g, 'sqrt(')
     .replace(/√(\d+(?:\.\d+)?)/g, 'sqrt($1)')
+    .replace(/√([a-zA-Zπ]+)/g, 'sqrt($1)')
     .replace(/∛\(/g, 'cbrt(')
     .replace(/∛(\d+(?:\.\d+)?)/g, 'cbrt($1)')
+    .replace(/∛([a-zA-Zπ]+)/g, 'cbrt($1)')
     .replace(/π/g, 'pi')
     .replace(/∞/g, 'inf')
     .replace(/Ran#/gi, String(Number(Math.random().toFixed(4))))
@@ -688,6 +693,23 @@ export function toSimplifiedFraction(value: number, maxDen = 10000): string | nu
   if (bestErr > 1e-7 || bestDen === 1) return null;
   const g = gcdNum(bestNum, bestDen);
   return `${sign * (bestNum / g)} / ${bestDen / g}`;
+}
+
+export function toMixedFraction(value: number, maxDen = 10000): string | null {
+  const simple = toSimplifiedFraction(value, maxDen);
+  if (!simple) return null;
+  const parts = simple.split('/').map((s) => Number(s.trim()));
+  if (parts.length !== 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) {
+    return simple;
+  }
+  const [signedNum, den] = parts;
+  const sign = signedNum < 0 ? '-' : '';
+  const absNum = Math.abs(signedNum);
+  if (absNum < den) return simple;
+  const whole = Math.floor(absNum / den);
+  const rem = absNum % den;
+  if (rem === 0) return `${sign}${whole}`;
+  return `${sign}${whole} ⌟ ${rem}/${den}`;
 }
 
 export function primeFactorizeString(value: number): string | null {

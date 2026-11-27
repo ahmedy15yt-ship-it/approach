@@ -30,6 +30,7 @@ import {
   Share2,
   RefreshCw,
   MonitorCheck,
+  AlertOctagon,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -39,6 +40,7 @@ import {
   QuestionTypeFilter,
   QuestionDifficultyFilter,
   QuizChallengeRoom,
+  MistakeItem,
 } from '../types';
 import {
   encodeQuizChallengeCode,
@@ -55,6 +57,7 @@ interface QuestionGeneratorViewProps {
   accountPhone?: string;
   onAwardBonusXp?: (xp: number, reason?: string) => void;
   onAskTutor?: (subjectName: string, promptText: string) => void;
+  onSaveMistake?: (mistake: Omit<MistakeItem, 'id' | 'reviewCount' | 'isResolved' | 'createdAt'>) => void;
 }
 
 const OPTION_LETTERS = ['أ', 'ب', 'ج', 'د'];
@@ -65,7 +68,9 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
   accountPhone,
   onAwardBonusXp,
   onAskTutor,
+  onSaveMistake,
 }) => {
+  const [savedMistakeIds, setSavedMistakeIds] = useState<Record<string, boolean>>({});
   const storageKey = useMemo(
     () => `nahj_question_sets_${accountPhone || 'default'}`,
     [accountPhone]
@@ -1592,21 +1597,51 @@ export const QuestionGeneratorView: React.FC<QuestionGeneratorViewProps> = ({
                             )}
                           </div>
 
-                          {onAskTutor && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onAskTutor(
-                                  activeSet.subject,
-                                  `اشرح لي بعمق هذا السؤال من درس "${activeSet.lesson}" (${activeSet.chapter}):\n${q.question}\nالإجابة الصحيحة هي: ${q.correctAnswerText}`
-                                )
-                              }
-                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#9A7218] dark:text-[#E8CE88] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 flex items-center gap-1 cursor-pointer transition-colors"
-                            >
-                              <Bot className="w-3.5 h-3.5" />
-                              <span>اسأل أستاذ نَهج لشرح أعمق</span>
-                            </button>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {isRevealed && onSaveMistake && (
+                              <button
+                                type="button"
+                                disabled={Boolean(savedMistakeIds[q.id])}
+                                onClick={() => {
+                                  const pickedOpt =
+                                    pickedIdx !== undefined && q.options[pickedIdx]
+                                      ? q.options[pickedIdx]
+                                      : 'إجابة غير دقيقة';
+                                  onSaveMistake({
+                                    subjectId: selectedSubject?.id || 'general',
+                                    subjectName: activeSet.subject,
+                                    lessonTitle: activeSet.lesson,
+                                    question: q.question,
+                                    wrongAnswer: pickedOpt,
+                                    correctAnswer: q.correctAnswerText,
+                                    reasonOrRule: q.explanation,
+                                    sourceLabel: 'مُنشئ الأسئلة',
+                                  });
+                                  setSavedMistakeIds((prev) => ({ ...prev, [q.id]: true }));
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/35 text-[11px] font-bold text-rose-600 dark:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              >
+                                <AlertOctagon className="w-3.5 h-3.5" />
+                                <span>{savedMistakeIds[q.id] ? 'حُفظ في غلطاتي ✔' : 'احفظ في غلطاتي'}</span>
+                              </button>
+                            )}
+
+                            {onAskTutor && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onAskTutor(
+                                    activeSet.subject,
+                                    `اشرح لي بعمق هذا السؤال من درس "${activeSet.lesson}" (${activeSet.chapter}):\n${q.question}\nالإجابة الصحيحة هي: ${q.correctAnswerText}`
+                                  )
+                                }
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#9A7218] dark:text-[#E8CE88] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Bot className="w-3.5 h-3.5" />
+                                <span>اسأل أستاذ نَهج لشرح أعمق</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {visibleHints[q.id] && q.hint && (

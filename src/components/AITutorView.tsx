@@ -793,7 +793,7 @@ export const AITutorView: React.FC<AITutorViewProps> = ({
                 : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#E8CE88]'
             }`}
           >
-            🔬 معلم خبير بأمثلة واقعية
+            🔬 تحليل خبير عميق بأمثلة وربط تراكمي
           </button>
           <button
             type="button"

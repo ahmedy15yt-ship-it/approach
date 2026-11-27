@@ -10,11 +10,9 @@ import {
   ChevronRight,
   Delete,
   MoreVertical,
-  Copy,
-  Check,
   Trash2,
   Atom,
-  Sparkles,
+  Gem,
 } from 'lucide-react';
 import {
   AngleUnit,
@@ -23,6 +21,7 @@ import {
   primeFactorizeString,
   toDMSString,
   toEngineeringNotation,
+  toMixedFraction,
   toSimplifiedFraction,
 } from '../utils/calculatorEngine';
 
@@ -86,7 +85,7 @@ export const CalculatorView: React.FC = () => {
 
   // Popover drawers inside calculator shell
   const [activeDrawer, setActiveDrawer] = useState<
-    null | 'constants' | 'conv' | 'history' | 'mode' | 'vars'
+    null | 'constants' | 'conv' | 'history' | 'mode' | 'vars' | 'help'
   >(null);
   const [statusToast, setStatusToast] = useState<string | null>(null);
 
@@ -188,6 +187,9 @@ export const CalculatorView: React.FC = () => {
       'exp(',
       'Ans',
       '×10^',
+      '⁻¹',
+      '√(',
+      '∛(',
       '∫(',
     ];
 
@@ -257,13 +259,13 @@ export const CalculatorView: React.FC = () => {
   // Toggle S ⇔ D (Fraction / Decimal)
   const handleToggleSD = () => {
     if (modifier === 'SHIFT') {
-      // S->D mixed fraction note
-      const frac = toSimplifiedFraction(lastNumericResult);
-      if (frac) {
-        setDisplayResult(frac);
-        showToast('تم التحويل إلى كسر اعتيادي');
+      const mixed = toMixedFraction(lastNumericResult);
+      if (mixed) {
+        setDisplayFormat('FRAC');
+        setDisplayResult(mixed);
+        showToast('تم التحويل إلى كسر مختلط (a b/c)');
       } else {
-        showToast('العدد صحيح أو غير قابل للتبسيط الكسري');
+        showToast('العدد صحيح أو غير قابل للتحويل الكسري');
       }
       setModifier('NONE');
       return;
@@ -384,15 +386,15 @@ export const CalculatorView: React.FC = () => {
   // Helper to render key button with dual SHIFT (amber) & ALPHA (purple) labels matching CalcES screenshot
   const SciKey: React.FC<{
     main: React.ReactNode;
-    shiftLbl?: string;
-    alphaLbl?: string;
+    shiftLbl?: React.ReactNode;
+    alphaLbl?: React.ReactNode;
     onPress: () => void;
     btnClass?: string;
   }> = ({ main, shiftLbl, alphaLbl, onPress, btnClass = '' }) => (
     <div className="flex flex-col items-stretch">
-      <div className="flex items-center justify-between px-1 h-4 text-[10px] font-bold leading-none select-none">
+      <div className="flex items-center justify-between gap-0.5 px-0.5 h-4 text-[10px] font-bold leading-none select-none">
         <span className="text-[#F5C531] truncate">{shiftLbl || ''}</span>
-        <span className="text-[#9683EC] truncate">{alphaLbl || ''}</span>
+        <span className="text-[#9683EC] truncate flex items-center gap-0.5">{alphaLbl || ''}</span>
       </div>
       <button
         type="button"
@@ -406,15 +408,15 @@ export const CalculatorView: React.FC = () => {
 
   const NumKey: React.FC<{
     main: React.ReactNode;
-    shiftLbl?: string;
-    alphaLbl?: string;
+    shiftLbl?: React.ReactNode;
+    alphaLbl?: React.ReactNode;
     onPress: () => void;
     variant?: 'dark' | 'orange';
   }> = ({ main, shiftLbl, alphaLbl, onPress, variant = 'dark' }) => (
     <div className="flex flex-col items-stretch">
-      <div className="flex items-center justify-between px-1 h-4 text-[10px] font-bold leading-none select-none">
+      <div className="flex items-center justify-between gap-0.5 px-1 h-4 text-[10px] font-bold leading-none select-none">
         <span className="text-[#F5C531] truncate">{shiftLbl || ''}</span>
-        <span className="text-[#9683EC] truncate">{alphaLbl || ''}</span>
+        <span className="text-[#9683EC] truncate flex items-center gap-0.5">{alphaLbl || ''}</span>
       </div>
       <button
         type="button"
@@ -472,10 +474,11 @@ export const CalculatorView: React.FC = () => {
           {/* Top Status Indicator Bar matching screenshot */}
           <div className="flex items-center justify-between text-[10px] font-mono font-bold tracking-wider px-1.5 pb-1.5">
             <div className="flex items-center gap-2">
-              <span className={modifier === 'SHIFT' ? 'text-[#F5C531]' : 'text-zinc-600'}>S</span>
+              <span className={modifier === 'SHIFT' || modifier === 'SECOND' ? 'text-[#F5C531]' : 'text-zinc-600'}>S</span>
               <span className={modifier === 'ALPHA' ? 'text-[#9683EC]' : 'text-zinc-600'}>A</span>
               <span className={modifier === 'STO' ? 'text-[#F5C531]' : 'text-zinc-600'}>STO</span>
-              <span className="text-zinc-600">RCL</span>
+              <span className={activeDrawer === 'vars' ? 'text-zinc-200' : 'text-zinc-600'}>RCL</span>
+              {modifier === 'HYP' && <span className="text-[#F5C531]">HYP</span>}
               <span className="text-zinc-300">NORM-11</span>
               <span className="text-zinc-300">{displayBase}</span>
               <span className="text-zinc-300">{displayFormat}</span>
@@ -543,10 +546,10 @@ export const CalculatorView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveDrawer((d) => (d === 'constants' ? null : 'constants'))}
-                className="h-7 px-2.5 rounded-full bg-[#9D79FF] hover:bg-[#AD8EFF] text-[#0D0C10] font-black text-[10px] flex items-center gap-1 cursor-pointer"
+                className="h-7 px-2.5 rounded-full bg-[#C6B4FF] hover:bg-[#D5C7FF] text-[#1A142B] font-black text-[10px] flex items-center gap-1 cursor-pointer border border-[#9D79FF]/50"
                 title="مكتبة الثوابت والقوانين (PRO)"
               >
-                <Sparkles className="w-3 h-3" />
+                <Gem className="w-3 h-3" />
                 <span>PRO</span>
               </button>
 
@@ -564,7 +567,7 @@ export const CalculatorView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => insertAtCursor('∫(,0,1)', false, 5)}
-                title="تكامل محدد"
+                title="تكامل محدد / مجموع"
                 className="w-8 h-7 rounded-lg bg-[#2D2B32] hover:bg-[#3D3A44] text-zinc-200 font-serif font-black text-xs flex items-center justify-center cursor-pointer"
               >
                 Σ
@@ -582,8 +585,8 @@ export const CalculatorView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => insertAtCursor('−', false)}
-                title="إشارة سالب"
-                className="w-8 h-7 rounded-lg bg-[#2D2B32] hover:bg-[#3D3A44] text-zinc-200 font-mono font-black text-xs flex items-center justify-center cursor-pointer"
+                title="تغيير الإشارة / سالب"
+                className="w-8 h-7 rounded-lg bg-[#2D2B32] hover:bg-[#3D3A44] text-zinc-200 font-mono font-black text-[11px] flex items-center justify-center cursor-pointer"
               >
                 +/−
               </button>
@@ -609,17 +612,19 @@ export const CalculatorView: React.FC = () => {
             </button>
           </div>
 
-          {/* Optional Inline Drawer inside Calculator when user opens Constants / Conversions / Vars / Mode */}
+          {/* Optional Inline Drawer inside Calculator when user opens Constants / Conversions / Vars / Mode / Help */}
           {activeDrawer && activeDrawer !== 'history' && (
             <div className="mb-2.5 p-2.5 rounded-xl bg-[#19181F] border border-[#F5C531]/45 text-white space-y-2" dir="rtl">
               <div className="flex items-center justify-between text-[11px] font-black text-[#F5C531]">
                 <span>
                   {activeDrawer === 'constants'
-                    ? 'الثوابت العلمية (CONST)'
+                    ? 'الثوابت العلمية (CONST / SI)'
                     : activeDrawer === 'conv'
                     ? 'تحويل الوحدات (CONV)'
                     : activeDrawer === 'mode'
                     ? 'نظام الآلة (MODE)'
+                    : activeDrawer === 'help'
+                    ? 'دليل الدوال والرموز العلمية (HELP / FUNC)'
                     : 'الذاكرة والمتغيرات (A - F, X, Y, M)'}
                 </span>
                 <button
@@ -695,6 +700,31 @@ export const CalculatorView: React.FC = () => {
                   >
                     صيغة العرض: {displayBase}
                   </button>
+                </div>
+              )}
+
+              {activeDrawer === 'help' && (
+                <div className="grid grid-cols-2 gap-1.5 font-mono text-[10px]" dir="ltr">
+                  {[
+                    { label: 'd/dx(x^2,3)', insert: 'd/dx(x^2,3)', cursorBack: 0 },
+                    { label: '∫(x^2,0,3)', insert: '∫(x^2,0,3)', cursorBack: 0 },
+                    { label: 'logxy(2,8)', insert: 'logxy(2,8)', cursorBack: 0 },
+                    { label: 'nroot(4,81)', insert: 'nroot(4,81)', cursorBack: 0 },
+                    { label: 'pol(3,4) → r,θ', insert: 'pol(3,4)', cursorBack: 0 },
+                    { label: 'rec(5,53.1) → x,y', insert: 'rec(5,53.1)', cursorBack: 0 },
+                  ].map((fn) => (
+                    <button
+                      key={fn.label}
+                      type="button"
+                      onClick={() => {
+                        insertAtCursor(fn.insert, false, fn.cursorBack);
+                        setActiveDrawer(null);
+                      }}
+                      className="p-1.5 rounded-lg bg-[#2A2931] hover:bg-[#383642] text-left cursor-pointer text-zinc-200"
+                    >
+                      {fn.label}
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -837,8 +867,8 @@ export const CalculatorView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setModifier((m) => (m === 'SECOND' || m === 'SHIFT' ? 'NONE' : 'SHIFT'))}
-                className={`h-9 sm:h-10 rounded-xl font-bold italic text-xs sm:text-sm shadow-[0_2px_0_rgba(0,0,0,0.45)] cursor-pointer ${
-                  modifier === 'SHIFT'
+                className={`h-9 sm:h-10 rounded-xl font-serif font-bold italic text-xs sm:text-sm shadow-[0_2px_0_rgba(0,0,0,0.45)] cursor-pointer ${
+                  modifier === 'SHIFT' || modifier === 'SECOND'
                     ? 'bg-[#F5C531] text-black'
                     : 'bg-[#4E4C52] hover:bg-[#5E5B63] text-white'
                 }`}
@@ -847,18 +877,27 @@ export const CalculatorView: React.FC = () => {
               </button>
 
               <SciKey
-                shiftLbl="x!"
-                alphaLbl="><="
-                main={<span className="italic">x⁻¹</span>}
+                shiftLbl={<span className="font-serif italic">x!</span>}
+                alphaLbl="&gt;&lt;="
+                main={
+                  <span className="font-serif italic">
+                    x<sup className="not-italic text-[10px]">−1</sup>
+                  </span>
+                }
                 onPress={() => {
                   if (modifier === 'SHIFT') insertAtCursor('!', true);
-                  else insertAtCursor('^-1', true);
+                  else insertAtCursor('⁻¹', true);
                 }}
               />
               <SciKey
                 shiftLbl="Σ"
                 alphaLbl="Π"
-                main={<span className="text-[11px] sm:text-xs">Logₓy</span>}
+                main={
+                  <span className="text-[11px] sm:text-xs font-medium">
+                    Log<sub className="font-serif italic text-[10px]">x</sub>
+                    <span className="font-serif italic">y</span>
+                  </span>
+                }
                 onPress={() => {
                   if (modifier === 'SHIFT') insertAtCursor('∫(,0,5)', false, 5);
                   else insertAtCursor('logxy(,)', false, 2);
@@ -871,48 +910,86 @@ export const CalculatorView: React.FC = () => {
           <div className="grid grid-cols-6 gap-1.5 mb-2.5">
             {/* Sci Row 1 */}
             <SciKey
-              shiftLbl="x y/z"
+              shiftLbl={
+                <span className="font-serif italic text-[9px]">
+                  x<span className="not-italic text-[8px] ml-0.5">y/z</span>
+                </span>
+              }
               alphaLbl="÷R"
               main={
-                <span className="text-[11px] leading-tight flex flex-col items-center">
-                  <span className="border-b border-white/70 px-1 text-[9px]">x</span>
-                  <span className="text-[9px]">y</span>
+                <span className="text-[11px] leading-none flex flex-col items-center font-serif italic">
+                  <span className="border-b border-white/80 px-1.5 pb-[1px] text-[10px]">x</span>
+                  <span className="text-[10px] pt-[1px]">y</span>
                 </span>
               }
               onPress={() => {
                 if (modifier === 'ALPHA') insertAtCursor('mod(,)', false, 2);
-                else insertAtCursor('/', true);
+                else insertAtCursor('÷', true);
               }}
             />
             <SciKey
-              shiftLbl="³√x"
+              shiftLbl={
+                <span className="inline-flex items-center">
+                  <span className="text-[8px] -mr-0.5 -mt-1">3</span>
+                  <span>√</span>
+                  <span className="border-t border-[#F5C531] font-serif italic px-[1px]">x</span>
+                </span>
+              }
               alphaLbl="mod"
-              main="√x"
+              main={
+                <span className="inline-flex items-center text-sm">
+                  <span>√</span>
+                  <span className="border-t border-white font-serif italic px-0.5 leading-none">x</span>
+                </span>
+              }
               onPress={() => {
-                if (modifier === 'SHIFT') insertAtCursor('cbrt(');
+                if (modifier === 'SHIFT') insertAtCursor('∛(');
                 else if (modifier === 'ALPHA') insertAtCursor('mod(,)', false, 2);
-                else insertAtCursor('sqrt(');
+                else insertAtCursor('√(');
               }}
             />
             <SciKey
-              shiftLbl="x³"
+              shiftLbl={
+                <span className="font-serif italic">
+                  x<sup className="not-italic text-[8px]">3</sup>
+                </span>
+              }
               alphaLbl="|"
-              main={<span className="italic">x²</span>}
+              main={
+                <span className="font-serif italic">
+                  x<sup className="not-italic text-[10px]">2</sup>
+                </span>
+              }
               onPress={() => {
-                if (modifier === 'SHIFT') insertAtCursor('^3', true);
-                else insertAtCursor('^2', true);
+                if (modifier === 'SHIFT') insertAtCursor('³', true);
+                else if (modifier === 'ALPHA') insertAtCursor('abs(');
+                else insertAtCursor('²', true);
               }}
             />
             <SciKey
-              shiftLbl="ˣ√y"
-              main={<span className="italic">xʸ</span>}
+              shiftLbl={
+                <span className="inline-flex items-center">
+                  <span className="font-serif italic text-[8px] -mr-0.5 -mt-1">x</span>
+                  <span>√</span>
+                  <span className="border-t border-[#F5C531] font-serif italic px-[1px]">y</span>
+                </span>
+              }
+              main={
+                <span className="font-serif italic">
+                  x<sup className="text-[10px]">y</sup>
+                </span>
+              }
               onPress={() => {
                 if (modifier === 'SHIFT') insertAtCursor('nroot(,)', false, 2);
                 else insertAtCursor('^', true);
               }}
             />
             <SciKey
-              shiftLbl="10ˣ"
+              shiftLbl={
+                <span>
+                  10<sup className="font-serif italic text-[8px]">x</sup>
+                </span>
+              }
               main="Log"
               onPress={() => {
                 if (modifier === 'SHIFT') insertAtCursor('10^(');
@@ -920,7 +997,11 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="eˣ"
+              shiftLbl={
+                <span className="font-serif italic">
+                  e<sup className="text-[8px]">x</sup>
+                </span>
+              }
               alphaLbl="t"
               main="Ln"
               onPress={() => {
@@ -938,13 +1019,13 @@ export const CalculatorView: React.FC = () => {
               onPress={() => {
                 if (modifier === 'STO') handleStoreVariable('a');
                 else if (modifier === 'ALPHA') insertAtCursor('a');
-                else insertAtCursor('-');
+                else insertAtCursor('−');
               }}
             />
             <SciKey
               shiftLbl="FACT"
               alphaLbl="b"
-              main="°'&quot;"
+              main="° ′ ″"
               onPress={() => {
                 if (modifier === 'STO') handleStoreVariable('b');
                 else if (modifier === 'ALPHA') insertAtCursor('b');
@@ -953,7 +1034,11 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="|x|"
+              shiftLbl={
+                <span>
+                  |<span className="font-serif italic">x</span>|
+                </span>
+              }
               alphaLbl="c"
               main={modifier === 'HYP' ? <span className="text-[#F5C531]">hyp●</span> : 'hyp'}
               onPress={() => {
@@ -964,7 +1049,11 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="Sin⁻¹"
+              shiftLbl={
+                <span>
+                  Sin<sup className="text-[8px]">−1</sup>
+                </span>
+              }
               alphaLbl="d"
               main="Sin"
               onPress={() => {
@@ -976,7 +1065,11 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="Cos⁻¹"
+              shiftLbl={
+                <span>
+                  Cos<sup className="text-[8px]">−1</sup>
+                </span>
+              }
               alphaLbl="e"
               main="Cos"
               onPress={() => {
@@ -988,7 +1081,11 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="Tan⁻¹"
+              shiftLbl={
+                <span>
+                  Tan<sup className="text-[8px]">−1</sup>
+                </span>
+              }
               alphaLbl="f"
               main="Tan"
               onPress={() => {
@@ -1029,17 +1126,24 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="i"
+              shiftLbl={<span className="font-serif italic">i</span>}
               alphaLbl="Cot"
               main="ENG"
               onPress={() => {
                 if (modifier === 'ALPHA') insertAtCursor('cot(');
-                else handleENG();
+                else if (modifier === 'SHIFT') {
+                  insertAtCursor('pol(,)', false, 2);
+                  showToast('تحويل الإحداثيات/المتجهات: Pol(x,y)');
+                } else handleENG();
               }}
             />
             <SciKey
               shiftLbl="%"
-              alphaLbl="Cot⁻¹"
+              alphaLbl={
+                <span>
+                  Cot<sup className="text-[8px]">−1</sup>
+                </span>
+              }
               main="("
               onPress={() => {
                 if (modifier === 'SHIFT') insertAtCursor('%', true);
@@ -1049,7 +1153,7 @@ export const CalculatorView: React.FC = () => {
             />
             <SciKey
               shiftLbl=","
-              alphaLbl="x"
+              alphaLbl={<span className="font-serif italic">x</span>}
               main=")"
               onPress={() => {
                 if (modifier === 'STO') handleStoreVariable('x');
@@ -1059,8 +1163,12 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <SciKey
-              shiftLbl="x/y→"
-              alphaLbl="y"
+              shiftLbl={
+                <span className="text-[8px] font-serif italic">
+                  x/y→x y/z
+                </span>
+              }
+              alphaLbl={<span className="font-serif italic">y</span>}
               main="S ⇌ D"
               onPress={() => {
                 if (modifier === 'STO') handleStoreVariable('y');
@@ -1110,6 +1218,9 @@ export const CalculatorView: React.FC = () => {
                 if (modifier === 'SHIFT') {
                   setActiveDrawer('conv');
                   setModifier('NONE');
+                } else if (modifier === 'ALPHA') {
+                  setActiveDrawer('constants');
+                  setModifier('NONE');
                 } else {
                   insertAtCursor('8');
                 }
@@ -1121,12 +1232,15 @@ export const CalculatorView: React.FC = () => {
               main="9"
               onPress={() => {
                 if (modifier === 'ALPHA') insertAtCursor('∞');
-                else insertAtCursor('9');
+                else if (modifier === 'SHIFT') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else insertAtCursor('9');
               }}
             />
             <NumKey
               variant="orange"
-              main={<Delete className="w-5 h-5" />}
+              main={<Delete className="w-6 h-6 fill-[#14110F] stroke-[#ED9E59]" />}
               onPress={handleBackspace}
             />
             <NumKey
@@ -1137,9 +1251,56 @@ export const CalculatorView: React.FC = () => {
             />
 
             {/* Row 2 */}
-            <NumKey shiftLbl="MATRIX" main="4" onPress={() => insertAtCursor('4')} />
-            <NumKey shiftLbl="VECTOR" main="5" onPress={() => insertAtCursor('5')} />
-            <NumKey shiftLbl="FUNC" alphaLbl="HELP" main="6" onPress={() => insertAtCursor('6')} />
+            <NumKey
+              shiftLbl="MATRIX"
+              alphaLbl={
+                <span className="grid grid-cols-3 gap-[1.5px] opacity-95" aria-hidden="true">
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                  <span className="w-[3px] h-[3px] bg-[#9683EC] rounded-[0.5px]" />
+                </span>
+              }
+              main="4"
+              onPress={() => {
+                if (modifier === 'SHIFT' || modifier === 'ALPHA') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else {
+                  insertAtCursor('4');
+                }
+              }}
+            />
+            <NumKey
+              shiftLbl="VECTOR"
+              main="5"
+              onPress={() => {
+                if (modifier === 'SHIFT') {
+                  insertAtCursor('pol(,)', false, 2);
+                  showToast('المتجه القطبي Pol(x,y)');
+                } else {
+                  insertAtCursor('5');
+                }
+              }}
+            />
+            <NumKey
+              shiftLbl="FUNC"
+              alphaLbl="HELP"
+              main="6"
+              onPress={() => {
+                if (modifier === 'SHIFT' || modifier === 'ALPHA') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else {
+                  insertAtCursor('6');
+                }
+              }}
+            />
             <NumKey
               shiftLbl="nPr"
               alphaLbl="GCD"
@@ -1162,9 +1323,42 @@ export const CalculatorView: React.FC = () => {
             />
 
             {/* Row 3 */}
-            <NumKey shiftLbl="STAT" main="1" onPress={() => insertAtCursor('1')} />
-            <NumKey shiftLbl="CMPLX" main="2" onPress={() => insertAtCursor('2')} />
-            <NumKey shiftLbl="DISTR" main="3" onPress={() => insertAtCursor('3')} />
+            <NumKey
+              shiftLbl="STAT"
+              main="1"
+              onPress={() => {
+                if (modifier === 'SHIFT') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else {
+                  insertAtCursor('1');
+                }
+              }}
+            />
+            <NumKey
+              shiftLbl="CMPLX"
+              main="2"
+              onPress={() => {
+                if (modifier === 'SHIFT') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else {
+                  insertAtCursor('2');
+                }
+              }}
+            />
+            <NumKey
+              shiftLbl="DISTR"
+              main="3"
+              onPress={() => {
+                if (modifier === 'SHIFT') {
+                  setActiveDrawer('help');
+                  setModifier('NONE');
+                } else {
+                  insertAtCursor('3');
+                }
+              }}
+            />
             <NumKey
               shiftLbl="Pol"
               alphaLbl="Ceil"
@@ -1214,8 +1408,8 @@ export const CalculatorView: React.FC = () => {
               }}
             />
             <NumKey
-              shiftLbl="π"
-              alphaLbl="e"
+              shiftLbl={<span className="font-serif italic">π</span>}
+              alphaLbl={<span className="font-serif italic">e</span>}
               main="Exp"
               onPress={() => {
                 if (modifier === 'SHIFT') insertAtCursor('π');

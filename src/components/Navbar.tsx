@@ -22,6 +22,7 @@ import {
 } from '../services/notificationService';
 import { VerifiedBadge } from './VerifiedBadge';
 import { isVerifiedPhone } from '../utils/verifiedAccounts';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   profile: StudentProfile;
@@ -219,6 +220,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               {notifEnabled ? 'التنبيهات مفعلة' : 'تفعيل التنبيهات'}
             </span>
           </button>
+
+          {/* Install App Button with App Icon */}
+          <PWAInstallButton compact />
 
           {/* Telegram Support Link */}
           <a

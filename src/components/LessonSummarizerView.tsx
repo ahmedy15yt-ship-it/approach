@@ -19,6 +19,7 @@ import {
   EyeOff,
   Compass,
   Check,
+  Copy,
 } from 'lucide-react';
 import { LessonMasterSummary, Subject } from '../types';
 import { downloadLessonSummaryPdf } from '../utils/pdfExporter';
@@ -67,6 +68,8 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
   const [customNotes, setCustomNotes] = useState('');
 
   const [detailLevel, setDetailLevel] = useState<'comprehensive' | 'exam-sprint'>('comprehensive');
+  const [teachingStyle, setTeachingStyle] = useState<'storyteller' | 'academic'>('storyteller');
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [pdfFeedback, setPdfFeedback] = useState<string | null>(null);
@@ -200,6 +203,7 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
           chapter: resolvedChapter,
           lesson: resolvedLesson,
           detailLevel,
+          teachingStyle,
           customNotes: customNotes.trim(),
           contextPoints: !useCustomTopic ? currentChapter?.summary?.keyPoints || [] : [],
           examTips: !useCustomTopic ? currentChapter?.summary?.examTips || [] : [],
@@ -250,6 +254,27 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
     }
   };
 
+  const handleCopySummaryText = async (summary: LessonMasterSummary) => {
+    const lines = [
+      `📘 ${summary.subject} — ${summary.lesson}`,
+      `الفكرة المحورية: ${summary.bigIdea}`,
+      '',
+      ...summary.conceptSections.map(
+        (s, i) => `${i + 1}. ${s.title}\n${s.deepExplanation}\nمثال: ${s.realLifeExample}`
+      ),
+      '',
+      '⚡ تريكات الامتحان:',
+      ...summary.examTraps.map((t) => `- الفخ: ${t.trap}\n  الصواب: ${t.truth}`),
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2000);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
   return (
     <div className="space-y-6 font-['Cairo',sans-serif]">
       {/* Section Header */}
@@ -266,7 +291,7 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
             مُـلخّص المنهج ومذكرات الفهم (PDF)
           </h1>
           <p className="text-xs sm:text-sm text-zinc-600 dark:text-[#B5AA92] max-w-2xl leading-relaxed">
-            اختر أي مادة وفصل ودرس ليقوم المستر الذكي بشرح الدرس كاملاً بأسلوب الفهم والربط المنطقي مع القوانين، التريكات الامتحانية، والأسئلة المحلولة بالخطوات — مع إمكانية تحميله كملف PDF منسق للمراجعة في أي وقت.
+            اختر أي مادة وفصل ودرس ليقدّم لك المستر الخبير تحليلاً عميقاً وربطاً تراكمياً بين الأبواب مع القوانين، التريكات الخفية، والأسئلة المحلولة بالاستبعاد والبرهان — مع تحميله كملف PDF منسق للمراجعة.
           </p>
         </div>
 
@@ -406,7 +431,7 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
             {/* Explanation Style Segmented Selector */}
             <div className="space-y-1.5">
               <span className="text-xs font-bold text-zinc-700 dark:text-[#E8CE88] block">
-                أسلوب التلخيص والشرح
+                حجم التلخيص ومستوى التفصيل
               </span>
               <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/20">
                 <button
@@ -430,6 +455,36 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
                   }`}
                 >
                   مراجعة ليلة الامتحان
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-xs font-bold text-zinc-700 dark:text-[#E8CE88] block">
+                أسلوب المستر في الشرح
+              </span>
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-zinc-100 dark:bg-[#09090C] border border-zinc-200 dark:border-[#D4AF37]/20">
+                <button
+                  type="button"
+                  onClick={() => setTeachingStyle('storyteller')}
+                  className={`py-2 px-2 rounded-xl text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                    teachingStyle === 'storyteller'
+                      ? 'btn-luxury-gold'
+                      : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F6E2A6]'
+                  }`}
+                >
+                  مبسّط وقصة وتشبيه
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTeachingStyle('academic')}
+                  className={`py-2 px-2 rounded-xl text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                    teachingStyle === 'academic'
+                      ? 'btn-luxury-gold'
+                      : 'text-zinc-600 dark:text-[#B5AA92] hover:text-zinc-950 dark:hover:text-[#F6E2A6]'
+                  }`}
+                >
+                  أكاديمي صياغة كتاب
                 </button>
               </div>
             </div>
@@ -638,6 +693,15 @@ export const LessonSummarizerView: React.FC<LessonSummarizerViewProps> = ({
                         <span>ناقش المستر</span>
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopySummaryText(activeSummary)}
+                      className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-[#D4AF37]/30 bg-zinc-50 dark:bg-[#09090C] text-xs font-bold text-zinc-700 dark:text-[#E8CE88] hover:border-[#D4AF37] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSummary ? 'تم النسخ' : 'نسخ المذكرة'}</span>
+                    </button>
                   </div>
                 </div>
 

@@ -74,3 +74,43 @@ html.dark ::-webkit-scrollbar-thumb {
 ::-webkit-scrollbar-thumb:hover {
   background: #D4AF37;
 }
+
+/* Celebratory Visual Effects on Lesson / Task Completion */
+@keyframes nahj-celebrate-pop {
+  0% {
+    transform: scale(0.75) rotate(-8deg);
+  }
+  45% {
+    transform: scale(1.18) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes nahj-ring-pulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(1.38);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.38);
+    opacity: 0;
+  }
+}
+
+.animate-celebrate-pop {
+  animation: nahj-celebrate-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-celebrate-ring {
+  animation: nahj-ring-pulse 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+

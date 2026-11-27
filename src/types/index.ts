@@ -73,7 +73,7 @@ export interface DailyTask {
 export interface CustomDailyTask {
   id: string;
   title: string;
-  category: 'study' | 'practice' | 'summary' | 'worship' | 'personal';
+  category: string;
   priority: 'high' | 'medium' | 'normal';
   estimatedMinutes: number;
   xp: number;
@@ -421,4 +421,95 @@ export interface WhiteboardLessonScript {
   createdAt: string;
 }
 
+export interface MistakeItem {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  lessonTitle: string;
+  question: string;
+  wrongAnswer: string;
+  correctAnswer: string;
+  reasonOrRule: string;
+  sourceLabel?: string;
+  reviewCount: number;
+  isResolved: boolean;
+  createdAt: string;
+  resolvedAt?: string;
+}
 
+export interface ExamDateItem {
+  id: string;
+  subjectName: string;
+  examDate: string; // YYYY-MM-DD
+  notes?: string;
+}
+
+export interface SubjectTermItem {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  chapterTitle: string;
+  term: string;
+  definition: string;
+  examDifference: string;
+  example: string;
+  isCustom?: boolean;
+}
+
+export interface StudyWithMePart {
+  partNumber: number;
+  title: string;
+  explanation: string;
+  coreRule: string;
+  question: string;
+  expectedKeyPoints: string[];
+  hint: string;
+}
+
+export interface StudyWithMeGrade {
+  isCorrect: boolean;
+  scorePercent: number;
+  feedback: string;
+  modelAnswer: string;
+  missedPoint?: string;
+}
+
+export interface EssayQuestionItem {
+  id: string;
+  subject: string;
+  chapter: string;
+  lesson: string;
+  questionType: string;
+  question: string;
+  rubricPoints: string[];
+  hint: string;
+  sampleAnswer: string;
+}
+
+export interface EssayGradeResult {
+  score: number;
+  maxScore: number;
+  strengths: string[];
+  missingPoints: string[];
+  modelAnswer: string;
+  teacherAdvice: string;
+  source?: 'gemini' | 'fallback';
+  warning?: string;
+}
+
+export interface IrabToken {
+  word: string;
+  pos: string;
+  irab: string;
+  signOrReason: string;
+}
+
+export interface IrabAnalysis {
+  vocalizedSentence: string;
+  generalMeaning: string;
+  tokens: IrabToken[];
+  sentenceClauses: string[];
+  grammarExtracts: string[];
+  source: 'gemini' | 'fallback';
+  warning?: string;
+}
